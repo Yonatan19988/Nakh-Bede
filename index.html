@@ -866,6 +866,48 @@
     .setup-note{ font-size:10.5px; }
   }
 
+
+  /* ---------- online: create-or-join chooser ---------- */
+  .room-choose__head{ text-align:center; margin-bottom:6px; }
+  .room-choose__title{
+    margin:0 0 8px; font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400;
+    font-size:28px; line-height:1.2; color:#F3D37A;
+  }
+  .room-choose__sub{ margin:0 auto; max-width:320px; font-size:14px; line-height:1.7; color:#9EB5C1; }
+
+  .room-choice{
+    width:100%; min-height:92px; border:none; border-radius:26px; cursor:pointer;
+    display:flex; align-items:center; gap:14px; padding:14px 18px;
+    font-family:inherit; text-align:right;
+    box-shadow:0 10px 24px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.14);
+    transition:transform 150ms ease, filter 150ms ease;
+  }
+  .room-choice:hover{ filter:brightness(1.06); }
+  .room-choice:active{ transform:scale(.985); }
+  .room-choice--create{ background:linear-gradient(180deg,#D8543A,#B23422); color:#FFF3EC; }
+  .room-choice--join{ background:linear-gradient(180deg,#17B3AC,#0C807F); color:#EEFFFD; }
+  .room-choice__icon{
+    flex:none; width:54px; height:54px; border-radius:18px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.16); border:1.5px solid rgba(255,255,255,.28);
+  }
+  .room-choice__text{ flex:1; display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .room-choice__label{ font-size:21px; font-weight:800; line-height:1.3; }
+  .room-choice__hint{ font-size:13.5px; font-weight:600; opacity:.85; }
+  .room-choice__chev{ flex:none; display:flex; opacity:.75; }
+  .room-choice + .room-choice{ margin-top:6px; }
+  .room-choose__head{ margin-bottom:12px; }
+
+  .room-foot{ margin:2px 6px 0; font-size:12.5px; line-height:1.6; color:#7E93A0; text-align:center; }
+
+  @media (max-height:780px){
+    .room-choose__title{ font-size:24px; }
+    .room-choose__sub{ font-size:13px; }
+    .room-choice{ min-height:80px; padding:12px 16px; border-radius:22px; }
+    .room-choice__icon{ width:48px; height:48px; border-radius:16px; }
+    .room-choice__label{ font-size:19px; }
+  }
+
   /* ---------- create / join room page (Home Screen design language) ---------- */
   html.room-mode, body.room-mode{ overflow:hidden; height:100vh; height:100svh; }
   body.room-mode{ padding:0; }
@@ -943,7 +985,8 @@
     box-shadow:0 0 0 3px rgba(217,173,76,.22);
   }
   .room-form__input--code{ letter-spacing:2px; text-transform:uppercase; }
-  .room-form__error{ font-size:13px; color:#FF8A78; margin-top:6px; text-align:right; }
+  .room-form__error{ font-size:13px; font-weight:600; color:#FF8A78; margin-top:6px; text-align:right; }
+  .room-form__input.is-invalid{ border-color:#E8705D; box-shadow:0 0 0 3px rgba(232,112,93,.2); }
 
   .room-button{
     width:100%; height:58px; border:none; border-radius:26px; cursor:pointer;
@@ -973,6 +1016,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDSrLKHeMsY6qD2FZggiBqZY4GNmhdj3q8",
@@ -986,9 +1030,23 @@
 
   const fbApp = initializeApp(firebaseConfig);
   const db = getDatabase(fbApp);
-  window.FB = { ref, set, get, update, onValue, off, remove, onDisconnect, db };
-  window.__fbReady = true;
-  window.dispatchEvent(new Event('fb-ready'));
+  const auth = getAuth(fbApp);
+  window.FB = { ref, set, get, update, onValue, off, remove, onDisconnect, db, uid: null };
+  // the security rules identify players by their auth uid, so nothing goes
+  // online until an anonymous identity exists
+  onAuthStateChanged(auth, (user) => {
+    if(!user) return;
+    window.FB.uid = user.uid;
+    window.__fbAuthError = null;
+    if(!window.__fbReady){
+      window.__fbReady = true;
+      window.dispatchEvent(new Event('fb-ready'));
+    }
+  });
+  signInAnonymously(auth).catch((err) => {
+    window.__fbAuthError = (err && (err.code || err.message)) || 'unknown';
+    console.error('Anonymous sign-in failed:', err);
+  });
 </script>
 </head>
 <body>
@@ -1289,14 +1347,48 @@ function genRoomCode(){
   for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
   return s;
 }
+function fbReadyOrWarn(){
+  if(window.__fbReady && window.FB && window.FB.uid) return true;
+  if(window.__fbAuthError){
+    alert('ورود به سرور ناموفق بود. لطفاً اتصال اینترنت را بررسی کنید و صفحه را دوباره باز کنید.');
+  } else {
+    alert('اتصال به سرور هنوز آماده نیست، چند ثانیه صبر کنید.');
+  }
+  return false;
+}
+
+function fbErrorText(err){
+  const code = String((err && (err.code || err.message)) || '').toLowerCase();
+  if(code.includes('permission')) return 'دسترسی به این اتاق مجاز نیست.';
+  return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
+}
+
+// Presence: when the connection drops, onDisconnect removes this player from
+// the room, and the rules then refuse their writes. So on every reconnect we
+// put the player back (same team) and re-arm the disconnect cleanup.
+let presenceUnsub = null;
+function armPresence(){
+  if(presenceUnsub){ presenceUnsub(); presenceUnsub = null; }
+  const connRef = window.FB.ref(window.FB.db, '.info/connected');
+  presenceUnsub = window.FB.onValue(connRef, (snap) => {
+    if(snap.val() !== true) return;
+    if(!online.roomCode || !online.playerId) return;
+    const meRef = window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`);
+    window.FB.onDisconnect(meRef).remove();
+    window.FB.update(meRef, { name: online.playerName, teamId: online.lastTeamId || null })
+      .catch(err => console.warn('presence restore failed', err));
+  });
+}
+
 function genPlayerId(){
   return 'p_' + Math.random().toString(36).slice(2,10);
 }
 
 function onlineCreateRoom(playerName){
-  if(!window.__fbReady){ alert('اتصال به سرور هنوز آماده نیست، چند ثانیه صبر کن.'); return Promise.resolve(); }
+  if(!fbReadyOrWarn()) return Promise.resolve();
   const code = genRoomCode();
-  const playerId = genPlayerId();
+  const playerId = window.FB.uid;
+  online.lastTeamId = null;
   online.roomCode = code;
   online.playerId = playerId;
   online.playerName = playerName;
@@ -1309,32 +1401,33 @@ function onlineCreateRoom(playerName){
     teams: {},
   };
   return window.FB.set(window.FB.ref(window.FB.db, 'rooms/'+code), roomData).then(() => {
-    window.FB.onDisconnect(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`)).remove();
+    armPresence();
     subscribeRoom();
     state.screen = 'online-lobby';
     render();
-  }).catch(err => { alert('خطا: ' + err.message); });
+  }).catch(err => { alert(fbErrorText(err)); });
 }
 
 function onlineJoinRoom(code, playerName){
-  if(!window.__fbReady){ alert('اتصال به سرور هنوز آماده نیست، چند ثانیه صبر کن.'); return Promise.resolve(); }
+  if(!fbReadyOrWarn()) return Promise.resolve();
   code = code.trim().toUpperCase();
   if(!code){ alert('کد اتاق رو وارد کن'); return Promise.resolve(); }
   const roomRef = window.FB.ref(window.FB.db, 'rooms/'+code);
   return window.FB.get(roomRef).then(snap => {
     if(!snap.exists()){ alert('اتاقی با این کد پیدا نشد'); return; }
-    const playerId = genPlayerId();
+    const playerId = window.FB.uid;
+    online.lastTeamId = null;
     online.roomCode = code;
     online.playerId = playerId;
     online.playerName = playerName;
     online.isHost = false;
     return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: null}).then(() => {
-      window.FB.onDisconnect(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`)).remove();
+      armPresence();
       subscribeRoom();
       state.screen = 'online-lobby';
       render();
     });
-  }).catch(err => { alert('خطا: ' + err.message); });
+  }).catch(err => { alert(fbErrorText(err)); });
 }
 
 function subscribeRoom(){
@@ -1342,6 +1435,8 @@ function subscribeRoom(){
   window.FB.onValue(roomRef, (snap) => {
     online.room = snap.val();
     if(!online.room){ return; }
+    const me = online.room.players && online.room.players[online.playerId];
+    if(me && me.teamId) online.lastTeamId = me.teamId;
     if(online.room.phase === 'playing' && state.screen === 'online-lobby'){
       state.screen = 'online-board';
     }
@@ -1353,7 +1448,8 @@ function onlineLeaveRoom(){
   if(online.roomCode && online.playerId){
     window.FB.remove(window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`));
   }
-  online.roomCode = null; online.playerId = null; online.room = null; online.isHost = false;
+  if(presenceUnsub){ presenceUnsub(); presenceUnsub = null; }
+  online.roomCode = null; online.playerId = null; online.room = null; online.isHost = false; online.lastTeamId = null;
   state.screen = 'home';
   render();
 }
@@ -1439,8 +1535,9 @@ function render(){
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
   document.body.classList.toggle('setup-mode', state.screen === 'setup');
-  document.body.classList.toggle('room-mode', state.screen === 'online-home');
-  document.documentElement.classList.toggle('room-mode', state.screen === 'online-home');
+  const roomScreen = ['online-home','online-create','online-join'].includes(state.screen);
+  document.body.classList.toggle('room-mode', roomScreen);
+  document.documentElement.classList.toggle('room-mode', roomScreen);
   document.body.classList.toggle('play-mode', state.screen === 'board');
   document.documentElement.classList.toggle('play-mode', state.screen === 'board');
   app.innerHTML = '';
@@ -1453,6 +1550,10 @@ function render(){
     app.appendChild(renderSetup());
   } else if(state.screen === 'online-home'){
     app.appendChild(renderOnlineHome());
+  } else if(state.screen === 'online-create'){
+    app.appendChild(renderOnlineCreate());
+  } else if(state.screen === 'online-join'){
+    app.appendChild(renderOnlineJoin());
   } else if(state.screen === 'online-lobby'){
     app.appendChild(renderOnlineLobby());
   } else if(state.screen === 'online-board'){
@@ -1549,11 +1650,6 @@ function renderHome(){
   onlineBtn.addEventListener('click', () => { state.screen = 'online-home'; render(); });
   menu.appendChild(onlineBtn);
 
-  const continueBtn = menuBtn('home-btn--continue', 'ادامه بازی قبلی', ico.clock);
-  continueBtn.disabled = !state.hasActiveGame;
-  continueBtn.addEventListener('click', () => { state.screen = 'board'; render(); });
-  menu.appendChild(continueBtn);
-
   const tutorialBtn = menuBtn('home-btn--tutorial', 'آموزش بازی', ico.cap);
   tutorialBtn.addEventListener('click', () => { toast('آموزش بازی به زودی اضافه می‌شود'); });
   menu.appendChild(tutorialBtn);
@@ -1638,31 +1734,85 @@ function ensureOnlineTicker(){
   }, 1000);
 }
 
-function renderOnlineHome(){
-  const wrap = el(`<div class="online-room-page"></div>`);
+function clearErrorOnType(form){
+  form.querySelectorAll('.room-form__field').forEach(field => {
+    const input = field.querySelector('input');
+    const err = field.querySelector('.room-form__error');
+    if(!input || !err) return;
+    input.addEventListener('input', () => {
+      if(input.value.trim()){ err.style.display = 'none'; input.classList.remove('is-invalid'); }
+    });
+  });
+}
 
-  // Header: title+dot (right, first in RTL) + back pill (left)
+function roomHeader(){
   const header = el(`<div class="online-room-header"></div>`);
   header.appendChild(el(`<div class="online-room-logo"><span class="online-room-logo-dot"></span>نخ بده</div>`));
   const backTop = el(`<button class="online-room-back-top"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg><span>بازگشت</span></button>`);
   backTop.addEventListener('click', goBack);
   header.appendChild(backTop);
-  wrap.appendChild(header);
+  return header;
+}
 
-  // ---- Create room card ----
+// ---- step 1: choose create or join ----
+function renderOnlineHome(){
+  const wrap = el(`<div class="online-room-page"></div>`);
+  wrap.appendChild(roomHeader());
+
+  wrap.appendChild(el(`<div class="room-choose__head">
+    <h1 class="room-choose__title">بازی آنلاین با دوستان</h1>
+    <p class="room-choose__sub">یه اتاق بساز و کدش رو برای دوستات بفرست، یا با کد دوستت وارد اتاقش شو.</p>
+  </div>`));
+
+  const createChoice = el(`<button class="room-choice room-choice--create">
+    <span class="room-choice__icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+    <span class="room-choice__text"><span class="room-choice__label">ساخت اتاق</span><span class="room-choice__hint">میزبان بازی شو</span></span>
+    <span class="room-choice__chev"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></span>
+  </button>`);
+  createChoice.addEventListener('click', () => { state.screen = 'online-create'; render(); });
+  wrap.appendChild(createChoice);
+
+  const joinChoice = el(`<button class="room-choice room-choice--join">
+    <span class="room-choice__icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg></span>
+    <span class="room-choice__text"><span class="room-choice__label">ورود به اتاق</span><span class="room-choice__hint">با کد دوستت وارد شو</span></span>
+    <span class="room-choice__chev"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></span>
+  </button>`);
+  joinChoice.addEventListener('click', () => { state.screen = 'online-join'; render(); });
+  wrap.appendChild(joinChoice);
+
+  return wrap;
+}
+
+// ---- step 2a: create a room ----
+function renderOnlineCreate(){
+  const wrap = el(`<div class="online-room-page"></div>`);
+  wrap.appendChild(roomHeader());
+
   const createForm = el(`<form class="room-card room-card--create" novalidate></form>`);
   createForm.appendChild(el(`<div class="room-card__ornament room-card__ornament--tr">${PERSIAN_CORNER(46)}</div>`));
   createForm.appendChild(el(`<h2 class="room-card__title">${PERSIAN_ORNAMENT(16)}<span>ساخت اتاق جدید</span>${PERSIAN_ORNAMENT(16)}</h2>`));
-  const createField = el(`<div class="room-form__field">
-    <label class="room-form__label" for="createNameInput">اسمت</label>
-    <input class="room-form__input" type="text" id="createNameInput" placeholder="مثلاً علی" />
+  const createNameField = el(`<div class="room-form__field">
+    <label class="room-form__label" for="createNameInput">نام خود را وارد کنید</label>
+    <input class="room-form__input" type="text" id="createNameInput" maxlength="20" autocomplete="off" />
+    <div class="room-form__error" style="display:none;"></div>
   </div>`);
-  createForm.appendChild(createField);
+  createForm.appendChild(createNameField);
   const createBtn = el(`<button type="submit" class="room-button room-button--create">ساخت اتاق</button>`);
   createForm.appendChild(createBtn);
   createForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = createForm.querySelector('#createNameInput').value.trim() || 'میزبان';
+    const nameInput = createForm.querySelector('#createNameInput');
+    const nameErr = createNameField.querySelector('.room-form__error');
+    const name = nameInput.value.trim();
+    if(!name){
+      nameErr.textContent = 'لطفاً نام خود را وارد کنید';
+      nameErr.style.display = 'block';
+      nameInput.classList.add('is-invalid');
+      nameInput.focus();
+      return;
+    }
+    nameErr.style.display = 'none';
+    nameInput.classList.remove('is-invalid');
     createBtn.disabled = true;
     createBtn.textContent = 'ساخت اتاق...';
     onlineCreateRoom(name).finally(() => {
@@ -1670,20 +1820,29 @@ function renderOnlineHome(){
       createBtn.textContent = 'ساخت اتاق';
     });
   });
+  clearErrorOnType(createForm);
   wrap.appendChild(createForm);
+  wrap.appendChild(el(`<p class="room-foot">بعد از ساخت، یه کد ۵ حرفی می‌گیری که دوستات باهاش وارد می‌شن.</p>`));
+  return wrap;
+}
 
-  // ---- Join room card ----
+// ---- step 2b: join a friend's room ----
+function renderOnlineJoin(){
+  const wrap = el(`<div class="online-room-page"></div>`);
+  wrap.appendChild(roomHeader());
+
   const joinForm = el(`<form class="room-card room-card--join" novalidate></form>`);
   joinForm.appendChild(el(`<div class="room-card__ornament room-card__ornament--tr">${PERSIAN_CORNER(46)}</div>`));
   joinForm.appendChild(el(`<h2 class="room-card__title">${PERSIAN_ORNAMENT(16)}<span>ورود به اتاق دوستت</span>${PERSIAN_ORNAMENT(16)}</h2>`));
   const joinNameField = el(`<div class="room-form__field">
-    <label class="room-form__label" for="joinNameInput">اسمت</label>
-    <input class="room-form__input" type="text" id="joinNameInput" placeholder="مثلاً سارا" />
+    <label class="room-form__label" for="joinNameInput">نام خود را وارد کنید</label>
+    <input class="room-form__input" type="text" id="joinNameInput" maxlength="20" autocomplete="off" />
+    <div class="room-form__error" style="display:none;"></div>
   </div>`);
   joinForm.appendChild(joinNameField);
   const joinCodeField = el(`<div class="room-form__field">
-    <label class="room-form__label" for="joinCodeInput">کد اتاق</label>
-    <input class="room-form__input room-form__input--code" type="text" id="joinCodeInput" placeholder="مثلاً AB12C" />
+    <label class="room-form__label" for="joinCodeInput">کد اتاق را وارد کنید</label>
+    <input class="room-form__input room-form__input--code" type="text" id="joinCodeInput" maxlength="5" autocomplete="off" />
     <div class="room-form__error" style="display:none;"></div>
   </div>`);
   joinForm.appendChild(joinCodeField);
@@ -1692,14 +1851,32 @@ function renderOnlineHome(){
   joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const errBox = joinCodeField.querySelector('.room-form__error');
-    const name = joinForm.querySelector('#joinNameInput').value.trim() || 'بازیکن';
-    const code = joinForm.querySelector('#joinCodeInput').value.trim();
-    if(!code){
-      errBox.textContent = 'کد اتاق رو وارد کن';
-      errBox.style.display = 'block';
-      return;
+    const nameErr = joinNameField.querySelector('.room-form__error');
+    const nameInput = joinForm.querySelector('#joinNameInput');
+    const codeInput = joinForm.querySelector('#joinCodeInput');
+    const name = nameInput.value.trim();
+    const code = codeInput.value.trim();
+    // check both fields so the player sees every problem at once
+    let firstBad = null;
+    if(!name){
+      nameErr.textContent = 'لطفاً نام خود را وارد کنید';
+      nameErr.style.display = 'block';
+      nameInput.classList.add('is-invalid');
+      firstBad = firstBad || nameInput;
+    } else {
+      nameErr.style.display = 'none';
+      nameInput.classList.remove('is-invalid');
     }
-    errBox.style.display = 'none';
+    if(!code){
+      errBox.textContent = 'لطفاً کد اتاق را وارد کنید';
+      errBox.style.display = 'block';
+      codeInput.classList.add('is-invalid');
+      firstBad = firstBad || codeInput;
+    } else {
+      errBox.style.display = 'none';
+      codeInput.classList.remove('is-invalid');
+    }
+    if(firstBad){ firstBad.focus(); return; }
     joinBtn.disabled = true;
     joinBtn.textContent = 'در حال ورود...';
     onlineJoinRoom(code, name).finally(() => {
@@ -1707,8 +1884,9 @@ function renderOnlineHome(){
       joinBtn.textContent = 'ورود به اتاق';
     });
   });
+  clearErrorOnType(joinForm);
   wrap.appendChild(joinForm);
-
+  wrap.appendChild(el(`<p class="room-foot">کد اتاق رو از کسی که اتاق رو ساخته بگیر.</p>`));
   return wrap;
 }
 
@@ -2145,7 +2323,10 @@ function renderSettings(){
 
 function goBack(){
   const s = state.screen;
-  if(s === 'settings' || s === 'setup' || s === 'online-home'){
+  if(s === 'online-create' || s === 'online-join'){
+    state.screen = 'online-home';
+    render();
+  } else if(s === 'settings' || s === 'setup' || s === 'online-home'){
     state.screen = 'home';
     render();
   } else if(s === 'online-lobby'){
@@ -2167,7 +2348,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','setup','board'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
