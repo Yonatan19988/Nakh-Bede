@@ -204,88 +204,8 @@
   .footer-note{text-align:center; color:var(--text-dim); font-size:11.5px; margin-top:18px; line-height:1.9;}
 
   /* ---------------- ONLINE ROOM PAGE (Persian luxury redesign) ---------------- */
-  .online-room-page{
-    margin: -20px -16px 0; padding: 18px 18px 40px;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(27,129,145,.20), transparent 42%),
-      linear-gradient(180deg,#07415A 0%,#043349 40%,#022638 100%);
-    position:relative;
-    min-height:100vh; min-height:100svh;
-  }
-  .online-room-page::before{
-    content:''; position:absolute; inset:0; pointer-events:none;
-    box-shadow: inset 0 0 90px rgba(0,0,0,.55);
-  }
-  .online-room-header{
-    display:flex; justify-content:space-between; align-items:center;
-    margin-bottom:22px; position:relative; z-index:1;
-  }
-  .online-room-logo{
-    display:flex; align-items:center; gap:8px; font-family:'Lalezar','Vazirmatn',sans-serif;
-    font-size:26px; font-weight:800;
-    background: linear-gradient(180deg,#FFF2BA,#E7B750);
-    -webkit-background-clip:text; background-clip:text; color:#E7B750; -webkit-text-fill-color:transparent;
-    text-shadow: 0 3px 12px rgba(0,0,0,.25);
-  }
-  .online-room-logo-dot{
-    width:11px; height:11px; border-radius:50%; background:#C54838;
-    box-shadow: 0 0 10px 2px rgba(197,72,56,.65); display:inline-block;
-  }
-  .online-room-back-top{
-    display:inline-flex; align-items:center; gap:4px; height:46px; padding:0 20px;
-    border-radius:999px; font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
-    background: linear-gradient(180deg, rgba(5,49,67,.95), rgba(4,35,50,.95));
-    border:1.5px solid #DDB658; color:#F7E6B1; box-shadow:0 6px 18px rgba(0,0,0,.25);
-  }
-  .online-room-back-top:active{ transform: scale(.97); }
 
-  .room-card{
-    position:relative; z-index:1;
-    background: linear-gradient(180deg, #06384B, #042E40);
-    border:1.5px solid #CDA648; border-radius:30px; padding:26px 22px;
-    box-shadow: 0 12px 34px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.06);
-    margin-bottom:18px; overflow:hidden;
-  }
-  .room-card__ornament{ position:absolute; top:6px; opacity:.85; }
-  .room-card__ornament--tr{ right:6px; }
-  .room-card__title{
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    font-size:24px; font-weight:800; color:#F3D37A; text-align:center; margin-bottom:18px;
-  }
-  .room-form__field{ margin-bottom:20px; }
-  .room-form__field:last-of-type{ margin-bottom:22px; }
-  .room-form__label{
-    display:block; font-size:15.5px; font-weight:700; color:#E0C07A; margin-bottom:8px; text-align:right;
-  }
-  .room-form__input{
-    width:100%; height:60px; border-radius:22px; background:rgba(255,255,255,.07);
-    border:1.4px solid #CDA648; padding:0 20px; font-size:17px; color:#FFF1CD;
-    font-family:inherit; outline:none; transition:180ms ease; text-align:right;
-  }
-  .room-form__input::placeholder{ color:#7E93A0; }
-  .room-form__input:focus{ border-color:#D6A934; box-shadow:0 0 0 4px rgba(214,169,52,.16); }
-  .room-form__input--code{ direction:ltr; text-align:right; letter-spacing:2px; font-weight:700; }
-  .room-form__error{ font-size:13px; color:#FF8A78; margin-top:6px; text-align:right; }
 
-  .room-button{
-    width:100%; height:64px; border-radius:24px; font-family:inherit; font-size:20px;
-    font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
-    transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease; border:none;
-  }
-  .room-button:active{ transform: scale(.985); }
-  .room-button:disabled{ opacity:.55; cursor:not-allowed; filter:grayscale(.25); }
-  .room-button--create{
-    background: linear-gradient(180deg, #C74A35, #A93227); border:2px solid rgba(219,178,83,.75);
-    color:#FFF8E6; box-shadow:0 8px 18px rgba(99,25,18,.25);
-  }
-  .room-button--join{
-    background: linear-gradient(180deg, #07988F, #05746F); border:2px solid rgba(218,181,84,.65);
-    color:#FFFFFF; box-shadow:0 8px 18px rgba(4,60,56,.3);
-  }
-  .room-button--back{
-    background: linear-gradient(180deg, #06374D, #042C3F); border:2px solid #D5AA50;
-    color:#FAE8B6; font-size:19px; position:relative; z-index:1;
-  }
 
   /* ---------------- HOME SCREEN (reference-matched Persian design) ---------------- */
   html.home-mode, body.home-mode{
@@ -794,6 +714,261 @@
     .act-card__title{ font-size:24px; }
     .act-card__text{ font-size:15px; line-height:1.65; }
   }
+
+
+  /* ---------- team setup screen ---------- */
+  .setup-page{
+    width:calc(100% - 28px); max-width:460px; margin:0 auto;
+    min-height:100vh; min-height:100svh;
+    display:flex; flex-direction:column; gap:10px;
+    padding:10px 0 14px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  body.setup-mode{ padding:0; }
+  body.setup-mode .wrap{ max-width:none; padding:0; }
+  body.setup-mode{
+    background:
+      radial-gradient(circle at 50% 0%, rgba(27,129,145,.18), transparent 42%),
+      linear-gradient(180deg,#073E55 0%,#043247 45%,#02283B 100%);
+    background-attachment: fixed;
+  }
+
+  .setup-head{ display:flex; align-items:center; justify-content:space-between; flex:0 0 auto; }
+  .setup-brand{
+    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:27px; line-height:1;
+    background:linear-gradient(180deg,#FFF0B7,#E0B34E);
+    -webkit-background-clip:text; background-clip:text;
+    color:#E0B34E; -webkit-text-fill-color:transparent;
+    display:flex; align-items:center; gap:6px;
+  }
+  .setup-brand-dot{ width:8px; height:8px; border-radius:50%; background:#EF5C48; -webkit-text-fill-color:initial; flex:none; }
+  .setup-back{
+    display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 15px;
+    border-radius:999px; background:rgba(4,35,50,.9); border:1.5px solid #D4AA50;
+    color:#F3D37A; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+    transition:transform 150ms ease, filter 150ms ease;
+  }
+  .setup-back:active{ transform:scale(.985); }
+
+  .setup-intro{
+    background:rgba(6,48,66,.62); border:1.5px solid rgba(217,173,76,.5);
+    border-radius:20px; padding:11px 15px; flex:0 0 auto;
+  }
+  .setup-intro__title{
+    margin:0 0 3px; font-family:'Lalezar','Vazirmatn',sans-serif;
+    font-size:20px; font-weight:400; color:#F3D37A;
+  }
+  .setup-intro__sub{ margin:0; font-size:12.5px; line-height:1.55; color:#9EB5C1; }
+
+  .team-card{
+    background:rgba(6,48,66,.62); border:1.5px solid rgba(217,173,76,.5);
+    border-radius:20px; padding:13px; flex:0 0 auto;
+    display:flex; flex-direction:column; gap:9px;
+  }
+  .team-card__head{ display:flex; align-items:center; gap:9px; }
+  .team-card__name{
+    width:auto; flex:0 1 128px; min-width:0; height:42px; border-radius:14px;
+    background:rgba(255,255,255,.07); border:1.4px solid rgba(217,173,76,.5);
+    padding:0 13px; font-family:inherit; font-size:15px; font-weight:700; color:#FFF1CD; outline:none;
+  }
+  .team-card__name:focus{ border-color:#F0C96B; box-shadow:0 0 0 3px rgba(217,173,76,.2); }
+  .team-card__color{
+    flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:7px;
+    font-size:11.5px; color:#9EB5C1; white-space:nowrap; overflow:hidden;
+  }
+  .team-card__swatch{ width:15px; height:15px; border-radius:50%; flex:none; box-shadow:0 0 0 2px rgba(255,255,255,.14); }
+  .team-card__x{
+    flex:none; width:38px; height:38px; border-radius:13px; cursor:pointer;
+    background:rgba(4,35,50,.85); border:1.4px solid rgba(217,173,76,.45);
+    color:#F0836F; display:flex; align-items:center; justify-content:center;
+    transition:transform 150ms ease, filter 150ms ease;
+  }
+  .team-card__x:active{ transform:scale(.985); }
+  .team-card__x:disabled{ opacity:.35; cursor:not-allowed; }
+
+  .team-card__players{ display:flex; flex-wrap:wrap; gap:9px; }
+  .player-cell{ position:relative; width:calc(50% - 4.5px); flex:0 0 calc(50% - 4.5px); }
+  .player-cell__input{
+    width:100%; height:48px; border-radius:16px;
+    background:rgba(255,255,255,.06); border:1.4px solid rgba(217,173,76,.42);
+    padding:0 13px; font-family:inherit; font-size:14.5px; color:#FFF1CD; outline:none;
+  }
+  .player-cell__input:focus{ border-color:#F0C96B; box-shadow:0 0 0 3px rgba(217,173,76,.18); }
+  .player-cell__x{
+    position:absolute; top:-6px; left:-5px; width:21px; height:21px; border-radius:50%;
+    background:#8E2A22; border:1.5px solid #F7EBD0; color:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .team-card__add{
+    width:100%; height:46px; border-radius:16px; cursor:pointer;
+    background:transparent; border:1.5px solid rgba(217,173,76,.6);
+    color:#F3D37A; font-family:inherit; font-size:14.5px; font-weight:700;
+    transition:transform 150ms ease, background 150ms ease;
+  }
+  .team-card__add:hover{ background:rgba(217,173,76,.1); }
+  .team-card__add:active{ transform:scale(.985); }
+
+  .setup-addteam{
+    width:100%; height:56px; border:none; border-radius:24px; cursor:pointer; flex:0 0 auto;
+    background:linear-gradient(180deg,#14C6BE,#0A9E9B); color:#fff;
+    font-family:inherit; font-size:18px; font-weight:800;
+    box-shadow:0 8px 18px rgba(0,0,0,.26);
+    transition:transform 150ms ease, filter 150ms ease;
+  }
+  .setup-addteam:hover{ filter:brightness(1.06); }
+  .setup-addteam:active{ transform:scale(.985); }
+
+  .deck-card{
+    background:rgba(6,48,66,.62); border:1.5px solid rgba(217,173,76,.5);
+    border-radius:20px; padding:13px 15px; flex:0 0 auto;
+  }
+  .deck-card__title{
+    margin:0 0 4px; font-family:'Lalezar','Vazirmatn',sans-serif;
+    font-size:18px; font-weight:400; color:#F3D37A;
+  }
+  .deck-card__sub{ margin:0 0 9px; font-size:12px; line-height:1.5; color:#9EB5C1; }
+  .deck-card__area{
+    width:100%; height:86px; resize:vertical; border-radius:15px;
+    background:rgba(255,255,255,.06); border:1.4px solid rgba(217,173,76,.45);
+    padding:10px 13px; font-family:inherit; font-size:13.5px; color:#FFF1CD;
+    outline:none; line-height:1.6;
+  }
+  .deck-card__area::placeholder{ color:#7E93A0; }
+  .deck-card__area:focus{ border-color:#F0C96B; box-shadow:0 0 0 3px rgba(217,173,76,.18); }
+
+  .setup-start{
+    width:100%; height:62px; border:none; border-radius:26px; cursor:pointer; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    background:linear-gradient(180deg,#F05B45,#D64732); color:#FFF3EC;
+    font-family:inherit; font-size:19px; font-weight:800;
+    box-shadow:0 10px 22px rgba(0,0,0,.3);
+    transition:transform 150ms ease, filter 150ms ease;
+  }
+  .setup-start:hover{ filter:brightness(1.06); }
+  .setup-start:active{ transform:scale(.985); }
+  .setup-note{ font-size:11.5px; line-height:1.55; color:#7E93A0; text-align:center; flex:0 0 auto; }
+
+  @media (max-height:800px){
+    .setup-page{ gap:8px; }
+    .setup-brand{ font-size:24px; }
+    .setup-intro{ padding:9px 13px; }
+    .setup-intro__title{ font-size:18px; }
+    .setup-intro__sub{ font-size:11.5px; }
+    .team-card{ padding:11px; gap:8px; border-radius:17px; }
+    .team-card__name, .team-card__x{ height:38px; }
+    .player-cell__input{ height:44px; }
+    .team-card__add{ height:42px; font-size:13.5px; }
+    .setup-addteam{ height:50px; font-size:16.5px; }
+    .deck-card{ padding:11px 13px; }
+    .deck-card__area{ height:70px; }
+    .setup-start{ height:56px; font-size:17.5px; }
+    .setup-note{ font-size:10.5px; }
+  }
+
+  /* ---------- create / join room page (Home Screen design language) ---------- */
+  html.room-mode, body.room-mode{ overflow:hidden; height:100vh; height:100svh; }
+  body.room-mode{ padding:0; }
+  body.room-mode .wrap{ max-width:none; }
+
+  .online-room-page{
+    max-width:460px; margin:0 auto;
+    height:100vh; height:100svh; max-height:100svh;
+    display:flex; flex-direction:column; justify-content:center; gap:14px;
+    padding:12px 16px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    background:
+      radial-gradient(circle at 50% 0%, rgba(27,129,145,.20), transparent 42%),
+      linear-gradient(180deg,#07415A 0%,#043349 40%,#022638 100%);
+    overflow:hidden;
+  }
+
+  .online-room-header{
+    display:flex; align-items:center; justify-content:space-between; flex:0 0 auto;
+    position:absolute; top:0; right:0; left:0; margin:12px 16px 0;
+    margin-top: calc(12px + env(safe-area-inset-top, 0px));
+  }
+  .online-room-page{ position:relative; }
+  .online-room-logo{
+    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:30px; line-height:1;
+    background:linear-gradient(180deg,#FFF0B7,#E0B34E);
+    -webkit-background-clip:text; background-clip:text;
+    color:#E0B34E; -webkit-text-fill-color:transparent;
+    display:flex; align-items:center; gap:6px;
+  }
+  .online-room-logo-dot{
+    width:9px; height:9px; border-radius:50%; background:#EF5C48;
+    -webkit-text-fill-color:initial; flex:none;
+  }
+  .online-room-back-top{
+    display:inline-flex; align-items:center; gap:6px; height:40px; padding:0 16px;
+    border-radius:999px; background:rgba(4,35,50,.9); border:1.5px solid #D4AA50;
+    color:#F3D37A; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .online-room-back-top:active{ transform:scale(.97); }
+
+  .room-card{
+    position:relative; flex:0 0 auto;
+    display:flex; flex-direction:column;
+    background:linear-gradient(180deg, rgba(9,62,82,.92), rgba(4,44,60,.92));
+    border:1.5px solid rgba(217,173,76,.65); border-radius:26px;
+    padding:16px 16px 18px;
+    box-shadow:0 10px 26px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .room-card__ornament{ position:absolute; opacity:.38; pointer-events:none; }
+  .room-card__ornament--tr{ top:9px; right:9px; }
+  .room-card__title{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin:0 0 14px; font-family:'Lalezar','Vazirmatn',sans-serif;
+    font-size:22px; font-weight:400; color:#F3D37A; text-align:center;
+  }
+  .room-card__title span{ line-height:1.2; }
+
+  .room-form__field{ margin-bottom:12px; }
+  .room-form__label{
+    display:block; font-size:14.5px; font-weight:700; color:#E0C07A;
+    margin-bottom:7px; text-align:right;
+  }
+  .room-form__input{
+    width:100%; height:56px; border-radius:20px;
+    background:rgba(255,255,255,.07); border:1.5px solid rgba(217,173,76,.55);
+    padding:0 18px; font-family:inherit; font-size:16.5px; font-weight:600;
+    color:#FFF1CD; outline:none;
+    transition:border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  }
+  .room-form__input::placeholder{ color:#7E93A0; font-weight:500; }
+  .room-form__input:focus{
+    border-color:#F0C96B; background:rgba(255,255,255,.11);
+    box-shadow:0 0 0 3px rgba(217,173,76,.22);
+  }
+  .room-form__input--code{ letter-spacing:2px; text-transform:uppercase; }
+  .room-form__error{ font-size:13px; color:#FF8A78; margin-top:6px; text-align:right; }
+
+  .room-button{
+    width:100%; height:58px; border:none; border-radius:26px; cursor:pointer;
+    font-family:inherit; font-size:19px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:transform 130ms ease, filter 130ms ease;
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+  }
+  .room-button:not(:disabled):hover{ filter:brightness(1.06); }
+  .room-button:not(:disabled):active{ transform:scale(.98); }
+  .room-button:disabled{ opacity:.55; cursor:not-allowed; }
+  .room-button--create{ background:linear-gradient(180deg,#D8543A,#B23422); color:#FFF3EC; }
+  .room-button--join{ background:linear-gradient(180deg,#17B3AC,#0C807F); color:#EEFFFD; }
+
+  @media (max-height:780px){
+    .online-room-page{ gap:9px; padding:9px 14px 12px; }
+    .online-room-logo{ font-size:26px; }
+    .online-room-back-top{ height:36px; font-size:13px; }
+    .room-card{ padding:13px 14px 14px; border-radius:22px; }
+    .room-card__title{ font-size:19px; margin-bottom:10px; }
+    .room-form__field{ margin-bottom:9px; }
+    .room-form__label{ font-size:13.5px; margin-bottom:5px; }
+    .room-form__input{ height:48px; border-radius:16px; font-size:15.5px; }
+    .room-button{ height:50px; font-size:17px; border-radius:22px; }
+  }
 </style>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1257,9 +1432,15 @@ function el(html){
 }
 
 function render(){
+  // the wheel owns the screen for the length of its spin — but never block
+  // a navigation away from the board, or the UI would freeze for 4s
+  if(state.wheelTimer && (state.screen === 'board' || state.screen === 'online-board')) return;
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup');
+  document.body.classList.toggle('room-mode', state.screen === 'online-home');
+  document.documentElement.classList.toggle('room-mode', state.screen === 'online-home');
   document.body.classList.toggle('play-mode', state.screen === 'board');
   document.documentElement.classList.toggle('play-mode', state.screen === 'board');
   app.innerHTML = '';
@@ -1448,7 +1629,12 @@ let onlineTicker = null;
 function ensureOnlineTicker(){
   if(onlineTicker) return;
   onlineTicker = setInterval(() => {
-    if(state.screen === 'online-board') render();
+    if(state.screen !== 'online-board') return;
+    // nothing is counting down during the wheel / action-card overlay or the
+    // round summary — re-rendering there only restarts their animations
+    if(state.actionPickActive || state.roundEnded || state.animating) return;
+    if(!state.timerRunning) return;
+    render();
   }, 1000);
 }
 
@@ -1458,7 +1644,7 @@ function renderOnlineHome(){
   // Header: title+dot (right, first in RTL) + back pill (left)
   const header = el(`<div class="online-room-header"></div>`);
   header.appendChild(el(`<div class="online-room-logo"><span class="online-room-logo-dot"></span>نخ بده</div>`));
-  const backTop = el(`<button class="online-room-back-top">→ بازگشت</button>`);
+  const backTop = el(`<button class="online-room-back-top"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg><span>بازگشت</span></button>`);
   backTop.addEventListener('click', goBack);
   header.appendChild(backTop);
   wrap.appendChild(header);
@@ -1522,10 +1708,6 @@ function renderOnlineHome(){
     });
   });
   wrap.appendChild(joinForm);
-
-  const bottomBack = el(`<button class="room-button room-button--back">${PERSIAN_ORNAMENT(14)}<span>بازگشت</span>${PERSIAN_ORNAMENT(14)}</button>`);
-  bottomBack.addEventListener('click', goBack);
-  wrap.appendChild(bottomBack);
 
   return wrap;
 }
@@ -1841,7 +2023,12 @@ function renderOnlineBoard(){
   wrap.appendChild(el(`<div style="margin-bottom:10px;"><span class="pill pill-turn">نوبت: ${t.name} — عدد خانه: ${currentTargetNumber(t)}</span></div>`));
 
   if(state.roundEnded){
-    wrap.appendChild(buildRoundResult(() => onlineContinueNextTurn()));
+    const pendingAction = state.actionPickActive;
+    wrap.appendChild(buildRoundResult(() => {
+      // only clear the summary; the action phase advances the turn
+      if(pendingAction){ window.FB.update(fbRoomRef(), { roundEnded: false }); return; }
+      onlineContinueNextTurn();
+    }, pendingAction ? 'روی خونه‌ی ویژه افتادی — برو سراغ گردونه' : null));
     return wrap;
   }
 
@@ -1978,7 +2165,10 @@ function goBack(){
 }
 
 function renderBrand(){
-  if(state.screen === 'home' || state.screen === 'online-home'){
+  // these screens draw their own header (brand + back), so the global bar
+  // would render a second logo and a second back button on top of them
+  const ownHeader = ['home','online-home','setup','board'];
+  if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
   const wrap = el(`<div class="brand"></div>`);
@@ -1992,22 +2182,27 @@ function renderBrand(){
 
 // ---------------- SETUP SCREEN ----------------
 function renderSetup(){
-  const wrap = el(`<div></div>`);
+  const wrap = el(`<div class="setup-page"></div>`);
 
-  const introCard = el(`<div class="card">
-    <h2>تنظیم تیم‌ها</h2>
-    <small class="hint">۲ تا ۱۰ تیم، هر تیم ۲ تا ۱۰ نفر. اسم‌ها رو ویرایش کن یا اعضا اضافه/کم کن.</small>
-  </div>`);
-  wrap.appendChild(introCard);
+  // ---- header ----
+  const header = el(`<div class="setup-head"></div>`);
+  header.appendChild(el(`<div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div>`));
+  const backBtn = el(`<button class="setup-back"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg><span>بازگشت</span></button>`);
+  backBtn.addEventListener('click', () => { state.screen = 'home'; render(); });
+  header.appendChild(backBtn);
+  wrap.appendChild(header);
 
+  // ---- team cards ----
   state.teams.forEach((team, ti) => {
-    const block = el(`<div class="team-block"></div>`);
-    const head = el(`<div class="team-head">
-      <input type="text" value="${team.name}" />
-    </div>`);
-    const nameInput = head.querySelector('input');
+    const block = el(`<div class="team-card"></div>`);
+
+    const head = el(`<div class="team-card__head"></div>`);
+    const nameInput = el(`<input class="team-card__name" type="text" value="${team.name}" />`);
     nameInput.addEventListener('input', e => { team.name = e.target.value; syncScoreLabelsOnly(); });
-    const removeTeamBtn = el(`<button class="icon-btn" title="حذف تیم">✕</button>`);
+    head.appendChild(nameInput);
+    head.appendChild(el(`<span class="team-card__color"><span class="team-card__swatch" style="background:${team.color}"></span><span>رنگ تیم روی نقشه</span></span>`));
+    const removeTeamBtn = el(`<button class="team-card__x" title="حذف تیم"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>`);
+    removeTeamBtn.disabled = state.teams.length <= 2;
     removeTeamBtn.addEventListener('click', () => {
       if(state.teams.length <= 2) return;
       state.teams.splice(ti,1);
@@ -2016,36 +2211,35 @@ function renderSetup(){
     head.appendChild(removeTeamBtn);
     block.appendChild(head);
 
-    const swatchRow = el(`<div style="margin-bottom:8px;"><span class="swatch" style="background:${team.color}"></span><span style="font-size:12px;color:var(--text-dim)">رنگ تیم روی نقشه</span></div>`);
-    block.appendChild(swatchRow);
-
+    const grid = el(`<div class="team-card__players"></div>`);
     team.members.forEach((m, mi) => {
-      const row = el(`<div class="member-row"></div>`);
-      const inp = el(`<input type="text" value="${m}" />`);
+      const cell = el(`<div class="player-cell"></div>`);
+      const inp = el(`<input class="player-cell__input" type="text" value="${m}" />`);
       inp.addEventListener('input', e => { team.members[mi] = e.target.value; });
-      row.appendChild(inp);
+      cell.appendChild(inp);
       if(team.members.length > 2){
-        const del = el(`<button class="icon-btn">✕</button>`);
+        const del = el(`<button class="player-cell__x" title="حذف بازیکن"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>`);
         del.addEventListener('click', () => { team.members.splice(mi,1); render(); });
-        row.appendChild(del);
+        cell.appendChild(del);
       }
-      block.appendChild(row);
+      grid.appendChild(cell);
     });
+    block.appendChild(grid);
 
     if(team.members.length < 10){
-      const addMember = el(`<button class="btn btn-ghost" style="margin-top:4px;">+ افزودن بازیکن</button>`);
+      const addMember = el(`<button class="team-card__add">+ افزودن بازیکن</button>`);
       addMember.addEventListener('click', () => {
         team.members.push('بازیکن ' + (team.members.length + 1));
         render();
       });
       block.appendChild(addMember);
     }
-
     wrap.appendChild(block);
   });
 
+  // ---- add team ----
   if(state.teams.length < 10){
-    const addTeam = el(`<button class="btn btn-teal" style="margin-bottom:14px;">+ افزودن تیم</button>`);
+    const addTeam = el(`<button class="setup-addteam">+ افزودن تیم</button>`);
     addTeam.addEventListener('click', () => {
       const idx = state.teams.length;
       state.teams.push({
@@ -2057,10 +2251,11 @@ function renderSetup(){
     wrap.appendChild(addTeam);
   }
 
-  const deckCard = el(`<div class="card">
-    <h2>کارت‌های کلمه</h2>
-    <small class="hint" style="margin-bottom:8px;">۱۷۶ کارت واقعی بازی (از فایل PDF) بارگذاری شده و آماده‌ی استفاده‌ست. اگه خواستی خودت دستی جایگزینش کنی، همینجا بنویس (هر خط = یک کارت، ۶ کلمه با کاما جدا شده) و بعد از خروج از باکس اعمال میشه.</small>
-    <textarea id="deckInput" placeholder="برای جایگزینی، اینجا کارت‌های خودت رو بنویس..." rows="3"></textarea>
+  // ---- custom word cards ----
+  const deckCard = el(`<div class="deck-card">
+    <h2 class="deck-card__title">کارت‌های کلمه</h2>
+    <p class="deck-card__sub">اگر خواستی خودت دستی جایگزینش کنی، اینجا بنویس (هر خط = یک کارت).</p>
+    <textarea class="deck-card__area" id="deckInput" placeholder="برای جایگزینی، اینجا کارت‌های خودت رو بنویس..."></textarea>
   </div>`);
   const ta = deckCard.querySelector('#deckInput');
   ta.value = '';
@@ -2072,11 +2267,11 @@ function renderSetup(){
   });
   wrap.appendChild(deckCard);
 
-  const startBtn = el(`<button class="btn btn-primary">شروع بازی و رفتن به تخته</button>`);
+  const startBtn = el(`<button class="setup-start"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی و رفتن به تخته</span></button>`);
   startBtn.addEventListener('click', startGame);
   wrap.appendChild(startBtn);
 
-  wrap.appendChild(el(`<div class="footer-note">این یه پروتوتایپ روی یک گوشیه. برای دیدن چیزی که هر بازیکن می‌بینه، بعد از شروع بازی از منوی «دیدن به‌عنوان» استفاده کن.</div>`));
+  wrap.appendChild(el(`<div class="setup-note">بعد از شروع بازی، از منوی «دیدن به‌عنوان» می‌تونی چیزی که هر بازیکن می‌بینه رو ببینی.</div>`));
 
   return wrap;
 }
@@ -2167,7 +2362,15 @@ function renderBoard(){
   }
 
   if(state.roundEnded){
-    wrap.appendChild(buildRoundResult(() => { state.roundEnded = false; nextTurn(); render(); }));
+    const pendingAction = state.actionPickActive;
+    wrap.appendChild(buildRoundResult(() => {
+      state.roundEnded = false;
+      // when a special cell is pending, the action phase is what ends the turn —
+      // advancing here too would skip the next team
+      if(pendingAction){ render(); return; }
+      nextTurn();
+      render();
+    }, pendingAction ? 'روی خونه‌ی ویژه افتادی — برو سراغ گردونه' : null));
     return wrap;
   }
 
@@ -2638,7 +2841,7 @@ function renderCardView(isDescriber, isTurnTeam){
   return card;
 }
 
-function buildRoundResult(onNext){
+function buildRoundResult(onNext, label){
   const s = state.lastRoundSummary || {};
   const correct = s.correct ?? 0, skip = s.skip ?? 0;
   const score = s.scoreChange ?? 0, moved = s.moved ?? 0;
@@ -2690,7 +2893,7 @@ function buildRoundResult(onNext){
   });
   box.appendChild(sb);
 
-  const next = el(`<button class="res-next">ادامه — نوبت بعدی<span class="res-next__chev"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></span></button>`);
+  const next = el(`<button class="res-next">${label || 'ادامه — نوبت بعدی'}<span class="res-next__chev"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></span></button>`);
   next.addEventListener('click', onNext);
   box.appendChild(next);
   return box;
