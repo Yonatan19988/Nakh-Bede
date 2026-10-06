@@ -278,14 +278,17 @@ function render(){
   const roomScreen = ['online-home','online-create','online-join'].includes(state.screen);
   document.body.classList.toggle('room-mode', roomScreen);
   document.documentElement.classList.toggle('room-mode', roomScreen);
-  document.body.classList.toggle('play-mode', state.screen === 'board');
-  document.documentElement.classList.toggle('play-mode', state.screen === 'board');
+  const playScreen = state.screen === 'board' || state.screen === 'online-board';
+  document.body.classList.toggle('play-mode', playScreen);
+  document.documentElement.classList.toggle('play-mode', playScreen);
   app.innerHTML = '';
   app.appendChild(renderBrand());
   if(state.screen === 'home'){
     app.appendChild(renderHome());
   } else if(state.screen === 'settings'){
     app.appendChild(renderSettings());
+  } else if(state.screen === 'tutorial'){
+    app.appendChild(renderTutorial());
   } else if(state.screen === 'setup'){
     app.appendChild(renderSetup());
   } else if(state.screen === 'online-home'){
@@ -380,7 +383,7 @@ function renderHome(){
   const learnTile = el(`<button class="hm-btn hm-btn--red hm-tile"><span class="hm-btn__gloss"></span>
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 12 5l9 4.2-9 4.2Z"/><path d="M7 11.4v4.1c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.1"/></svg>
     <span class="hm-out hm-out--red" data-text="آموزش">آموزش</span></button>`);
-  learnTile.addEventListener('click', () => toastHome('آموزش بازی به زودی'));
+  learnTile.addEventListener('click', () => { state.screen = 'tutorial'; render(); });
   tiles.appendChild(joinTile);
   tiles.appendChild(learnTile);
   wrap.appendChild(tiles);
@@ -438,7 +441,7 @@ function fbRoomRef(path){
 function onlineTeamsArray(){
   const room = online.room;
   if(!room || !room.teams) return [];
-  return Object.keys(room.teams).sort().map(tid => {
+  return Object.keys(room.teams).sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10)).map(tid => {
     const t = room.teams[tid];
     const memberIds = Object.keys(room.players||{}).filter(pid => room.players[pid].teamId === tid).sort();
     return {
@@ -463,7 +466,8 @@ function ensureOnlineTicker(){
     // round summary — re-rendering there only restarts their animations
     if(state.actionPickActive || state.roundEnded || state.animating) return;
     if(!state.timerRunning) return;
-    render();
+    syncStateFromOnlineRoom();
+    if(!tickTimerOnly()) render();
   }, 1000);
 }
 
@@ -929,7 +933,7 @@ function onlineContinueNextTurn(effectUpdates){
 function renderOnlineBoard(){
   ensureOnlineTicker();
   syncStateFromOnlineRoom();
-  const wrap = el(`<div></div>`);
+  const wrap = el(`<div class="play-screen"></div>`);
   const room = online.room;
   if(!room || !state.teams.length){
     wrap.appendChild(el(`<div class="card">در حال بارگذاری بازی…</div>`));
@@ -950,7 +954,20 @@ function renderOnlineBoard(){
   const describerPid = t.memberIds && t.memberIds.length ? t.memberIds[(t.describerIdx||0) % t.memberIds.length] : null;
   const isDescriber = isTurnTeam && describerPid === online.playerId;
 
-  wrap.appendChild(el(`<div style="margin-bottom:10px;"><span class="pill pill-turn">نوبت: ${t.name} — عدد خانه: ${currentTargetNumber(t)}</span></div>`));
+  let roleLabel = 'ناظر (تیم دیگر)';
+  if(isDescriber) roleLabel = 'توضیح‌دهنده';
+  else if(isTurnTeam) roleLabel = 'هم‌تیمی توضیح‌دهنده';
+
+  const header = el(`<div class="play-head"></div>`);
+  header.appendChild(el(`<div class="play-turn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Zm7.5.5c-.7 0-1.4.1-2 .3 1.2 1 2 2.3 2 3.7V19H22v-1.8c0-2-2.4-3.7-5.5-3.7Z"/></svg><span>نوبت ${t.name}</span></div>`));
+  header.appendChild(el(`<div class="play-brand">نخ بده<span class="play-brand-dot"></span></div>`));
+  wrap.appendChild(header);
+
+  const status = el(`<div class="play-status"></div>`);
+  status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(currentTargetNumber(t))}</span></div>`));
+  status.appendChild(el(`<span class="play-status__sep"></span>`));
+  status.appendChild(el(`<div class="play-status__item play-status__role">${roleLabel}</div>`));
+  wrap.appendChild(status);
 
   if(state.roundEnded){
     const pendingAction = state.actionPickActive;
@@ -968,7 +985,7 @@ function renderOnlineBoard(){
     wrap.appendChild(el(`<div class="action-banner" style="border-color:var(--teal); background:rgba(51,201,181,.12); text-align:right; margin-bottom:10px;">
       <div class="cardtag" style="color:var(--teal);">خلاصه‌ی این راند — ${s.teamName || ''}</div>
       <p style="margin:0 0 4px;">✓ درست: ${faNum(s.correct ?? 0)} &nbsp; | &nbsp; ✕ رد شده: ${faNum(s.skip ?? 0)}</p>
-      <p style="margin:0;">تغییر امتیاز: ${(s.scoreChange ?? 0) >= 0 ? '+' : '−'}${faNum(Math.abs(s.scoreChange ?? 0))}</p>
+      <p style="margin:0;">تغییر امتیاز: ${(s.scoreChange ?? 0) >= 0 ? '+' : '−'}${faNum(Math.abs(s.scoreChange ?? 0))} — حرکت: ${(s.moved ?? 0) >= 0 ? '+' : '−'}${faNum(Math.abs(s.moved ?? 0))} خانه</p>
     </div>`));
     const backdrop = el(`<div class="card-modal-backdrop"></div>`);
     const modal = el(`<div class="card-modal"></div>`);
@@ -1005,40 +1022,34 @@ function renderOnlineBoard(){
   const cardViewEl = renderCardView(isDescriber, isTurnTeam);
   if(state.flashFeedback === 'correct') cardViewEl.classList.add('flash-correct');
   if(state.flashFeedback === 'wrong') cardViewEl.classList.add('flash-wrong');
-  wrap.appendChild(renderTimer());
+  wrap.appendChild(renderPlayTimer());
   wrap.appendChild(cardViewEl);
+  wrap.appendChild(buildFoulRow(onlineFoul, onlineResolveFoul));
 
-  const controls = el(`<div class="card"></div>`);
   if(isDescriber){
-    controls.appendChild(el(`<h2>کنترل دور</h2>`));
-    if(state.timerRunning){
-      controls.appendChild(el(`<small class="hint" style="margin-bottom:8px;">این دور: ${state.correctCount} درست، ${state.skipCount} رد شده${state.foulCount ? `، ${state.foulCount} خطا` : ''}</small>`));
-    }
-    const row = el(`<div class="row" style="margin-bottom:8px;"></div>`);
-    const correctBtn = el(`<button class="btn btn-teal">✓ درست گفت</button>`);
+    const blocked = t.mods && t.mods.blockSkip;
+    const actions = el(`<div class="play-actions"></div>`);
+    const skipBtn = el(`<button class="play-act play-act--skip"><span class="play-act__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></span><span>رد شد${blocked ? ' (قفل)' : ''}</span></button>`);
+    skipBtn.disabled = !state.timerRunning || blocked;
+    skipBtn.addEventListener('click', onlineSkip);
+    const startBtn = el(`<button class="play-act play-act--start"><span class="play-act__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span><span>شروع تایمر</span></button>`);
+    startBtn.disabled = state.timerRunning;
+    startBtn.addEventListener('click', onlineStartTimer);
+    const correctBtn = el(`<button class="play-act play-act--ok"><span class="play-act__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg></span><span>درست گفت</span></button>`);
     correctBtn.disabled = !state.timerRunning;
     correctBtn.addEventListener('click', onlineCorrect);
-    const blocked1 = currentTeam().mods && currentTeam().mods.blockSkip;
-    const skipBtn = el(`<button class="btn btn-danger">✕ رد شد${blocked1?' (قفل شده)':''}</button>`);
-    skipBtn.disabled = !state.timerRunning || blocked1;
-    skipBtn.addEventListener('click', onlineSkip);
-    row.appendChild(correctBtn); row.appendChild(skipBtn);
-    controls.appendChild(row);
-    if(!state.timerRunning){
-      const startBtn = el(`<button class="btn btn-primary">شروع تایمر ${state.roundDuration} ثانیه</button>`);
-      startBtn.addEventListener('click', onlineStartTimer);
-      controls.appendChild(startBtn);
-    }
+    actions.appendChild(skipBtn);
+    actions.appendChild(startBtn);
+    actions.appendChild(correctBtn);
+    wrap.appendChild(actions);
   } else if(isTurnTeam){
-    controls.appendChild(el(`<div class="hidden-view"><div class="big">🙈</div><p>نوبت تیمته؛ فقط توضیح‌دهنده می‌تونه دکمه‌ها رو بزنه.</p></div>`));
+    wrap.appendChild(el(`<div class="play-note">🙈 نوبت تیمته؛ فقط توضیح‌دهنده دکمه‌ها رو می‌زنه.</div>`));
   } else {
-    controls.appendChild(el(`<div style="text-align:center; color:var(--text-dim); font-size:13px; padding:10px;">منتظر بمون، نوبت تیم «${t.name}»ه.</div>`));
+    wrap.appendChild(el(`<div class="play-note">منتظر بمون، نوبت تیم «${t.name}»ه.</div>`));
   }
-  wrap.appendChild(controls);
-  wrap.appendChild(buildFoulRow(onlineFoul, onlineResolveFoul));
-  wrap.appendChild(renderScoreboard());
 
-  const leaveBtn = el(`<button class="btn btn-ghost" style="margin-top:6px;">خروج از اتاق</button>`);
+  wrap.appendChild(buildPlayScore());
+  const leaveBtn = el(`<button class="play-leave">خروج از اتاق</button>`);
   leaveBtn.addEventListener('click', onlineLeaveRoom);
   wrap.appendChild(leaveBtn);
   return wrap;
@@ -1058,7 +1069,7 @@ function renderSettings(){
   });
   row.appendChild(durationInput);
   card.appendChild(row);
-  card.appendChild(el(`<small class="hint">مقدار رسمی بازی ۶۰ ثانیه‌ست؛ الان روی ${state.roundDuration} ثانیه تنظیمه.</small>`));
+  card.appendChild(el(`<small class="hint">مقدار رسمی بازی ۹۰ ثانیه‌ست؛ الان روی ${state.roundDuration} ثانیه تنظیمه.</small>`));
   wrap.appendChild(card);
 
   const infoCard = el(`<div class="card">
@@ -1084,6 +1095,71 @@ function renderSettings(){
   }
   wrap.appendChild(aboutCard);
 
+  return wrap;
+}
+
+// ---------------- TUTORIAL SCREEN ----------------
+function renderTutorial(){
+  const wrap = el(`<div class="tut"></div>`);
+  const dur = faNum(state.roundDuration);
+  const last = faNum(state.trackLength);
+
+  wrap.appendChild(el(`<div class="card tut-intro">
+    <h2>آموزش بازی</h2>
+    <p>«نخ بده» یک بازی حدس کلمات گروهیه. هر تیم می‌خواد زودتر از بقیه خودش رو به خانه‌ی آخر نقشه برسونه؛ و راهش اینه که کلمه‌ها رو درست توضیح بده و درست حدس بزنه.</p>
+  </div>`));
+
+  const wordCells = [1,2,3,4,5,6].map(n => `<li><b>${faNum(n)}</b><span>کلمه‌ی ${faNum(n)}</span></li>`).join('');
+  const actionRows = ACTION_CARDS.map(c => `<li><b>${c.title}</b><span>${c.instruction}</span></li>`).join('');
+
+  const sections = [
+    ['🎯', 'هدف بازی', `
+      <p>اولین تیمی که مهره‌اش به خانه‌ی <b>${last}</b> برسه، برنده‌ست.</p>
+      <p>مهره‌ی هر تیم روی نقشه جلو می‌ره؛ هر چقدر راندت بهتر باشه، بیشتر جلو می‌ری.</p>`],
+    ['🧶', 'آماده‌سازی', `
+      <p>دو یا چند تیم تشکیل بدین. مهره‌ی هر تیم روی خانه‌ی شروع قرار می‌گیره.</p>
+      <p>می‌تونین روی یک گوشی بازی کنین یا از بخش «بازی آنلاین» یک اتاق بسازین و بقیه با کد اتاق وارد بشن.</p>`],
+    ['🔁', 'نوبت هر تیم', `
+      <p>تیم‌ها به نوبت بازی می‌کنن. در هر نوبت <b>یک نفر</b> از تیم، «توضیح‌دهنده» می‌شه و بقیه‌ی هم‌تیمی‌ها حدس می‌زنن. دفعه‌ی بعد که نوبت این تیم شد، نفر بعدی توضیح می‌ده.</p>
+      <p>هر راند <b>${dur} ثانیه</b> طول می‌کشه و با زدن دکمه‌ی شروع تایمر آغاز می‌شه.</p>`],
+    ['🃏', 'کارت و شماره‌ی کلمه', `
+      <p>روی هر کارت <b>شش کلمه</b> هست. فقط توضیح‌دهنده کارت رو می‌بینه.</p>
+      <p>اینکه کدوم کلمه رو باید توضیح بده، به <b>شماره‌ی خانه‌ای</b> بستگی داره که مهره‌ی تیم روش ایستاده؛ خانه‌ها به ترتیب ۱ تا ۶ شماره می‌گیرن و دوباره از ۱ شروع می‌شن. مثلاً اگه شماره‌ی خانه‌ات ۳ باشه، کلمه‌ی سوم کارت رو توضیح می‌دی.</p>
+      <ul class="tut-list tut-list--six">${wordCells}</ul>`],
+    ['🗣️', 'توضیح دادن', `
+      <p>توضیح‌دهنده کلمه رو با جمله‌ها و مثال‌هاش توضیح می‌ده، ولی <b>نباید</b> خودِ کلمه رو بگه.</p>
+      <p>اگه هم‌تیمی‌ها درست حدس زدن، دکمه‌ی «درست» رو بزن تا کارت بعدی بیاد. اگه توضیح دادن سخته، «رد شد» رو بزن؛ البته رد کردن امتیاز منفی داره.</p>
+      <p>اگه توضیح‌دهنده راهنمایی غیرمجاز بده (مثلاً کلمه رو بگه)، هر کسی می‌تونه دکمه‌ی «راهنمایی غیرمجاز» رو بزنه. تایمر می‌ایسته و تیم مقابل تصمیم می‌گیره: تأیید یا برگردوندن. اگه تأیید بشه، یک امتیاز منفی ثبت می‌شه.</p>`],
+    ['➕', 'امتیاز و حرکت', `
+      <ul class="tut-list">
+        <li><b>+۱</b><span>هر جواب درست</span></li>
+        <li><b>−۱</b><span>هر «رد شد»</span></li>
+        <li><b>−۱</b><span>هر راهنمایی غیرمجاز</span></li>
+      </ul>
+      <p>آخر راند، امتیاز خالص همون تعداد خانه‌ایه که مهره جلو (یا عقب) می‌ره. مثلاً ۵ درست، ۱ رد و ۱ خطا یعنی ${faNum(5-1-1)} خانه جلو.</p>`],
+    ['🎡', 'خانه‌های ویژه و گردونه', `
+      <p>روی نقشه <b>${faNum(state.obstacles.length)} خانه‌ی ویژه</b> هست. هر تیمی آخر راند روی یکی از اونا بایسته، گردونه رو می‌چرخونه و یک «کارت فرمان» می‌گیره.</p>
+      <p>اثر بعضی کارت‌ها همون لحظه اعمال می‌شه و بعضی‌ها روی راند بعدی تیم اثر می‌ذارن. کارت‌های حمله‌ای تیم هدف رو خودت انتخاب می‌کنی.</p>
+      <p>«کارت نجات» حمله‌ی بعدی علیه تیمت رو خنثی می‌کنه.</p>`],
+    ['⚡', 'کارت‌های فرمان', `
+      <p>این‌ها همه‌ی کارت‌هایی‌ان که ممکنه از گردونه دربیاد:</p>
+      <ul class="tut-list tut-list--cards">${actionRows}</ul>`],
+    ['💡', 'نکته‌های آخر', `
+      <p>• اگه عقب‌تر از خانه‌ی شروع بری، همون‌جا می‌مونی.</p>
+      <p>• کارت‌های فرمان می‌تونن بازی رو کامل برگردونن، پس تا آخرش امیدوار باش!</p>`],
+  ];
+
+  sections.forEach(([icon, title, body], i) => {
+    const d = el(`<details class="card tut-sec"${i === 0 ? ' open' : ''}>
+      <summary><span class="tut-sec__ico">${icon}</span><span class="tut-sec__title">${title}</span><span class="tut-sec__chev" aria-hidden="true"></span></summary>
+      <div class="about-body tut-sec__body">${body}</div>
+    </details>`);
+    wrap.appendChild(d);
+  });
+
+  const start = el(`<button class="btn btn-primary tut-start">شروع بازی</button>`);
+  start.addEventListener('click', () => { state.screen = 'setup'; render(); });
+  wrap.appendChild(start);
   return wrap;
 }
 
@@ -1131,7 +1207,7 @@ function goBack(){
   if(s === 'online-create' || s === 'online-join'){
     state.screen = 'online-home';
     render();
-  } else if(s === 'settings' || s === 'setup' || s === 'online-home'){
+  } else if(s === 'settings' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
     state.screen = 'home';
     render();
   } else if(s === 'online-lobby'){
@@ -1153,7 +1229,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -1454,7 +1530,12 @@ function renderBoard(){
   wrap.appendChild(buildFoulRow(onFoul, resolveFoul));
   wrap.appendChild(actions);
 
-  // ---- slim scoreboard ----
+  wrap.appendChild(buildPlayScore());
+
+  return wrap;
+}
+
+function buildPlayScore(){
   const sb = el(`<div class="play-score"></div>`);
   state.teams.forEach((t, i) => {
     if(i > 0) sb.appendChild(el(`<span class="play-score__sep"></span>`));
@@ -1463,9 +1544,7 @@ function renderBoard(){
       <div class="play-score__vals">امتیاز: ${faNum(t.score)} | خانه ${faNum(t.position+1)}</div>
     </div>`));
   });
-  wrap.appendChild(sb);
-
-  return wrap;
+  return sb;
 }
 
 function renderPlayTimer(){
