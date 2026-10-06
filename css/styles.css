@@ -1622,33 +1622,6 @@
   }
 
 
-  /* ---------------- tutorial ---------------- */
-  .tut-intro p{ margin:0; font-size:13.5px; line-height:1.95; color:var(--text-dim); }
-  .tut-sec{ padding:0; overflow:hidden; }
-  .tut-sec summary{
-    display:flex; align-items:center; gap:10px; padding:14px 16px;
-    cursor:pointer; list-style:none; font-weight:700; font-size:15px; color:var(--text);
-  }
-  .tut-sec summary::-webkit-details-marker{ display:none; }
-  .tut-sec__ico{ font-size:20px; line-height:1; }
-  .tut-sec__title{ flex:1; }
-  .tut-sec__chev{
-    width:9px; height:9px; border-inline-end:2.4px solid var(--gold); border-bottom:2.4px solid var(--gold);
-    transform:rotate(45deg); margin-inline-end:4px; transition:transform .2s;
-  }
-  .tut-sec[open] .tut-sec__chev{ transform:rotate(-135deg); }
-  .tut-sec__body{ margin:0; padding:0 16px 8px; }
-  .tut-list{ list-style:none; margin:0 0 10px; padding:0; display:grid; gap:8px; }
-  .tut-list li{
-    display:flex; align-items:baseline; gap:10px; padding:9px 12px;
-    background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:12px;
-    font-size:13px; line-height:1.8; color:var(--text-dim);
-  }
-  .tut-list li b{ color:var(--gold); font-weight:800; white-space:nowrap; }
-  .tut-list--six{ grid-template-columns:repeat(3, 1fr); }
-  .tut-list--six li{ justify-content:center; }
-  .tut-list--cards li{ flex-direction:column; gap:2px; }
-  .tut-start{ width:100%; margin:4px 0 16px; padding:14px; font-size:15px; }
 
   .play-note{
     flex:0 0 auto; text-align:center; font-size:13.5px; line-height:1.8; color:var(--text-dim);
@@ -1900,3 +1873,54 @@
     .hm-banner{ padding:6px 6px 6px 10px; }
     .hm-banner__txt{ font-size:12px; }
   }
+
+
+  /* ---------------- tutorial ---------------- */
+  .tut-intro p{ margin:0; font-size:13.5px; line-height:1.95; color:var(--text-dim); }
+  .tut-steps{
+    list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
+  }
+  .tut-steps li{
+    display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;
+    font-size:12px; font-weight:700; color:#EAF6FF; line-height:1.4;
+  }
+  .tut-steps__n{
+    width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg,#FFE27A,#F7BC33); color:#5A3200; font-size:16px; font-weight:800;
+    box-shadow:0 3px 0 rgba(0,0,0,.25);
+  }
+  .tut-facts{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+  .tut-toggle{
+    flex:0 0 auto; align-self:flex-end; height:38px; padding:0 16px; border-radius:999px; cursor:pointer;
+    background:rgba(4,35,50,.72); border:1.4px solid rgba(217,173,76,.5); color:#F3D37A;
+    font-family:inherit; font-size:12.5px; font-weight:700;
+  }
+  /* the section cards are .team-card; drop its inner gap so the summary sits flush */
+  .tut-sec{ padding:0; gap:0; overflow:hidden; }
+  .tut-sec summary{
+    display:flex; align-items:center; gap:10px; padding:14px 16px; min-height:52px;
+    cursor:pointer; list-style:none; font-weight:700; font-size:15px; color:var(--text);
+  }
+  .tut-sec summary::-webkit-details-marker{ display:none; }
+  .tut-sec__ico{ font-size:20px; line-height:1; flex:none; }
+  .tut-sec__title{ flex:1; }
+  .tut-sec__chev{
+    width:9px; height:9px; border-inline-end:2.4px solid var(--gold); border-bottom:2.4px solid var(--gold);
+    transform:rotate(45deg); margin-inline-end:4px; transition:transform .2s; flex:none;
+  }
+  .tut-sec[open] .tut-sec__chev{ transform:rotate(-135deg); }
+  .tut-sec__body{ margin:0; padding:0 16px 10px; }
+  .tut-sec__body p:last-child{ margin-bottom:6px; }
+  .tut-list{ list-style:none; margin:0 0 10px; padding:0; display:grid; gap:8px; }
+  .tut-list li{
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    background:rgba(255,255,255,.05); border:1px solid var(--nb-card-line); border-radius:12px;
+    font-size:13px; line-height:1.8; color:var(--text-dim);
+  }
+  .tut-list li b{ color:var(--gold); font-weight:800; white-space:nowrap; min-width:2.2em; text-align:center; }
+  .tut-list--six{ grid-template-columns:repeat(3, 1fr); }
+  .tut-list--six li{ justify-content:center; }
+  /* action cards: title above text, everything starting from the same edge */
+  .tut-list--cards li{ flex-direction:column; align-items:stretch; gap:2px; text-align:start; }
+  .tut-list--cards li b{ min-width:0; text-align:start; white-space:normal; }
+  .tut-start{ margin-top:2px; }

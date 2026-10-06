@@ -304,7 +304,7 @@ function render(){
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'tutorial');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -1300,13 +1300,25 @@ function renderSettings(){
 // ---------------- TUTORIAL SCREEN ----------------
 function renderTutorial(){
   LS.set('seenTutorial', true);
-  const wrap = el(`<div class="tut"></div>`);
+  const wrap = el(`<div class="setup-page tut"></div>`);
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`));
   const dur = faNum(state.roundDuration);
   const last = faNum(state.trackLength);
 
-  wrap.appendChild(el(`<div class="card tut-intro">
-    <h2>آموزش بازی</h2>
+  wrap.appendChild(el(`<div class="team-card tut-intro">
+    <h2 class="set-card__title">آموزش بازی</h2>
     <p>«نخ بده» یک بازی حدس کلمات گروهیه. هر تیم می‌خواد زودتر از بقیه خودش رو به خانه‌ی آخر نقشه برسونه؛ و راهش اینه که کلمه‌ها رو درست توضیح بده و درست حدس بزنه.</p>
+    <ol class="tut-steps">
+      <li><span class="tut-steps__n">۱</span><span>توضیح بده</span></li>
+      <li><span class="tut-steps__n">۲</span><span>حدس بزن</span></li>
+      <li><span class="tut-steps__n">۳</span><span>امتیاز بگیر</span></li>
+      <li><span class="tut-steps__n">۴</span><span>جلو برو</span></li>
+    </ol>
+    <div class="tut-facts">
+      <div class="set-stat"><b>${dur}</b><span>ثانیه هر راند</span></div>
+      <div class="set-stat"><b>${last}</b><span>خانه تا پایان</span></div>
+      <div class="set-stat"><b>${faNum(state.obstacles.length)}</b><span>خانه‌ی ویژه</span></div>
+    </div>
   </div>`));
 
   const wordCells = [1,2,3,4,5,6].map(n => `<li><b>${faNum(n)}</b><span>کلمه‌ی ${faNum(n)}</span></li>`).join('');
@@ -1326,15 +1338,15 @@ function renderTutorial(){
       <p>روی هر کارت <b>شش کلمه</b> هست. فقط توضیح‌دهنده کارت رو می‌بینه.</p>
       <p>اینکه کدوم کلمه رو باید توضیح بده، به <b>شماره‌ی خانه‌ای</b> بستگی داره که مهره‌ی تیم روش ایستاده؛ خانه‌ها به ترتیب ۱ تا ۶ شماره می‌گیرن و دوباره از ۱ شروع می‌شن. مثلاً اگه شماره‌ی خانه‌ات ۳ باشه، کلمه‌ی سوم کارت رو توضیح می‌دی.</p>
       <ul class="tut-list tut-list--six">${wordCells}</ul>`],
-    ['🗣️', 'توضیح دادن', `
+    ['💬', 'توضیح دادن', `
       <p>توضیح‌دهنده کلمه رو با جمله‌ها و مثال‌هاش توضیح می‌ده، ولی <b>نباید</b> خودِ کلمه رو بگه.</p>
       <p>اگه هم‌تیمی‌ها درست حدس زدن، دکمه‌ی «درست» رو بزن تا کارت بعدی بیاد. اگه توضیح دادن سخته، «رد شد» رو بزن؛ البته رد کردن امتیاز منفی داره.</p>
       <p>اگه توضیح‌دهنده راهنمایی غیرمجاز بده (مثلاً کلمه رو بگه)، هر کسی می‌تونه دکمه‌ی «راهنمایی غیرمجاز» رو بزنه. تایمر می‌ایسته و تیم مقابل تصمیم می‌گیره: تأیید یا برگردوندن. اگه تأیید بشه، یک امتیاز منفی ثبت می‌شه.</p>`],
     ['➕', 'امتیاز و حرکت', `
       <ul class="tut-list">
-        <li><b>+۱</b><span>هر جواب درست</span></li>
-        <li><b>−۱</b><span>هر «رد شد»</span></li>
-        <li><b>−۱</b><span>هر راهنمایی غیرمجاز</span></li>
+        <li><b dir="ltr">+۱</b><span>هر جواب درست</span></li>
+        <li><b dir="ltr">−۱</b><span>هر «رد شد»</span></li>
+        <li><b dir="ltr">−۱</b><span>هر راهنمایی غیرمجاز</span></li>
       </ul>
       <p>آخر راند، امتیاز خالص همون تعداد خانه‌ایه که مهره جلو (یا عقب) می‌ره. مثلاً ۵ درست، ۱ رد و ۱ خطا یعنی ${faNum(5-1-1)} خانه جلو.</p>`],
     ['🎡', 'خانه‌های ویژه و گردونه', `
@@ -1349,15 +1361,28 @@ function renderTutorial(){
       <p>• کارت‌های فرمان می‌تونن بازی رو کامل برگردونن، پس تا آخرش امیدوار باش!</p>`],
   ];
 
+  const toggleAll = el(`<button class="tut-toggle"></button>`);
+  const secEls = [];
+  const syncToggle = () => { toggleAll.textContent = secEls.every(d => d.open) ? 'بستن همه‌ی بخش‌ها' : 'باز کردن همه‌ی بخش‌ها'; };
+  toggleAll.addEventListener('click', () => {
+    const open = !secEls.every(d => d.open);
+    secEls.forEach(d => { d.open = open; });
+    syncToggle();
+  });
+  wrap.appendChild(toggleAll);
+
   sections.forEach(([icon, title, body], i) => {
-    const d = el(`<details class="card tut-sec"${i === 0 ? ' open' : ''}>
+    const d = el(`<details class="team-card tut-sec"${i === 0 ? ' open' : ''}>
       <summary><span class="tut-sec__ico">${icon}</span><span class="tut-sec__title">${title}</span><span class="tut-sec__chev" aria-hidden="true"></span></summary>
       <div class="about-body tut-sec__body">${body}</div>
     </details>`);
+    d.addEventListener('toggle', syncToggle);
+    secEls.push(d);
     wrap.appendChild(d);
   });
+  syncToggle();
 
-  const start = el(`<button class="btn btn-primary tut-start">شروع بازی</button>`);
+  const start = el(`<button class="setup-start tut-start"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی</span></button>`);
   start.addEventListener('click', () => { state.screen = 'setup'; render(); });
   wrap.appendChild(start);
   return wrap;
@@ -1430,7 +1455,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','tutorial'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
