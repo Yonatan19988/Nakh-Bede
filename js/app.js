@@ -269,7 +269,7 @@ function render(){
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -625,70 +625,103 @@ function renderOnlineJoin(){
 }
 
 function renderOnlineLobby(){
-  const wrap = el(`<div></div>`);
+  const wrap = el(`<div class="setup-page lobby"></div>`);
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`));
   const room = online.room;
   if(!room){
-    wrap.appendChild(el(`<div class="card">در حال اتصال به اتاق…</div>`));
+    wrap.appendChild(el(`<div class="lobby-wait">در حال اتصال به اتاق…</div>`));
     return wrap;
   }
-  const codeCard = el(`<div class="card" style="text-align:center;">
-    <h2>کد اتاق</h2>
-    <div style="font-size:32px; font-weight:800; letter-spacing:4px; color:var(--coral); margin:8px 0;">${online.roomCode}</div>
-    <small class="hint">این کد رو به دوستات بده تا وارد بشن.</small>
+
+  // ---- room code ----
+  const playerCount = Object.keys(room.players || {}).length;
+  const codeCard = el(`<div class="lobby-code">
+    <span class="lobby-code__lbl">کد اتاق</span>
+    <div class="lobby-code__val" dir="ltr">${online.roomCode}</div>
+    <small class="lobby-code__hint">این کد رو به دوستات بده تا وارد بشن · ${faNum(playerCount)} نفر توی اتاقن</small>
   </div>`);
+  const copyBtn = el(`<button class="lobby-code__copy">کپی کد</button>`);
+  copyBtn.addEventListener('click', () => {
+    const done = () => { copyBtn.textContent = 'کپی شد ✓'; setTimeout(() => { copyBtn.textContent = 'کپی کد'; }, 1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(online.roomCode).then(done).catch(() => {});
+    }
+  });
+  codeCard.insertBefore(copyBtn, codeCard.querySelector('.lobby-code__hint'));
   wrap.appendChild(codeCard);
 
+  // ---- teams ----
   const teams = onlineTeamsArray();
-  const teamsCard = el(`<div class="card"></div>`);
-  teamsCard.appendChild(el(`<h2>تیم‌ها</h2>`));
-  const unassigned = Object.keys(room.players||{}).filter(pid => !room.players[pid].teamId);
+  const myTeam = room.players[online.playerId] ? room.players[online.playerId].teamId : null;
+  const unassigned = Object.keys(room.players || {}).filter(pid => !room.players[pid].teamId);
 
+  if(!teams.length){
+    wrap.appendChild(el(`<div class="lobby-wait">${online.isHost ? 'اول چند تا تیم بساز تا بقیه بتونن بپیوندن.' : 'میزبان هنوز تیمی نساخته.'}</div>`));
+  }
   teams.forEach(t => {
-    const block = el(`<div class="team-block"></div>`);
-    block.appendChild(el(`<div class="team-head"><span class="swatch" style="background:${t.color}"></span><b>${t.name}</b></div>`));
-    block.appendChild(el(`<small class="hint">${t.memberNames.length ? t.memberNames.join('، ') : 'هنوز کسی نیست'}</small>`));
-    if(!room.players[online.playerId] || room.players[online.playerId].teamId !== t.id){
-      const joinBtn = el(`<button class="btn btn-ghost" style="margin-top:8px;">پیوستن به این تیم</button>`);
+    const mine = myTeam === t.id;
+    const block = el(`<div class="team-card lobby-team ${mine ? 'is-mine' : ''}"></div>`);
+    block.appendChild(el(`<div class="team-card__head lobby-team__head">
+      <span class="team-card__swatch" style="background:${t.color}"></span>
+      <b class="lobby-team__name">${t.name}</b>
+      <span class="lobby-team__count">${faNum(t.memberIds.length)} نفر</span>
+    </div>`));
+    const chips = el(`<div class="lobby-chips"></div>`);
+    if(t.memberIds.length){
+      t.memberIds.forEach((pid, k) => {
+        const me = pid === online.playerId;
+        chips.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${t.memberNames[k]}${me ? ' (تو)' : ''}</span>`));
+      });
+    } else {
+      chips.appendChild(el(`<span class="lobby-empty">هنوز کسی نیست</span>`));
+    }
+    block.appendChild(chips);
+    if(mine){
+      block.appendChild(el(`<div class="lobby-team__mine">✓ تیم توئه</div>`));
+    } else {
+      const joinBtn = el(`<button class="team-card__add">پیوستن به این تیم</button>`);
       joinBtn.addEventListener('click', () => {
         window.FB.update(fbRoomRef(`players/${online.playerId}`), {teamId: t.id});
       });
       block.appendChild(joinBtn);
-    } else {
-      block.appendChild(el(`<div style="margin-top:8px; color:var(--teal); font-size:12.5px; font-weight:700;">✓ تیم توئه</div>`));
     }
-    teamsCard.appendChild(block);
+    wrap.appendChild(block);
   });
 
   if(unassigned.length){
-    teamsCard.appendChild(el(`<small class="hint" style="display:block; margin-top:8px;">بدون تیم: ${unassigned.map(pid=>room.players[pid].name).join('، ')}</small>`));
-  }
-
-  if(online.isHost){
-    const addTeamBtn = el(`<button class="btn btn-teal" style="margin-top:10px;">+ افزودن تیم</button>`);
-    addTeamBtn.addEventListener('click', () => {
-      const n = teams.length;
-      if(n >= 10) return;
-      const tid = 't' + (n+1);
-      window.FB.update(fbRoomRef(`teams/${tid}`), {name: 'تیم '+(n+1), color: TEAM_COLORS[n % TEAM_COLORS.length], position:0, score:0, describerIdx:0});
+    const un = el(`<div class="lobby-unassigned"><span class="lobby-unassigned__lbl">بدون تیم</span></div>`);
+    unassigned.forEach(pid => {
+      const me = pid === online.playerId;
+      un.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${room.players[pid].name}${me ? ' (تو)' : ''}</span>`));
     });
-    teamsCard.appendChild(addTeamBtn);
+    wrap.appendChild(un);
   }
-  wrap.appendChild(teamsCard);
 
+  // ---- host / guest actions ----
   if(online.isHost){
-    const startBtn = el(`<button class="btn btn-primary">🎮 شروع بازی برای همه</button>`);
+    if(teams.length < 10){
+      const addTeamBtn = el(`<button class="setup-addteam">+ افزودن تیم</button>`);
+      addTeamBtn.addEventListener('click', () => {
+        const n = teams.length;
+        if(n >= 10) return;
+        const tid = 't' + (n+1);
+        window.FB.update(fbRoomRef(`teams/${tid}`), {name: 'تیم '+(n+1), color: TEAM_COLORS[n % TEAM_COLORS.length], position:0, score:0, describerIdx:0});
+      });
+      wrap.appendChild(addTeamBtn);
+    }
     const readyTeams = teams.filter(t => t.memberIds.length > 0);
+    const startBtn = el(`<button class="setup-start"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی برای همه</span></button>`);
     startBtn.disabled = readyTeams.length < 2;
     startBtn.addEventListener('click', () => { startOnlineGame(); });
     wrap.appendChild(startBtn);
     if(readyTeams.length < 2){
-      wrap.appendChild(el(`<small class="hint" style="display:block; text-align:center; margin-top:6px;">حداقل ۲ تیم با عضو لازمه</small>`));
+      wrap.appendChild(el(`<div class="setup-note">حداقل ۲ تیم با عضو لازمه</div>`));
     }
   } else {
-    wrap.appendChild(el(`<div style="text-align:center; color:var(--text-dim); font-size:13px;">منتظر شروع بازی از طرف میزبان…</div>`));
+    wrap.appendChild(el(`<div class="lobby-wait">منتظر شروع بازی از طرف میزبان…</div>`));
   }
 
-  const leaveBtn = el(`<button class="btn btn-ghost" style="margin-top:10px;">خروج از اتاق</button>`);
+  const leaveBtn = el(`<button class="play-leave">خروج از اتاق</button>`);
   leaveBtn.addEventListener('click', onlineLeaveRoom);
   wrap.appendChild(leaveBtn);
   return wrap;
@@ -1229,7 +1262,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
