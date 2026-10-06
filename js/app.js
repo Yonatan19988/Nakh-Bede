@@ -286,6 +286,8 @@ function render(){
     app.appendChild(renderHome());
   } else if(state.screen === 'settings'){
     app.appendChild(renderSettings());
+  } else if(state.screen === 'tutorial'){
+    app.appendChild(renderTutorial());
   } else if(state.screen === 'setup'){
     app.appendChild(renderSetup());
   } else if(state.screen === 'online-home'){
@@ -380,7 +382,7 @@ function renderHome(){
   const learnTile = el(`<button class="hm-btn hm-btn--red hm-tile"><span class="hm-btn__gloss"></span>
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 12 5l9 4.2-9 4.2Z"/><path d="M7 11.4v4.1c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.1"/></svg>
     <span class="hm-out hm-out--red" data-text="آموزش">آموزش</span></button>`);
-  learnTile.addEventListener('click', () => toastHome('آموزش بازی به زودی'));
+  learnTile.addEventListener('click', () => { state.screen = 'tutorial'; render(); });
   tiles.appendChild(joinTile);
   tiles.appendChild(learnTile);
   wrap.appendChild(tiles);
@@ -1087,6 +1089,71 @@ function renderSettings(){
   return wrap;
 }
 
+// ---------------- TUTORIAL SCREEN ----------------
+function renderTutorial(){
+  const wrap = el(`<div class="tut"></div>`);
+  const dur = faNum(state.roundDuration);
+  const last = faNum(state.trackLength);
+
+  wrap.appendChild(el(`<div class="card tut-intro">
+    <h2>آموزش بازی</h2>
+    <p>«نخ بده» یک بازی حدس کلمات گروهیه. هر تیم می‌خواد زودتر از بقیه خودش رو به خانه‌ی آخر نقشه برسونه؛ و راهش اینه که کلمه‌ها رو درست توضیح بده و درست حدس بزنه.</p>
+  </div>`));
+
+  const wordCells = [1,2,3,4,5,6].map(n => `<li><b>${faNum(n)}</b><span>کلمه‌ی ${faNum(n)}</span></li>`).join('');
+  const actionRows = ACTION_CARDS.map(c => `<li><b>${c.title}</b><span>${c.instruction}</span></li>`).join('');
+
+  const sections = [
+    ['🎯', 'هدف بازی', `
+      <p>اولین تیمی که مهره‌اش به خانه‌ی <b>${last}</b> برسه، برنده‌ست.</p>
+      <p>مهره‌ی هر تیم روی نقشه جلو می‌ره؛ هر چقدر راندت بهتر باشه، بیشتر جلو می‌ری.</p>`],
+    ['🧶', 'آماده‌سازی', `
+      <p>دو یا چند تیم تشکیل بدین. مهره‌ی هر تیم روی خانه‌ی شروع قرار می‌گیره.</p>
+      <p>می‌تونین روی یک گوشی بازی کنین یا از بخش «بازی آنلاین» یک اتاق بسازین و بقیه با کد اتاق وارد بشن.</p>`],
+    ['🔁', 'نوبت هر تیم', `
+      <p>تیم‌ها به نوبت بازی می‌کنن. در هر نوبت <b>یک نفر</b> از تیم، «توضیح‌دهنده» می‌شه و بقیه‌ی هم‌تیمی‌ها حدس می‌زنن. دفعه‌ی بعد که نوبت این تیم شد، نفر بعدی توضیح می‌ده.</p>
+      <p>هر راند <b>${dur} ثانیه</b> طول می‌کشه و با زدن دکمه‌ی شروع تایمر آغاز می‌شه.</p>`],
+    ['🃏', 'کارت و شماره‌ی کلمه', `
+      <p>روی هر کارت <b>شش کلمه</b> هست. فقط توضیح‌دهنده کارت رو می‌بینه.</p>
+      <p>اینکه کدوم کلمه رو باید توضیح بده، به <b>شماره‌ی خانه‌ای</b> بستگی داره که مهره‌ی تیم روش ایستاده؛ خانه‌ها به ترتیب ۱ تا ۶ شماره می‌گیرن و دوباره از ۱ شروع می‌شن. مثلاً اگه شماره‌ی خانه‌ات ۳ باشه، کلمه‌ی سوم کارت رو توضیح می‌دی.</p>
+      <ul class="tut-list tut-list--six">${wordCells}</ul>`],
+    ['🗣️', 'توضیح دادن', `
+      <p>توضیح‌دهنده کلمه رو با جمله‌ها و مثال‌هاش توضیح می‌ده، ولی <b>نباید</b> خودِ کلمه رو بگه.</p>
+      <p>اگه هم‌تیمی‌ها درست حدس زدن، دکمه‌ی «درست» رو بزن تا کارت بعدی بیاد. اگه توضیح دادن سخته، «رد شد» رو بزن؛ البته رد کردن امتیاز منفی داره.</p>
+      <p>اگه توضیح‌دهنده راهنمایی غیرمجاز بده (مثلاً کلمه رو بگه)، هر کسی می‌تونه دکمه‌ی «راهنمایی غیرمجاز» رو بزنه. تایمر می‌ایسته و تیم مقابل تصمیم می‌گیره: تأیید یا برگردوندن. اگه تأیید بشه، یک امتیاز منفی ثبت می‌شه.</p>`],
+    ['➕', 'امتیاز و حرکت', `
+      <ul class="tut-list">
+        <li><b>+۱</b><span>هر جواب درست</span></li>
+        <li><b>−۱</b><span>هر «رد شد»</span></li>
+        <li><b>−۱</b><span>هر راهنمایی غیرمجاز</span></li>
+      </ul>
+      <p>آخر راند، امتیاز خالص همون تعداد خانه‌ایه که مهره جلو (یا عقب) می‌ره. مثلاً ۵ درست، ۱ رد و ۱ خطا یعنی ${faNum(5-1-1)} خانه جلو.</p>`],
+    ['🎡', 'خانه‌های ویژه و گردونه', `
+      <p>روی نقشه <b>${faNum(state.obstacles.length)} خانه‌ی ویژه</b> هست. هر تیمی آخر راند روی یکی از اونا بایسته، گردونه رو می‌چرخونه و یک «کارت فرمان» می‌گیره.</p>
+      <p>اثر بعضی کارت‌ها همون لحظه اعمال می‌شه و بعضی‌ها روی راند بعدی تیم اثر می‌ذارن. کارت‌های حمله‌ای تیم هدف رو خودت انتخاب می‌کنی.</p>
+      <p>«کارت نجات» حمله‌ی بعدی علیه تیمت رو خنثی می‌کنه.</p>`],
+    ['⚡', 'کارت‌های فرمان', `
+      <p>این‌ها همه‌ی کارت‌هایی‌ان که ممکنه از گردونه دربیاد:</p>
+      <ul class="tut-list tut-list--cards">${actionRows}</ul>`],
+    ['💡', 'نکته‌های آخر', `
+      <p>• اگه عقب‌تر از خانه‌ی شروع بری، همون‌جا می‌مونی.</p>
+      <p>• کارت‌های فرمان می‌تونن بازی رو کامل برگردونن، پس تا آخرش امیدوار باش!</p>`],
+  ];
+
+  sections.forEach(([icon, title, body], i) => {
+    const d = el(`<details class="card tut-sec"${i === 0 ? ' open' : ''}>
+      <summary><span class="tut-sec__ico">${icon}</span><span class="tut-sec__title">${title}</span><span class="tut-sec__chev" aria-hidden="true"></span></summary>
+      <div class="about-body tut-sec__body">${body}</div>
+    </details>`);
+    wrap.appendChild(d);
+  });
+
+  const start = el(`<button class="btn btn-primary tut-start">شروع بازی</button>`);
+  start.addEventListener('click', () => { state.screen = 'setup'; render(); });
+  wrap.appendChild(start);
+  return wrap;
+}
+
 // Screens you may leave with a visible control. The board is deliberately
 // excluded: a round in progress should not be abandoned by a stray tap.
 const NO_BACK_SCREENS = ['home', 'board', 'online-board'];
@@ -1131,7 +1198,7 @@ function goBack(){
   if(s === 'online-create' || s === 'online-join'){
     state.screen = 'online-home';
     render();
-  } else if(s === 'settings' || s === 'setup' || s === 'online-home'){
+  } else if(s === 'settings' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
     state.screen = 'home';
     render();
   } else if(s === 'online-lobby'){
