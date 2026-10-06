@@ -269,7 +269,7 @@ function render(){
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -1089,44 +1089,49 @@ function renderOnlineBoard(){
 }
 
 function renderSettings(){
-  const wrap = el(`<div></div>`);
-  const card = el(`<div class="card"></div>`);
-  card.appendChild(el(`<h2>تنظیمات بازی</h2>`));
+  const wrap = el(`<div class="setup-page settings"></div>`);
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`));
 
-  const row = el(`<div style="margin-bottom:12px;"></div>`);
-  row.appendChild(el(`<label>مدت زمان هر راند (ثانیه)</label>`));
-  const durationInput = el(`<input type="number" min="10" max="180" step="5" value="${state.roundDuration}" />`);
-  durationInput.addEventListener('change', e => {
-    const v = parseInt(e.target.value, 10);
-    if(!isNaN(v) && v > 0) state.roundDuration = v;
+  // ---- round length ----
+  const MIN = 10, MAX = 180, STEP = 5, OFFICIAL = 90;
+  const setDuration = v => { state.roundDuration = Math.max(MIN, Math.min(MAX, v)); render(); };
+  const durCard = el(`<div class="team-card set-card"></div>`);
+  durCard.appendChild(el(`<h2 class="set-card__title">مدت زمان هر راند</h2>`));
+  const stepper = el(`<div class="set-stepper"></div>`);
+  const minus = el(`<button class="set-step" aria-label="کمتر"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/></svg></button>`);
+  const plus = el(`<button class="set-step" aria-label="بیشتر"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`);
+  minus.disabled = state.roundDuration <= MIN;
+  plus.disabled = state.roundDuration >= MAX;
+  minus.addEventListener('click', () => setDuration(state.roundDuration - STEP));
+  plus.addEventListener('click', () => setDuration(state.roundDuration + STEP));
+  stepper.appendChild(plus);
+  stepper.appendChild(el(`<div class="set-value"><b>${faNum(state.roundDuration)}</b><span>ثانیه</span></div>`));
+  stepper.appendChild(minus);
+  durCard.appendChild(stepper);
+  const presets = el(`<div class="set-presets"></div>`);
+  [60, 90, 120].forEach(v => {
+    const chip = el(`<button class="set-chip ${state.roundDuration === v ? 'is-on' : ''}">${faNum(v)}${v === OFFICIAL ? ' · رسمی' : ''}</button>`);
+    chip.addEventListener('click', () => setDuration(v));
+    presets.appendChild(chip);
   });
-  row.appendChild(durationInput);
-  card.appendChild(row);
-  card.appendChild(el(`<small class="hint">مقدار رسمی بازی ۹۰ ثانیه‌ست؛ الان روی ${state.roundDuration} ثانیه تنظیمه.</small>`));
-  wrap.appendChild(card);
+  durCard.appendChild(presets);
+  durCard.appendChild(el(`<small class="set-hint">مقدار رسمی بازی ${faNum(OFFICIAL)} ثانیه‌ست. این تنظیم فقط روی همین گوشی اثر داره.</small>`));
+  wrap.appendChild(durCard);
 
-  const infoCard = el(`<div class="card">
-    <h2>اطلاعات نقشه</h2>
-    <small class="hint">تعداد خانه‌ها: ${state.trackLength} · تعداد خانه‌های مانع: ${state.obstacles.length} · تعداد کارت‌ها: ${state.deck.length}</small>
-  </div>`);
+  // ---- board facts ----
+  const infoCard = el(`<div class="team-card set-card"></div>`);
+  infoCard.appendChild(el(`<h2 class="set-card__title">اطلاعات نقشه</h2>`));
+  infoCard.appendChild(el(`<div class="set-stats">
+    <div class="set-stat"><b>${faNum(state.trackLength)}</b><span>خانه</span></div>
+    <div class="set-stat"><b>${faNum(state.obstacles.length)}</b><span>خانه‌ی ویژه</span></div>
+    <div class="set-stat"><b>${faNum(state.deck.length)}</b><span>کارت</span></div>
+  </div>`));
   wrap.appendChild(infoCard);
 
-  // moved here from the home screen
-  const aboutCard = el(`<div class="card"></div>`);
-  aboutCard.appendChild(el(`<h2>درباره بازی</h2>`));
-  const aboutBtn = el(`<button class="btn btn-ghost">${state.showAbout ? 'بستن توضیحات' : 'قوانین و راهنمای بازی'}</button>`);
-  aboutBtn.addEventListener('click', () => { state.showAbout = !state.showAbout; render(); });
-  aboutCard.appendChild(aboutBtn);
-  if(state.showAbout){
-    aboutCard.appendChild(el(`<div class="about-body">
-      <p>«نخ بده» یک بازی حدس کلمات گروهیه. هر تیم به نوبت یک نفر رو به‌عنوان توضیح‌دهنده می‌فرسته و بقیه حدس می‌زنن.</p>
-      <p><b>هر راند ${faNum(state.roundDuration)} ثانیه‌ست.</b> شماره‌ی خانه‌ای که مهره‌ی تیم روش ایستاده تعیین می‌کنه کدوم کلمه‌ی کارت باید توضیح داده بشه.</p>
-      <p>هر جواب درست یک امتیاز مثبت، هر رد کردن و هر راهنمایی غیرمجاز یک امتیاز منفی. آخر راند، امتیاز خالص همون تعداد خانه‌ایه که تیم جلو (یا عقب) می‌ره.</p>
-      <p>${faNum(state.obstacles.length)} خانه‌ی ویژه روی نقشه هست؛ هر تیمی روشون فرود بیاد گردونه رو می‌چرخونه و یک کارت فرمان می‌گیره.</p>
-      <p>اولین تیمی که به خانه‌ی ${faNum(state.trackLength)} برسه برنده‌ست.</p>
-    </div>`));
-  }
-  wrap.appendChild(aboutCard);
+  // the rules live on the tutorial screen; no second copy here
+  const learn = el(`<button class="team-card__add set-learn">قوانین و آموزش بازی</button>`);
+  learn.addEventListener('click', () => { state.screen = 'tutorial'; render(); });
+  wrap.appendChild(learn);
 
   return wrap;
 }
@@ -1262,7 +1267,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }

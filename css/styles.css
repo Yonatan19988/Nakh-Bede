@@ -1750,3 +1750,35 @@
   .lobby-unassigned__lbl{ font-size:12px; color:#9EB5C1; margin-inline-end:2px; }
   .setup-start:disabled{ opacity:.45; filter:saturate(.6); cursor:not-allowed; }
   .lobby .play-leave{ margin-top:2px; }
+
+
+  /* ---------------- settings ---------------- */
+  .set-card__title{ margin:0; font-family:'Lalezar','Vazirmatn',sans-serif; font-size:18px; font-weight:400; color:#F3D37A; }
+  .set-stepper{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .set-step{
+    flex:none; width:56px; height:56px; border-radius:18px; cursor:pointer;
+    background:rgba(4,35,50,.9); border:1.5px solid rgba(217,173,76,.6); color:#F3D37A;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform 150ms ease, background 150ms ease;
+  }
+  .set-step:active{ transform:scale(.94); background:rgba(217,173,76,.14); }
+  .set-step:disabled{ opacity:.35; cursor:not-allowed; }
+  .set-value{ flex:1 1 auto; display:flex; flex-direction:column; align-items:center; line-height:1.1; }
+  .set-value b{ font-size:44px; font-weight:800; color:#FFF1CD; }
+  .set-value span{ font-size:13px; color:#9EB5C1; margin-top:2px; }
+  .set-presets{ display:flex; gap:8px; justify-content:center; }
+  .set-chip{
+    flex:1 1 0; height:40px; border-radius:13px; cursor:pointer;
+    background:rgba(255,255,255,.06); border:1.4px solid rgba(217,173,76,.4); color:#EAF6FF;
+    font-family:inherit; font-size:13.5px; font-weight:700;
+  }
+  .set-chip.is-on{ background:rgba(217,173,76,.2); border-color:#F0C96B; color:#F3D37A; }
+  .set-hint{ display:block; font-size:11.5px; line-height:1.7; color:#7E93A0; text-align:center; }
+  .set-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+  .set-stat{
+    display:flex; flex-direction:column; align-items:center; gap:3px; padding:11px 4px;
+    background:rgba(255,255,255,.05); border:1.2px solid rgba(217,173,76,.3); border-radius:14px;
+  }
+  .set-stat b{ font-size:22px; font-weight:800; color:#F3D37A; }
+  .set-stat span{ font-size:11.5px; color:#9EB5C1; }
+  .set-learn{ flex:0 0 auto; }
