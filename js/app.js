@@ -438,7 +438,7 @@ function fbRoomRef(path){
 function onlineTeamsArray(){
   const room = online.room;
   if(!room || !room.teams) return [];
-  return Object.keys(room.teams).sort().map(tid => {
+  return Object.keys(room.teams).sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10)).map(tid => {
     const t = room.teams[tid];
     const memberIds = Object.keys(room.players||{}).filter(pid => room.players[pid].teamId === tid).sort();
     return {
