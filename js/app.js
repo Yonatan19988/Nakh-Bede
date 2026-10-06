@@ -56,14 +56,6 @@ function PAWN_SVG(color){
   </svg>`;
 }
 
-const DEMO_DECK = [
-  ["سیب","دوچرخه","بهار","دریا","خورشید","کتاب"],
-  ["گیتار","کوه","قهوه","پرنده","آینه","باران"],
-  ["ماه","جنگل","ساعت","پل","آتش","ستاره"],
-  ["قطار","گل","برف","چتر","آسمان","نامه"],
-  ["دریاچه","کلید","پروانه","شمع","جاده","صخره"],
-  ["پنجره","موسیقی","صحرا","رنگین‌کمان","درخت","سایه"]
-];
 
 const HOME_CARD_BACK = "assets/card-back.webp";
 const HOME_CARD_WORD = "assets/card-word.webp";
@@ -71,7 +63,7 @@ const HOME_CARD_ACT = "assets/card-action.webp";
 const HOME_LOGO = "assets/logo.webp";
 const MAP_IMAGE = "assets/map.webp";
 
-// Index-aligned with ACTION_CARDS (0-23). needsTarget = must pick a rival team; needsNumber = must pick 1-6.
+// Index-aligned with ACTION_CARDS. needsTarget = must pick a rival team.
 
 let online = {
   roomCode: null,
@@ -249,7 +241,6 @@ let state = {
   actionRevealedIdx: null,
   actionChosenCard: null,
   actionChosenIdx: null,
-  cardPeekNum: null,
   actionEffectTarget: null,
   actionEffectNumber: null,
   wheelSpun: false,
@@ -264,7 +255,8 @@ let state = {
   pendingSummary: null,
   lastRoundSummary: null,
   winner: null,
-  deck: JSON.parse(JSON.stringify(REAL_DECK)),
+  wordSource: WORD_LIST.slice(),   // what the game draws from (the built-in list, or the player's own)
+  deck: [],                         // words left in the current shuffle
 };
 
 // ---------------- SOUND EFFECTS (Web Audio, no external files) ----------------
@@ -853,11 +845,11 @@ function renderOnlineLobby(){
 function startOnlineGame(){
   const teams = onlineTeamsArray().filter(t => t.memberIds.length > 0);
   if(teams.length < 2) return;
-  const firstCardIdx = Math.floor(Math.random()*REAL_DECK.length);
   const updates = {
     phase: 'playing',
     currentTeamId: teams[0].id,
-    currentCardIdx: firstCardIdx,
+    currentCardIdx: 0,
+    wordSeed: Math.floor(Math.random() * 2147483646) + 1,
     roundEndAt: null,
     correctCount: 0,
     skipCount: 0,
@@ -897,10 +889,10 @@ function syncStateFromOnlineRoom(){
   if(!state.actionPickActive){ resetWheel(); }
   else { state.wheelSpun = !!room.wheelSpun; }
   state.actionRevealedIdx = (room.actionRevealedIdx === undefined) ? null : room.actionRevealedIdx;
-  state.actionChosenCard = (room.actionChosenCardIdx !== null && room.actionChosenCardIdx !== undefined) ? ACTION_CARDS[room.actionChosenCardIdx] : null;
+  state.actionChosenCard = (room.actionChosenCardIdx !== null && room.actionChosenCardIdx !== undefined) ? (ACTION_CARDS[room.actionChosenCardIdx] || null) : null;
   state.lastRoundSummary = room.lastRoundSummary || null;
   const curCardIdx = (room.currentCardIdx===undefined || room.currentCardIdx===null) ? 0 : room.currentCardIdx;
-  state.currentCard = REAL_DECK[curCardIdx];
+  state.currentCard = onlineWordAt(curCardIdx, room.wordSeed);
   if(room.winnerTeamId){
     const wt = state.teams.find(t => t.id === room.winnerTeamId);
     if(wt && !state.winner){ sfxWin(); }
@@ -924,7 +916,7 @@ function onlineMyTeamId(){
 
 function onlineStartTimer(){
   const t = currentTeam();
-  const nextCardIdx = Math.floor(Math.random()*REAL_DECK.length);
+  const nextCardIdx = onlineNextWordIdx();
   const endAt = Date.now() + state.roundDuration*1000;
   window.FB.update(fbRoomRef(), { roundEndAt: endAt, correctCount: 0, skipCount: 0, foulCount: 0, foulPending: false, foulPausedAt: null, currentCardIdx: nextCardIdx });
   ensureOnlineLocalCountdown();
@@ -946,7 +938,7 @@ function ensureOnlineLocalCountdown(){
 function onlineCorrect(){
   if(!state.timerRunning || state.foulPending) return;
   sfxCorrect();
-  const nextCardIdx = Math.floor(Math.random()*REAL_DECK.length);
+  const nextCardIdx = onlineNextWordIdx();
   window.FB.update(fbRoomRef(), { correctCount: (state.correctCount||0)+1, currentCardIdx: nextCardIdx });
 }
 function onlineFoul(){
@@ -973,7 +965,7 @@ function onlineResolveFoul(counted){
 function onlineSkip(){
   if(!state.timerRunning || state.foulPending) return;
   sfxWrong();
-  const nextCardIdx = Math.floor(Math.random()*REAL_DECK.length);
+  const nextCardIdx = onlineNextWordIdx();
   window.FB.update(fbRoomRef(), { skipCount: (state.skipCount||0)+1, currentCardIdx: nextCardIdx });
 }
 
@@ -1007,7 +999,7 @@ function finishRoundOnline(){
   window.FB.update(fbRoomRef(), updates);
 }
 
-function computeActionEffectUpdates(effect, selfTeam, targetTeam, number){
+function computeActionEffectUpdates(effect, selfTeam, targetTeam){
   const updates = {};
   if(!effect) return updates;
   if(effect.attack && targetTeam && targetTeam.mods && targetTeam.mods.shieldAttack){
@@ -1025,15 +1017,6 @@ function computeActionEffectUpdates(effect, selfTeam, targetTeam, number){
       if(targetTeam) updates[`teams/${targetTeam.id}/timerOverride`] = Math.max(10, state.roundDuration - effect.seconds);
       updates[`teams/${selfTeam.id}/timerOverride`] = state.roundDuration + effect.seconds;
       break;
-    case 'forceNumberSelf':
-      updates[`teams/${selfTeam.id}/mods/forcedNumber`] = cellNumber(selfTeam.position);
-      break;
-    case 'forceNumberChoose':
-      if(targetTeam) updates[`teams/${targetTeam.id}/mods/forcedNumber`] = number;
-      break;
-    case 'freeNumberSelf':
-      updates[`teams/${selfTeam.id}/mods/forcedNumber`] = number;
-      break;
     case 'shieldFirstNegative':
       updates[`teams/${selfTeam.id}/mods/shieldNegative`] = true;
       break;
@@ -1043,10 +1026,6 @@ function computeActionEffectUpdates(effect, selfTeam, targetTeam, number){
     case 'bonusIfScoreAtLeast':
       updates[`teams/${selfTeam.id}/mods/bonusThreshold`] = effect.threshold;
       updates[`teams/${selfTeam.id}/mods/bonusAmount`] = effect.bonus;
-      break;
-    case 'predictNumberBonus':
-      updates[`teams/${selfTeam.id}/mods/predictNumber`] = number;
-      updates[`teams/${selfTeam.id}/mods/predictBonus`] = effect.bonus;
       break;
     case 'perSkipPenaltyChoose':
       if(targetTeam) updates[`teams/${targetTeam.id}/mods/skipPenalty`] = effect.penalty;
@@ -1073,7 +1052,7 @@ function onlineContinueNextTurn(effectUpdates){
   const nextDescriberIdx = ((t.describerIdx||0) + 1);
   const curIdx = teams.findIndex(x => x.id === t.id);
   const nextTeam = teams[(curIdx+1) % teams.length];
-  const nextCardIdx = Math.floor(Math.random()*REAL_DECK.length);
+  const nextCardIdx = onlineNextWordIdx();
   const updates = Object.assign({
     [`teams/${t.id}/describerIdx`]: nextDescriberIdx,
     currentTeamId: nextTeam.id,
@@ -1120,7 +1099,7 @@ function renderOnlineBoard(){
   wrap.appendChild(header);
 
   const status = el(`<div class="play-status"></div>`);
-  status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(currentTargetNumber(t))}</span></div>`));
+  status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(t.position + 1)} از ${faNum(state.trackLength)}</span></div>`));
   status.appendChild(el(`<span class="play-status__sep"></span>`));
   status.appendChild(el(`<div class="play-status__item play-status__role">${roleLabel}</div>`));
   wrap.appendChild(status);
@@ -1160,9 +1139,9 @@ function renderOnlineBoard(){
     modal.appendChild(renderActionCard(state.actionChosenCard, room.actionChosenCardIdx));
     const effect = ACTION_EFFECTS[room.actionChosenCardIdx];
     if(isTurnTeam && effect){
-      const choiceUI = buildEffectChoiceUI(effect, t.id, (targetId, number) => {
+      const choiceUI = buildEffectChoiceUI(effect, t.id, (targetId) => {
         const targetTeam = targetId ? state.teams.find(x => x.id === targetId) : null;
-        const effectUpdates = computeActionEffectUpdates(effect, t, targetTeam, number);
+        const effectUpdates = computeActionEffectUpdates(effect, t, targetTeam);
         onlineContinueNextTurn(effectUpdates);
       });
       modal.appendChild(choiceUI);
@@ -1262,7 +1241,7 @@ function renderSettings(){
   infoCard.appendChild(el(`<div class="set-stats">
     <div class="set-stat"><b>${faNum(state.trackLength)}</b><span>خانه</span></div>
     <div class="set-stat"><b>${faNum(state.obstacles.length)}</b><span>خانه‌ی ویژه</span></div>
-    <div class="set-stat"><b>${faNum(state.deck.length)}</b><span>کارت</span></div>
+    <div class="set-stat"><b>${faNum(state.wordSource.length)}</b><span>کلمه</span></div>
   </div>`));
   wrap.appendChild(infoCard);
 
@@ -1311,10 +1290,9 @@ function renderTutorial(){
     ['🔁', 'نوبت هر تیم', `
       <p>تیم‌ها به نوبت بازی می‌کنن. در هر نوبت <b>یک نفر</b> از تیم، «توضیح‌دهنده» می‌شه و بقیه‌ی هم‌تیمی‌ها حدس می‌زنن. دفعه‌ی بعد که نوبت این تیم شد، نفر بعدی توضیح می‌ده.</p>
       <p>هر راند <b>${dur} ثانیه</b> طول می‌کشه و با زدن دکمه‌ی شروع تایمر آغاز می‌شه.</p>`],
-    ['🃏', 'کارت و شماره‌ی کلمه', `
-      <p>روی هر کارت <b>شش کلمه</b> هست. فقط توضیح‌دهنده کارت رو می‌بینه.</p>
-      <p>اینکه کدوم کلمه رو باید توضیح بده، به <b>شماره‌ی خانه‌ای</b> بستگی داره که مهره‌ی تیم روش ایستاده؛ خانه‌ها به ترتیب ۱ تا ۶ شماره می‌گیرن و دوباره از ۱ شروع می‌شن. مثلاً اگه شماره‌ی خانه‌ات ۳ باشه، کلمه‌ی سوم کارت رو توضیح می‌دی.</p>
-      <ul class="tut-list tut-list--six">${wordCells}</ul>`],
+    ['🃏', 'کارت و کلمه', `
+      <p>هر بار روی صفحه <b>یک کلمه</b> می‌آید. فقط توضیح‌دهنده اون رو می‌بینه و باید بدون گفتن خودِ کلمه، توضیحش بده تا هم‌تیمی‌ها حدس بزنن.</p>
+      <p>با هر «درست» یا «رد شد» کلمه‌ی بعدی میاد. کلمه‌ها قاطی شدن و تا وقتی همه‌ی کلمه‌ها استفاده نشده، هیچ کلمه‌ای تکرار نمی‌شه.</p>`],
     ['💬', 'توضیح دادن', `
       <p>توضیح‌دهنده کلمه رو با جمله‌ها و مثال‌هاش توضیح می‌ده، ولی <b>نباید</b> خودِ کلمه رو بگه.</p>
       <p>اگه هم‌تیمی‌ها درست حدس زدن، دکمه‌ی «درست» رو بزن تا کارت بعدی بیاد. اگه توضیح دادن سخته، «رد شد» رو بزن؛ البته رد کردن امتیاز منفی داره.</p>
@@ -1512,17 +1490,23 @@ function renderSetup(){
 
   // ---- custom word cards ----
   const deckCard = el(`<div class="deck-card">
-    <h2 class="deck-card__title">کارت‌های کلمه</h2>
-    <p class="deck-card__sub">اگر خواستی خودت دستی جایگزینش کنی، اینجا بنویس (هر خط = یک کارت).</p>
-    <textarea class="deck-card__area" id="deckInput" placeholder="برای جایگزینی، اینجا کارت‌های خودت رو بنویس..."></textarea>
+    <h2 class="deck-card__title">کلمه‌های بازی</h2>
+    <p class="deck-card__sub">بازی ${faNum(WORD_LIST.length)} کلمه‌ی آماده داره. اگه خواستی خودت کلمه‌ها رو جایگزین کنی، اینجا بنویس (هر خط یک کلمه، حداقل ۱۰ تا).</p>
+    <textarea class="deck-card__area" id="deckInput" placeholder="برای جایگزینی، کلمه‌های خودت رو اینجا بنویس..."></textarea>
+    <small class="deck-card__count" id="deckCount" aria-live="polite"></small>
   </div>`);
   const ta = deckCard.querySelector('#deckInput');
+  const count = deckCard.querySelector('#deckCount');
   ta.value = '';
   ta.addEventListener('change', e => {
-    const lines = e.target.value.split('\n').map(l => l.trim()).filter(Boolean);
-    const parsed = lines.map(l => l.split(',').map(w => w.trim()).filter(Boolean)).filter(c => c.length >= 2)
-      .map(words => ({words}));
-    if(parsed.length) state.deck = parsed;
+    const words = e.target.value.split(/[\n,،]+/).map(w => w.trim()).filter(Boolean);
+    if(words.length >= 10){
+      state.wordSource = words;
+      count.textContent = `بازی با ${faNum(words.length)} کلمه‌ی خودت انجام می‌شه.`;
+    } else {
+      state.wordSource = WORD_LIST.slice();
+      count.textContent = words.length ? 'برای جایگزینی، حداقل ۱۰ کلمه لازمه؛ کلمه‌های آماده استفاده می‌شن.' : '';
+    }
   });
   wrap.appendChild(deckCard);
 
@@ -1539,6 +1523,7 @@ function syncScoreLabelsOnly(){ /* names update live via re-render on other acti
 
 // ---------------- GAME START ----------------
 function startGame(){
+  state.deck = [];
   state.teams.forEach(t => { t.position = 0; t.score = 0; t.describerIdx = 0; });
   state.currentTeamIdx = 0;
   state.winner = null;
@@ -1587,6 +1572,8 @@ function resumeLocalGame(){
   state.correctCount = 0; state.skipCount = 0; state.foulCount = 0; state.foulPending = false;
   state.animating = false; state.actionPickActive = false; state.actionChosenCard = null;
   state.actionRevealedIdx = null;
+  state.teams.forEach(t => { if(t.mods){ delete t.mods.forcedNumber; delete t.mods.predictNumber; delete t.mods.predictBonus; } });
+  state.deck = [];
   resetWheel();
   drawCard();
   state.viewerKey = describerKey();
@@ -1598,13 +1585,44 @@ function describerKey(){
   return state.currentTeamIdx + ':' + (t.describerIdx % t.members.length);
 }
 
-function drawCard(){
-  state.cardPeekNum = null;
-  if(state.deck.length === 0){
-    state.deck = JSON.parse(JSON.stringify(REAL_DECK));
+// ---- words ----
+function mulberry32(seed){
+  let a = seed | 0;
+  return function(){
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffled(list, rand){
+  const a = list.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  const idx = Math.floor(Math.random() * state.deck.length);
-  state.currentCard = state.deck[idx];
+  return a;
+}
+// Online, every phone has to show the same word. The host picks a seed when the
+// game starts and the room only counts how many words have been used; each phone
+// shuffles the list with that seed and reads the same position.
+const wordOrderCache = {};
+function onlineWordAt(idx, seed){
+  const key = (seed | 0) || 1;
+  const order = wordOrderCache[key] || (wordOrderCache[key] = shuffled(WORD_LIST, mulberry32(key)));
+  return order[((idx % order.length) + order.length) % order.length];
+}
+function onlineNextWordIdx(){
+  const cur = online.room && online.room.currentCardIdx;
+  return (cur == null ? 0 : cur) + 1;
+}
+
+// One word per card, taken from a shuffle so nothing repeats until the list runs out.
+function drawCard(){
+  if(state.deck.length === 0){
+    state.deck = shuffled(state.wordSource, Math.random);
+  }
+  state.currentCard = state.deck.pop();
 }
 
 // ---------------- BOARD SCREEN ----------------
@@ -1654,7 +1672,7 @@ function renderBoard(){
 
   // ---- compact status row: cell | role | viewer select ----
   const status = el(`<div class="play-status"></div>`);
-  status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(currentTargetNumber(currentTeam()))}</span></div>`));
+  status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(currentTeam().position + 1)} از ${faNum(state.trackLength)}</span></div>`));
   status.appendChild(el(`<span class="play-status__sep"></span>`));
   status.appendChild(el(`<div class="play-status__item play-status__role">${roleLabel}</div>`));
   const select = el(`<select class="play-status__select"></select>`);
@@ -1722,9 +1740,9 @@ function renderBoard(){
     modal.appendChild(el(`<div class="act-lead">گردونه این کارت رو برات آورد!</div>`));
     modal.appendChild(renderActionCard(state.actionChosenCard, state.actionChosenIdx));
     const effect = ACTION_EFFECTS[state.actionChosenIdx];
-    const choiceUI = buildEffectChoiceUI(effect, t.id, (targetId, number) => {
+    const choiceUI = buildEffectChoiceUI(effect, t.id, (targetId) => {
       const targetTeam = targetId ? state.teams.find(x => x.id === targetId) : null;
-      applyActionCardEffect(effect, t, targetTeam, number);
+      applyActionCardEffect(effect, t, targetTeam);
       state.actionPickActive = false;
       state.actionRevealedIdx = null;
       state.actionChosenCard = null;
@@ -1838,13 +1856,6 @@ function tickTimerOnly(){
   return true;
 }
 
-function cellNumber(pos){ return (pos % 6) + 1; }
-
-function currentTargetNumber(team){
-  if(team.mods && team.mods.forcedNumber) return team.mods.forcedNumber;
-  return cellNumber(team.position);
-}
-
 function computeRoundOutcome(team, correctCount, skipCount, foulCount){
   const mods = team.mods || {};
   const skipPenalty = mods.skipPenalty || 1;
@@ -1858,16 +1869,13 @@ function computeRoundOutcome(team, correctCount, skipCount, foulCount){
   if(mods.bonusThreshold !== undefined && scoreChange >= mods.bonusThreshold){ moved += (mods.bonusAmount||0); }
   // a lock only holds a team back; it must never cancel a move backwards
   if(mods.blockMoveThreshold !== undefined && scoreChange < mods.blockMoveThreshold && moved > 0){ moved = 0; }
-  if(mods.predictNumber !== undefined){
-    // the guess is about the cell the team actually lands on
-    const landing = Math.max(0, Math.min(team.position + moved, state.trackLength - 1));
-    if(cellNumber(landing) === mods.predictNumber) moved += (mods.predictBonus||0);
-  }
   return {scoreChange, moved};
 }
 
 function clearOneRoundMods(team){
   if(!team.mods) { team.mods = {}; return; }
+  // forcedNumber / predictNumber / predictBonus come from cards that no longer exist;
+  // they are cleared so an old saved game cannot carry them forward
   delete team.mods.forcedNumber;
   delete team.mods.shieldNegative;
   delete team.mods.doubleFirstCorrect;
@@ -1882,7 +1890,7 @@ function clearOneRoundMods(team){
   delete team.mods.shieldAttack;
 }
 
-function applyActionCardEffect(effect, selfTeam, targetTeam, number){
+function applyActionCardEffect(effect, selfTeam, targetTeam){
   if(!effect) return 'none';
   if(effect.attack && targetTeam && targetTeam.mods && targetTeam.mods.shieldAttack){
     targetTeam.mods.shieldAttack = false;
@@ -1899,15 +1907,6 @@ function applyActionCardEffect(effect, selfTeam, targetTeam, number){
       if(targetTeam) targetTeam.timerOverride = Math.max(10, state.roundDuration - effect.seconds);
       selfTeam.timerOverride = state.roundDuration + effect.seconds;
       break;
-    case 'forceNumberSelf':
-      selfTeam.mods.forcedNumber = cellNumber(selfTeam.position);
-      break;
-    case 'forceNumberChoose':
-      if(targetTeam){ targetTeam.mods = targetTeam.mods||{}; targetTeam.mods.forcedNumber = number; }
-      break;
-    case 'freeNumberSelf':
-      selfTeam.mods.forcedNumber = number;
-      break;
     case 'shieldFirstNegative':
       selfTeam.mods.shieldNegative = true;
       break;
@@ -1917,10 +1916,6 @@ function applyActionCardEffect(effect, selfTeam, targetTeam, number){
     case 'bonusIfScoreAtLeast':
       selfTeam.mods.bonusThreshold = effect.threshold;
       selfTeam.mods.bonusAmount = effect.bonus;
-      break;
-    case 'predictNumberBonus':
-      selfTeam.mods.predictNumber = number;
-      selfTeam.mods.predictBonus = effect.bonus;
       break;
     case 'perSkipPenaltyChoose':
       if(targetTeam){ targetTeam.mods = targetTeam.mods||{}; targetTeam.mods.skipPenalty = effect.penalty; }
@@ -1939,56 +1934,34 @@ function applyActionCardEffect(effect, selfTeam, targetTeam, number){
   return 'applied';
 }
 
-// Builds the target-team / number picker UI shown inside the card-reveal modal
+// Builds the target-team picker UI shown inside the card-reveal modal
 // when the drawn card's effect needs a choice before it can be confirmed.
-// onConfirm(targetTeamId|null, number|null) is called once the required choices are made.
+// onConfirm(targetTeamId|null) is called once the required choice is made.
 function buildEffectChoiceUI(effect, selfTeamId, onConfirm){
   const box = el(`<div style="margin-top:10px; text-align:center;"></div>`);
-  if(!effect || (!effect.needsTarget && !effect.needsNumber)){
+  if(!effect || !effect.needsTarget){
     const okBtn = el(`<button class="btn btn-primary">باشه، ادامه</button>`);
-    okBtn.addEventListener('click', () => onConfirm(null, null));
+    okBtn.addEventListener('click', () => onConfirm(null));
     box.appendChild(okBtn);
     return box;
   }
   let chosenTarget = null;
-  let chosenNumber = null;
-  if(effect.needsTarget){
-    box.appendChild(el(`<div style="color:#fdf6e3; font-size:13px; margin-bottom:8px;">یه تیم رقیب رو انتخاب کن:</div>`));
-    const row = el(`<div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;"></div>`);
-    state.teams.filter(x => x.id !== selfTeamId).forEach(x => {
-      const b = el(`<button class="btn btn-ghost" style="width:auto; padding:8px 14px; border-color:${x.color};">${x.name}</button>`);
-      b.addEventListener('click', () => {
-        chosenTarget = x.id;
-        Array.from(row.children).forEach(c => c.style.background = 'transparent');
-        b.style.background = x.color;
-        checkReady();
-      });
-      row.appendChild(b);
+  box.appendChild(el(`<div style="color:#fdf6e3; font-size:13px; margin-bottom:8px;">یه تیم رقیب رو انتخاب کن:</div>`));
+  const row = el(`<div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;"></div>`);
+  state.teams.filter(x => x.id !== selfTeamId).forEach(x => {
+    const b = el(`<button class="btn btn-ghost" style="width:auto; padding:8px 14px; border-color:${x.color};">${x.name}</button>`);
+    b.addEventListener('click', () => {
+      chosenTarget = x.id;
+      Array.from(row.children).forEach(c => c.style.background = 'transparent');
+      b.style.background = x.color;
+      okBtn.disabled = false;
     });
-    box.appendChild(row);
-  }
-  if(effect.needsNumber){
-    box.appendChild(el(`<div style="color:#fdf6e3; font-size:13px; margin-bottom:8px;">یه عدد از ۱ تا ۶ انتخاب کن:</div>`));
-    const row2 = el(`<div style="display:flex; gap:6px; justify-content:center; margin-bottom:10px;"></div>`);
-    for(let n=1;n<=6;n++){
-      const b = el(`<button class="btn btn-ghost" style="width:44px; padding:8px 0;">${n}</button>`);
-      b.addEventListener('click', () => {
-        chosenNumber = n;
-        Array.from(row2.children).forEach(c => c.style.background = 'transparent');
-        b.style.background = 'var(--gold)';
-        checkReady();
-      });
-      row2.appendChild(b);
-    }
-    box.appendChild(row2);
-  }
+    row.appendChild(b);
+  });
+  box.appendChild(row);
   const okBtn = el(`<button class="btn btn-primary" disabled>باشه، ادامه</button>`);
-  okBtn.addEventListener('click', () => onConfirm(chosenTarget, chosenNumber));
+  okBtn.addEventListener('click', () => onConfirm(chosenTarget));
   box.appendChild(okBtn);
-  function checkReady(){
-    const ready = (!effect.needsTarget || chosenTarget) && (!effect.needsNumber || chosenNumber);
-    okBtn.disabled = !ready;
-  }
   return box;
 }
 
@@ -2195,11 +2168,7 @@ function renderCardView(isDescriber, isTurnTeam){
       <div class="play-card__hidden">🙈<span>نوبت تیم توئه — فقط گوش کن و حدس بزن</span></div>
     </div>`);
   }
-  const targetNum = currentTargetNumber(currentTeam());
-  const words = state.currentCard.words;
-  const shownNum = state.cardPeekNum || targetNum;
-  const word = words[shownNum - 1] || '—';
-  const offTarget = shownNum !== targetNum;
+  const word = state.currentCard || '—';
 
   const changed = lastShownWord !== null && lastShownWord !== word;
   lastShownWord = word;
@@ -2217,25 +2186,13 @@ function renderCardView(isDescriber, isTurnTeam){
   } else {
     lastStreakShown = 0;
   }
-  card.appendChild(el(`<span class="play-card__badge n${shownNum}">${faNum(shownNum)}</span>`));
   card.appendChild(el(`<span class="play-card__corner play-card__corner--tr"></span>`));
   card.appendChild(el(`<span class="play-card__corner play-card__corner--tl"></span>`));
   card.appendChild(el(`<span class="play-card__corner play-card__corner--br"></span>`));
   card.appendChild(el(`<span class="play-card__corner play-card__corner--bl"></span>`));
-
-  const prev = el(`<button class="play-card__arrow play-card__arrow--r" aria-label="کلمه قبلی"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></button>`);
-  prev.addEventListener('click', () => { state.cardPeekNum = shownNum === 1 ? 6 : shownNum - 1; render(); });
-  const next = el(`<button class="play-card__arrow play-card__arrow--l" aria-label="کلمه بعدی"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 L16 12 L10 18"/></svg></button>`);
-  next.addEventListener('click', () => { state.cardPeekNum = shownNum === 6 ? 1 : shownNum + 1; render(); });
-
-  card.appendChild(prev);
-  card.appendChild(el(`<div class="play-card__word">${word}</div>`));
-  card.appendChild(next);
-  if(offTarget){
-    const back = el(`<button class="play-card__hint">این کلمه‌ی نوبت تو نیست — برگرد به شماره ${faNum(targetNum)}</button>`);
-    back.addEventListener('click', () => { state.cardPeekNum = null; render(); });
-    card.appendChild(back);
-  }
+  const wordEl = el(`<div class="play-card__word"></div>`);
+  wordEl.textContent = word;
+  card.appendChild(wordEl);
   return card;
 }
 
