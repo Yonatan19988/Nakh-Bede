@@ -304,15 +304,12 @@ function render(){
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'tutorial');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
   document.body.classList.toggle('scroll-lock', boardScreen);
   document.documentElement.classList.toggle('scroll-lock', boardScreen);
-  const roomScreen = ['online-home','online-create','online-join'].includes(state.screen);
-  document.body.classList.toggle('room-mode', roomScreen);
-  document.documentElement.classList.toggle('room-mode', roomScreen);
   const playScreen = state.screen === 'board' || state.screen === 'online-board';
   document.body.classList.toggle('play-mode', playScreen);
   document.documentElement.classList.toggle('play-mode', playScreen);
@@ -602,27 +599,34 @@ function ensureOnlineTicker(){
   }, 1000);
 }
 
-function clearErrorOnType(form){
-  form.querySelectorAll('.room-form__field').forEach(field => {
-    const input = field.querySelector('input');
-    const err = field.querySelector('.room-form__error');
-    if(!input || !err) return;
-    input.addEventListener('input', () => {
-      if(input.value.trim()){ err.style.display = 'none'; input.classList.remove('is-invalid'); }
-    });
-  });
+// ---------------- ONLINE ROOM SCREENS (choose / create / join) ----------------
+function roomHead(){
+  return el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`);
 }
 
-function roomHeader(){
-  const header = el(`<div class="online-room-header"></div>`);
-  header.appendChild(el(`<div class="online-room-logo"><span class="online-room-logo-dot"></span>نخ بده</div>`));
-  return header;
+function roomField(id, label, opts){
+  opts = opts || {};
+  return el(`<div class="room-form__field">
+    <label class="room-form__label" for="${id}">${label}</label>
+    <input class="room-form__input${opts.code ? ' room-form__input--code' : ''}" type="text" id="${id}" maxlength="${opts.max || 20}" autocomplete="off"${opts.code ? ' dir="ltr" autocapitalize="characters" spellcheck="false"' : ''} />
+    <div class="room-form__error" role="alert" style="display:none;"></div>
+  </div>`);
+}
+
+// shows or clears the message under a field; returns true when the field is fine
+function roomFieldCheck(field, ok, msg){
+  const input = field.querySelector('input');
+  const err = field.querySelector('.room-form__error');
+  err.textContent = ok ? '' : msg;
+  err.style.display = ok ? 'none' : 'block';
+  input.classList.toggle('is-invalid', !ok);
+  return ok;
 }
 
 // ---- step 1: choose create or join ----
 function renderOnlineHome(){
-  const wrap = el(`<div class="online-room-page"></div>`);
-  wrap.appendChild(roomHeader());
+  const wrap = el(`<div class="setup-page room-page"></div>`);
+  wrap.appendChild(roomHead());
 
   wrap.appendChild(el(`<div class="room-choose__head">
     <h1 class="room-choose__title">بازی آنلاین با دوستان</h1>
@@ -645,113 +649,86 @@ function renderOnlineHome(){
   joinChoice.addEventListener('click', () => { state.screen = 'online-join'; render(); });
   wrap.appendChild(joinChoice);
 
+  const sr = savedRoom();
+  if(sr){
+    const back = el(`<button class="team-card__add room-rejoin"></button>`);
+    back.textContent = `بازگشت به اتاق ${sr.code}`;
+    back.addEventListener('click', rejoinSavedRoom);
+    wrap.appendChild(back);
+  }
   return wrap;
 }
 
 // ---- step 2a: create a room ----
 function renderOnlineCreate(){
-  const wrap = el(`<div class="online-room-page"></div>`);
-  wrap.appendChild(roomHeader());
+  const wrap = el(`<div class="setup-page room-page"></div>`);
+  wrap.appendChild(roomHead());
 
-  const createForm = el(`<form class="room-card room-card--create" novalidate></form>`);
-  createForm.appendChild(el(`<div class="room-card__ornament room-card__ornament--tr">${PERSIAN_CORNER(46)}</div>`));
-  createForm.appendChild(el(`<h2 class="room-card__title">${PERSIAN_ORNAMENT(16)}<span>ساخت اتاق جدید</span>${PERSIAN_ORNAMENT(16)}</h2>`));
-  const createNameField = el(`<div class="room-form__field">
-    <label class="room-form__label" for="createNameInput">نام خود را وارد کنید</label>
-    <input class="room-form__input" type="text" id="createNameInput" maxlength="20" autocomplete="off" />
-    <div class="room-form__error" style="display:none;"></div>
-  </div>`);
-  createForm.appendChild(createNameField);
-  const createBtn = el(`<button type="submit" class="room-button room-button--create">ساخت اتاق</button>`);
-  createForm.appendChild(createBtn);
-  createForm.addEventListener('submit', (e) => {
+  const form = el(`<form class="team-card room-form-card" novalidate></form>`);
+  form.appendChild(el(`<h2 class="set-card__title">ساخت اتاق جدید</h2>`));
+  form.appendChild(el(`<p class="room-form__lead">اسمت رو بنویس. بعد از ساخت، یه کد ۵ حرفی می‌گیری که دوستات باهاش وارد می‌شن.</p>`));
+  const nameField = roomField('createNameInput', 'نام تو');
+  form.appendChild(nameField);
+  const btn = el(`<button type="submit" class="setup-start"><span>ساخت اتاق</span></button>`);
+  form.appendChild(btn);
+  const nameInput = nameField.querySelector('input');
+  nameInput.value = LS.get('name', '') || '';
+  nameInput.addEventListener('input', () => { if(nameInput.value.trim()) roomFieldCheck(nameField, true); });
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const nameInput = createForm.querySelector('#createNameInput');
-    const nameErr = createNameField.querySelector('.room-form__error');
     const name = nameInput.value.trim();
-    if(!name){
-      nameErr.textContent = 'لطفاً نام خود را وارد کنید';
-      nameErr.style.display = 'block';
-      nameInput.classList.add('is-invalid');
-      nameInput.focus();
-      return;
-    }
-    nameErr.style.display = 'none';
-    nameInput.classList.remove('is-invalid');
-    createBtn.disabled = true;
-    createBtn.textContent = 'ساخت اتاق...';
+    if(!roomFieldCheck(nameField, !!name, 'لطفاً اسمت رو وارد کن')){ nameInput.focus(); return; }
+    btn.disabled = true;
+    btn.firstChild.textContent = 'در حال ساخت…';
     onlineCreateRoom(name).finally(() => {
-      createBtn.disabled = false;
-      createBtn.textContent = 'ساخت اتاق';
+      btn.disabled = false;
+      btn.firstChild.textContent = 'ساخت اتاق';
     });
   });
-  clearErrorOnType(createForm);
-  wrap.appendChild(createForm);
-  wrap.appendChild(el(`<p class="room-foot">بعد از ساخت، یه کد ۵ حرفی می‌گیری که دوستات باهاش وارد می‌شن.</p>`));
+  wrap.appendChild(form);
+  if(!nameInput.value) setTimeout(() => nameInput.focus(), 80);
   return wrap;
 }
 
 // ---- step 2b: join a friend's room ----
 function renderOnlineJoin(){
-  const wrap = el(`<div class="online-room-page"></div>`);
-  wrap.appendChild(roomHeader());
+  const wrap = el(`<div class="setup-page room-page"></div>`);
+  wrap.appendChild(roomHead());
 
-  const joinForm = el(`<form class="room-card room-card--join" novalidate></form>`);
-  joinForm.appendChild(el(`<div class="room-card__ornament room-card__ornament--tr">${PERSIAN_CORNER(46)}</div>`));
-  joinForm.appendChild(el(`<h2 class="room-card__title">${PERSIAN_ORNAMENT(16)}<span>ورود به اتاق دوستت</span>${PERSIAN_ORNAMENT(16)}</h2>`));
-  const joinNameField = el(`<div class="room-form__field">
-    <label class="room-form__label" for="joinNameInput">نام خود را وارد کنید</label>
-    <input class="room-form__input" type="text" id="joinNameInput" maxlength="20" autocomplete="off" />
-    <div class="room-form__error" style="display:none;"></div>
-  </div>`);
-  joinForm.appendChild(joinNameField);
-  const joinCodeField = el(`<div class="room-form__field">
-    <label class="room-form__label" for="joinCodeInput">کد اتاق را وارد کنید</label>
-    <input class="room-form__input room-form__input--code" type="text" id="joinCodeInput" maxlength="5" autocomplete="off" />
-    <div class="room-form__error" style="display:none;"></div>
-  </div>`);
-  joinForm.appendChild(joinCodeField);
-  const joinBtn = el(`<button type="submit" class="room-button room-button--join">ورود به اتاق</button>`);
-  joinForm.appendChild(joinBtn);
-  joinForm.addEventListener('submit', (e) => {
+  const form = el(`<form class="team-card room-form-card" novalidate></form>`);
+  form.appendChild(el(`<h2 class="set-card__title">ورود به اتاق دوستت</h2>`));
+  form.appendChild(el(`<p class="room-form__lead">کد اتاق رو از کسی که اتاق رو ساخته بگیر.</p>`));
+  const codeField = roomField('joinCodeInput', 'کد اتاق', { code: true, max: 5 });
+  const nameField = roomField('joinNameInput', 'نام تو');
+  form.appendChild(codeField);
+  form.appendChild(nameField);
+  const btn = el(`<button type="submit" class="setup-addteam"><span>ورود به اتاق</span></button>`);
+  form.appendChild(btn);
+  const codeInput = codeField.querySelector('input'), nameInput = nameField.querySelector('input');
+  codeInput.value = state.joinCode || '';
+  nameInput.value = LS.get('name', '') || '';
+  codeInput.addEventListener('input', () => {
+    codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if(codeInput.value.length >= 5) roomFieldCheck(codeField, true);
+  });
+  nameInput.addEventListener('input', () => { if(nameInput.value.trim()) roomFieldCheck(nameField, true); });
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const errBox = joinCodeField.querySelector('.room-form__error');
-    const nameErr = joinNameField.querySelector('.room-form__error');
-    const nameInput = joinForm.querySelector('#joinNameInput');
-    const codeInput = joinForm.querySelector('#joinCodeInput');
-    const name = nameInput.value.trim();
-    const code = codeInput.value.trim();
-    // check both fields so the player sees every problem at once
-    let firstBad = null;
-    if(!name){
-      nameErr.textContent = 'لطفاً نام خود را وارد کنید';
-      nameErr.style.display = 'block';
-      nameInput.classList.add('is-invalid');
-      firstBad = firstBad || nameInput;
-    } else {
-      nameErr.style.display = 'none';
-      nameInput.classList.remove('is-invalid');
-    }
-    if(!code){
-      errBox.textContent = 'لطفاً کد اتاق را وارد کنید';
-      errBox.style.display = 'block';
-      codeInput.classList.add('is-invalid');
-      firstBad = firstBad || codeInput;
-    } else {
-      errBox.style.display = 'none';
-      codeInput.classList.remove('is-invalid');
-    }
-    if(firstBad){ firstBad.focus(); return; }
-    joinBtn.disabled = true;
-    joinBtn.textContent = 'در حال ورود...';
-    onlineJoinRoom(code, name).finally(() => {
-      joinBtn.disabled = false;
-      joinBtn.textContent = 'ورود به اتاق';
+    const code = codeInput.value.trim().toUpperCase(), name = nameInput.value.trim();
+    // check both fields so every problem shows at once
+    const codeOk = roomFieldCheck(codeField, code.length === 5, 'کد اتاق پنج حرفیه');
+    const nameOk = roomFieldCheck(nameField, !!name, 'لطفاً اسمت رو وارد کن');
+    if(!codeOk){ codeInput.focus(); return; }
+    if(!nameOk){ nameInput.focus(); return; }
+    btn.disabled = true;
+    btn.firstChild.textContent = 'در حال ورود…';
+    onlineJoinRoom(code, name).then(() => { if(state.screen !== 'online-join') state.joinCode = ''; }).finally(() => {
+      btn.disabled = false;
+      btn.firstChild.textContent = 'ورود به اتاق';
     });
   });
-  clearErrorOnType(joinForm);
-  wrap.appendChild(joinForm);
-  wrap.appendChild(el(`<p class="room-foot">کد اتاق رو از کسی که اتاق رو ساخته بگیر.</p>`));
+  wrap.appendChild(form);
+  setTimeout(() => (codeInput.value ? nameInput : codeInput).focus(), 80);
   return wrap;
 }
 
