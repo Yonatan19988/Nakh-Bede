@@ -1,5 +1,5 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v3';
+const CACHE = 'nakh-bede-v4';
 const CORE = [
   './', './index.html',
   './css/styles.css',
