@@ -1323,7 +1323,7 @@
   .setup-page{
     width:calc(100% - 28px); max-width:460px; margin:0 auto;
     min-height:100vh; min-height:100svh;
-    display:flex; flex-direction:column; gap:10px;
+    display:flex; flex-direction:column; gap:8px;
     padding:10px 0 14px;
     padding-top: calc(10px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -1337,7 +1337,8 @@
     background-attachment: fixed;
   }
 
-  .setup-head{ display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  /* as tall as the fixed back button, so the first card starts below it */
+  .setup-head{ display:flex; align-items:center; justify-content:center; flex:0 0 auto; min-height:44px; }
   .setup-brand{
     font-family:'Lalezar','Vazirmatn',sans-serif; font-size:27px; line-height:1;
     background:linear-gradient(180deg,#FFF0B7,#E0B34E);
@@ -1654,4 +1655,43 @@
   .play-leave{
     flex:0 0 auto; align-self:center; background:none; border:none; color:var(--text-dim);
     font-family:inherit; font-size:12.5px; padding:6px 14px; cursor:pointer; text-decoration:underline;
+  }
+
+  /* ---------------- home: fluid vertical rhythm ----------------
+     The stack used fixed heights, so short phones pushed the buttons under the
+     tab bar while tall ones left a hole above it. The card scene now absorbs
+     the slack (and sizes its cards from its own height); whatever it cannot
+     absorb is split evenly above the logo and below the buttons. */
+  /* keep clear of the raised home button, which rises 32px above the bar */
+  .hm{ padding-bottom:calc(122px + env(safe-area-inset-bottom, 0px)); }
+  .hm-logo{ margin-top:auto; }
+  .hm-scene{
+    height:auto; flex:1 1 0; min-height:150px; max-height:262px; margin-top:6px;
+    container-type:size; --cw:112px; --cw:clamp(54px, 50cqh, 128px);
+  }
+  .hm-card{ width:var(--cw); }
+  .hm-card--back{ margin-left:calc(var(--cw) * -.875); }
+  .hm-card--act { margin-left:calc(var(--cw) * -.125); }
+  .hm-card--word{ margin-left:calc(var(--cw) * -.518); }
+  .hm-tiles{ margin-bottom:auto; }
+
+  @media (max-height:700px){
+    .hm{ padding-top:calc(10px + env(safe-area-inset-top, 0px)); }
+    .hm-logo{ margin-top:4px; }
+    .hm-logo__img{ width:50%; }
+    .hm-ribbon{ margin-top:4px; padding:5px 26px; }
+    .hm-tag{ margin-top:6px; }
+    .hm-play{ height:62px; margin-top:8px; border-radius:20px; }
+    .hm-tiles{ margin-top:8px; }
+    .hm-tile{ height:52px; border-radius:17px; }
+    .hm-tile .hm-out{ font-size:19px; }
+    .hm-play__txt{ font-size:26px; }
+  }
+  @media (max-height:600px){
+    .hm-logo__img{ width:44%; }
+    .hm-ribbon span{ font-size:16px; }
+    .hm-scene{ min-height:116px; }
+    .hm-tag{ display:none; }
+    .hm-play{ height:52px; }
+    .hm-tile{ height:46px; }
   }
