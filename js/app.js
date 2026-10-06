@@ -1,6 +1,15 @@
 const TEAM_COLORS = ['#ff6b5e','#33c9b5','#ffcc4d','#8b7dff','#ff8fc4','#5eb3ff','#7fe08a','#ff9c5e','#c98bff','#5ee0c9'];
 const TEAM_ICONS = ['🦁','🐯','🐻','🦊','🐼','🐨','🐸','🦉','🐢','🦅'];
 
+// Small persistent store. Every access is guarded: storage can be blocked
+// (private window, site data cleared) and the game must still run without it.
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem('nb_' + k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('nb_' + k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem('nb_' + k); }catch(e){} },
+};
+const prefs = { sound: LS.get('sound', true) !== false, haptic: LS.get('haptic', true) !== false };
+
 function PERSIAN_ORNAMENT(size){
   size = size || 20;
   return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
@@ -132,6 +141,7 @@ function onlineCreateRoom(playerName){
     teams: {},
   };
   return window.FB.set(window.FB.ref(window.FB.db, 'rooms/'+code), roomData).then(() => {
+    rememberRoom();
     armPresence();
     subscribeRoom();
     state.screen = 'online-lobby';
@@ -139,7 +149,7 @@ function onlineCreateRoom(playerName){
   }).catch(err => { alert(fbErrorText(err)); });
 }
 
-function onlineJoinRoom(code, playerName){
+function onlineJoinRoom(code, playerName, restoreTeamId){
   if(!fbReadyOrWarn()) return Promise.resolve();
   code = code.trim().toUpperCase();
   if(!code){ alert('کد اتاق رو وارد کن'); return Promise.resolve(); }
@@ -147,12 +157,13 @@ function onlineJoinRoom(code, playerName){
   return window.FB.get(roomRef).then(snap => {
     if(!snap.exists()){ alert('اتاقی با این کد پیدا نشد'); return; }
     const playerId = window.FB.uid;
-    online.lastTeamId = null;
+    online.lastTeamId = restoreTeamId || null;
     online.roomCode = code;
     online.playerId = playerId;
     online.playerName = playerName;
     online.isHost = false;
-    return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: null}).then(() => {
+    return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: restoreTeamId || null}).then(() => {
+      rememberRoom();
       armPresence();
       subscribeRoom();
       state.screen = 'online-lobby';
@@ -167,7 +178,8 @@ function subscribeRoom(){
     online.room = snap.val();
     if(!online.room){ return; }
     const me = online.room.players && online.room.players[online.playerId];
-    if(me && me.teamId) online.lastTeamId = me.teamId;
+    if(me && me.teamId && me.teamId !== online.lastTeamId){ online.lastTeamId = me.teamId; rememberRoom(); }
+    else if(me && me.teamId) online.lastTeamId = me.teamId;
     if(online.room.phase === 'playing' && state.screen === 'online-lobby'){
       state.screen = 'online-board';
     }
@@ -175,7 +187,28 @@ function subscribeRoom(){
   });
 }
 
+// Lets a player who closed the app by accident get back into the same room.
+function rememberRoom(){
+  if(!online.roomCode) return;
+  LS.set('room', { code: online.roomCode, name: online.playerName, teamId: online.lastTeamId || null, at: Date.now() });
+  if(online.playerName) LS.set('name', online.playerName);
+}
+function savedRoom(){
+  const r = LS.get('room', null);
+  if(!r || !r.code || Date.now() - (r.at || 0) > 6 * 3600 * 1000) return null;
+  return r;
+}
+function rejoinSavedRoom(){
+  const r = savedRoom();
+  if(!r){ LS.del('room'); render(); return; }
+  onlineJoinRoom(r.code, r.name, r.teamId).then(() => {
+    // the room is gone: stop offering it
+    if(state.screen !== 'online-lobby' && state.screen !== 'online-board'){ LS.del('room'); render(); }
+  });
+}
+
 function onlineLeaveRoom(){
+  LS.del('room');
   if(online.roomCode && online.playerId){
     window.FB.remove(window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`));
   }
@@ -236,6 +269,7 @@ let state = {
 
 // ---------------- SOUND EFFECTS (Web Audio, no external files) ----------------
 function playTone(freq, duration, type, vol){
+  if(!prefs.sound) return;
   try{
     const ctx = window.__audioCtx || (window.__audioCtx = new (window.AudioContext||window.webkitAudioContext)());
     const osc = ctx.createOscillator();
@@ -249,6 +283,7 @@ function playTone(freq, duration, type, vol){
     osc.stop(ctx.currentTime + duration);
   }catch(e){}
 }
+function sfxTap(){ haptic(6); playTone(640,0.04,'sine',0.045); }
 function sfxCorrect(){ haptic(18); playTone(880,0.14,'sine',0.18); setTimeout(()=>playTone(1320,0.16,'sine',0.15),90); }
 function sfxWrong(){ haptic([28,40,28]); playTone(180,0.25,'sawtooth',0.14); }
 function sfxTick(){ playTone(1000,0.05,'square',0.05); }
@@ -323,6 +358,38 @@ function playScreenEntrance(app){
 }
 
 // ---------------- HOME SCREEN ----------------
+let deferredInstall = null;
+function isStandalone(){
+  try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch(e){ return false; }
+}
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  if(state.screen === 'home') render();
+});
+window.addEventListener('appinstalled', () => { deferredInstall = null; LS.set('installDismissed', true); if(state.screen === 'home') render(); });
+
+// One banner at a time on the home screen: first the rules, then the install hint.
+function homeBanner(){
+  if(!LS.get('seenTutorial', false)){
+    return { kind:'learn', icon:'🎓', text:'اولین بازی‌ته؟ قانون‌ها رو تو یک دقیقه یاد بگیر.', cta:'آموزش',
+      go(){ state.screen = 'tutorial'; render(); }, close(){ LS.set('seenTutorial', true); } };
+  }
+  if(!isStandalone() && !LS.get('installDismissed', false)){
+    if(deferredInstall){
+      return { kind:'install', icon:'📲', text:'بازی رو روی گوشی نصب کن تا مثل یک اپ باز بشه.', cta:'نصب',
+        go(){ const d = deferredInstall; deferredInstall = null; d.prompt(); d.userChoice.finally(() => { LS.set('installDismissed', true); render(); }); },
+        close(){ LS.set('installDismissed', true); } };
+    }
+    if(isIOS()){
+      return { kind:'ios', icon:'📲', text:'برای نصب: در Safari دکمه‌ی اشتراک‌گذاری را بزن و «Add to Home Screen» را انتخاب کن.', cta:'',
+        go(){}, close(){ LS.set('installDismissed', true); } };
+    }
+  }
+  return null;
+}
+
 const SHOW_FUTURE_FEATURES = false;   // coins — not asked for yet
 const SHOW_BOTTOM_NAV = true;         // the five tabs along the bottom
 
@@ -345,6 +412,21 @@ function renderHome(){
   tools.appendChild(gear);
   top.appendChild(tools);
   wrap.appendChild(top);
+
+  const banner = homeBanner();
+  if(banner){
+    wrap.classList.add('has-banner');
+    const b = el(`<div class="hm-banner hm-banner--${banner.kind}" role="status">
+      <span class="hm-banner__ico" aria-hidden="true">${banner.icon}</span>
+      <span class="hm-banner__txt">${banner.text}</span>
+      ${banner.cta ? `<button class="hm-banner__cta">${banner.cta}</button>` : ''}
+      <button class="hm-banner__x" aria-label="بستن"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>
+    </div>`);
+    const cta = b.querySelector('.hm-banner__cta');
+    if(cta) cta.addEventListener('click', banner.go);
+    b.querySelector('.hm-banner__x').addEventListener('click', () => { banner.close(); render(); });
+    wrap.appendChild(b);
+  }
 
   wrap.appendChild(el(`<div class="hm-logo">
     <span class="hm-rays"></span><span class="hm-halo"></span>
@@ -371,18 +453,34 @@ function renderHome(){
   const play = el(`<button class="hm-btn hm-btn--gold hm-play">
     <span class="hm-btn__gloss"></span>
     <span class="hm-play__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span>
-    <span class="hm-play__txt">ساخت بازی</span></button>`);
-  play.addEventListener('click', () => { state.homeSheet = true; render(); });
+    <span class="hm-play__txt">${hasSavedGame() ? 'ادامه‌ی بازی' : 'ساخت بازی'}</span></button>`);
+  play.addEventListener('click', () => { if(hasSavedGame()) resumeLocalGame(); else { state.homeSheet = 'new'; render(); } });
   wrap.appendChild(play);
+
+  // quick ways back in: a fresh game next to a saved one, and the room you left
+  const quick = [];
+  if(hasSavedGame()) quick.push(['بازی جدید', () => { state.homeSheet = 'new'; render(); }]);
+  const sr = savedRoom();
+  if(sr) quick.push([`بازگشت به اتاق ${sr.code}`, rejoinSavedRoom]);
+  if(quick.length){
+    const row = el(`<div class="hm-quick"></div>`);
+    quick.forEach(([label, fn]) => {
+      const chip = el(`<button class="hm-chip"></button>`);
+      chip.textContent = label;
+      chip.addEventListener('click', fn);
+      row.appendChild(chip);
+    });
+    wrap.appendChild(row);
+  }
 
   const tiles = el(`<div class="hm-tiles"></div>`);
   const joinTile = el(`<button class="hm-btn hm-btn--teal hm-tile"><span class="hm-btn__gloss"></span>
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="3.6"/><path d="M11.6 12H21"/><path d="M17.5 12v3.2"/><path d="M20.4 12v2.4"/></svg>
     <span class="hm-out hm-out--teal" data-text="ورود با کد">ورود با کد</span></button>`);
-  joinTile.addEventListener('click', () => { state.screen = 'online-join'; render(); });
+  joinTile.addEventListener('click', () => { state.homeSheet = 'join'; render(); });
   const learnTile = el(`<button class="hm-btn hm-btn--red hm-tile"><span class="hm-btn__gloss"></span>
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 12 5l9 4.2-9 4.2Z"/><path d="M7 11.4v4.1c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.1"/></svg>
-    <span class="hm-out hm-out--red" data-text="آموزش">آموزش</span></button>`);
+    <span class="hm-out hm-out--red" data-text="آموزش">آموزش</span>${LS.get('seenTutorial', false) ? '' : '<span class="hm-tile__dot" aria-label="جدید"></span>'}</button>`);
   learnTile.addEventListener('click', () => { state.screen = 'tutorial'; render(); });
   tiles.appendChild(joinTile);
   tiles.appendChild(learnTile);
@@ -408,21 +506,54 @@ function renderHome(){
   }
 
   if(state.homeSheet){
-    const back = el(`<div class="hm-sheet-back"></div>`);
+    const isJoin = state.homeSheet === 'join';
+    const back = el(`<div class="hm-sheet-back" role="dialog" aria-modal="true" aria-label="${isJoin ? 'ورود به اتاق' : 'بازی جدید'}"></div>`);
     back.addEventListener('click', (e) => { if(e.target === back){ state.homeSheet = false; render(); } });
-    const sheet = el(`<div class="hm-sheet"><span class="hm-sheet__grip"></span><h2>بازی جدید</h2></div>`);
-    const online = el(`<button class="hm-btn hm-btn--teal hm-sheet__opt"><span class="hm-btn__gloss"></span>
-      <span class="hm-sheet__t">آنلاین با دوستان</span></button>`);
-    online.addEventListener('click', () => { state.homeSheet = false; state.screen = 'online-create'; render(); });
-    const local = el(`<button class="hm-btn hm-btn--gold hm-sheet__opt"><span class="hm-btn__gloss"></span>
-      <span class="hm-sheet__t">روی همین گوشی</span></button>`);
-    local.addEventListener('click', () => { state.homeSheet = false; state.screen = 'setup'; render(); });
-    sheet.appendChild(online); sheet.appendChild(local);
+    const sheet = el(`<div class="hm-sheet"><span class="hm-sheet__grip"></span><h2>${isJoin ? 'ورود به اتاق' : 'بازی جدید'}</h2></div>`);
+    if(isJoin){
+      const form = el(`<form class="hm-join" novalidate>
+        <label class="hm-join__lbl" for="hmCode">کد اتاق</label>
+        <input class="hm-join__input hm-join__input--code" id="hmCode" type="text" dir="ltr" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+        <label class="hm-join__lbl" for="hmName">نام تو</label>
+        <input class="hm-join__input" id="hmName" type="text" maxlength="20" autocomplete="off" />
+        <div class="hm-join__err" role="alert" hidden></div>
+        <button type="submit" class="hm-btn hm-btn--teal hm-sheet__opt"><span class="hm-btn__gloss"></span><span class="hm-sheet__t">ورود به اتاق</span></button>
+      </form>`);
+      const codeIn = form.querySelector('#hmCode'), nameIn = form.querySelector('#hmName'), err = form.querySelector('.hm-join__err');
+      codeIn.value = state.joinCode || '';
+      nameIn.value = LS.get('name', '') || '';
+      codeIn.addEventListener('input', () => { codeIn.value = codeIn.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); err.hidden = true; });
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const code = codeIn.value.trim().toUpperCase(), name = nameIn.value.trim();
+        if(!name || code.length < 5){
+          err.textContent = !name ? 'لطفاً نام خودت رو وارد کن' : 'کد اتاق پنج حرفیه';
+          err.hidden = false;
+          (!name ? nameIn : codeIn).focus();
+          return;
+        }
+        const btn = form.querySelector('button[type=submit]');
+        btn.disabled = true;
+        onlineJoinRoom(code, name).then(() => {
+          if(state.screen === 'online-lobby' || state.screen === 'online-board'){ state.homeSheet = false; state.joinCode = ''; }
+        }).finally(() => { btn.disabled = false; });
+      });
+      sheet.appendChild(form);
+      setTimeout(() => (codeIn.value ? nameIn : codeIn).focus(), 60);
+    } else {
+      const online = el(`<button class="hm-btn hm-btn--teal hm-sheet__opt"><span class="hm-btn__gloss"></span>
+        <span class="hm-sheet__t">آنلاین با دوستان</span></button>`);
+      online.addEventListener('click', () => { state.homeSheet = false; state.screen = 'online-create'; render(); });
+      const local = el(`<button class="hm-btn hm-btn--gold hm-sheet__opt"><span class="hm-btn__gloss"></span>
+        <span class="hm-sheet__t">روی همین گوشی</span></button>`);
+      local.addEventListener('click', () => { state.homeSheet = false; state.screen = 'setup'; render(); });
+      sheet.appendChild(online); sheet.appendChild(local);
+    }
     back.appendChild(sheet);
     wrap.appendChild(back);
   }
 
-  if(state.toast) wrap.appendChild(el(`<div class="home-toast">${state.toast}</div>`));
+  if(state.toast) wrap.appendChild(el(`<div class="home-toast" role="status" aria-live="polite">${state.toast}</div>`));
   return wrap;
 }
 
@@ -647,7 +778,22 @@ function renderOnlineLobby(){
       navigator.clipboard.writeText(online.roomCode).then(done).catch(() => {});
     }
   });
-  codeCard.insertBefore(copyBtn, codeCard.querySelector('.lobby-code__hint'));
+  const shareBtn = el(`<button class="lobby-code__copy lobby-code__copy--share">دعوت دوستان</button>`);
+  shareBtn.addEventListener('click', () => {
+    const link = location.origin + location.pathname + '?room=' + online.roomCode;
+    const text = `بیا توی اتاق «نخ بده»! کد اتاق: ${online.roomCode}`;
+    if(navigator.share){
+      navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {});
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text + '\n' + link).then(() => {
+        shareBtn.textContent = 'لینک کپی شد ✓'; setTimeout(() => { shareBtn.textContent = 'دعوت دوستان'; }, 1500);
+      }).catch(() => {});
+    }
+  });
+  const codeActions = el(`<div class="lobby-code__actions"></div>`);
+  codeActions.appendChild(copyBtn);
+  codeActions.appendChild(shareBtn);
+  codeCard.insertBefore(codeActions, codeCard.querySelector('.lobby-code__hint'));
   wrap.appendChild(codeCard);
 
   // ---- teams ----
@@ -1118,6 +1264,21 @@ function renderSettings(){
   durCard.appendChild(el(`<small class="set-hint">مقدار رسمی بازی ${faNum(OFFICIAL)} ثانیه‌ست. این تنظیم فقط روی همین گوشی اثر داره.</small>`));
   wrap.appendChild(durCard);
 
+  // ---- sound & vibration ----
+  const fbCard = el(`<div class="team-card set-card"></div>`);
+  fbCard.appendChild(el(`<h2 class="set-card__title">صدا و لرزش</h2>`));
+  [['sound', 'صدای بازی'], ['haptic', 'لرزش']].forEach(([key, label]) => {
+    const row = el(`<button class="set-switch" role="switch" aria-checked="${prefs[key]}"><span class="set-switch__lbl">${label}</span><span class="set-switch__knob" aria-hidden="true"></span></button>`);
+    row.addEventListener('click', () => {
+      prefs[key] = !prefs[key];
+      LS.set(key, prefs[key]);
+      if(prefs[key]) sfxTap();
+      render();
+    });
+    fbCard.appendChild(row);
+  });
+  wrap.appendChild(fbCard);
+
   // ---- board facts ----
   const infoCard = el(`<div class="team-card set-card"></div>`);
   infoCard.appendChild(el(`<h2 class="set-card__title">اطلاعات نقشه</h2>`));
@@ -1138,6 +1299,7 @@ function renderSettings(){
 
 // ---------------- TUTORIAL SCREEN ----------------
 function renderTutorial(){
+  LS.set('seenTutorial', true);
   const wrap = el(`<div class="tut"></div>`);
   const dur = faNum(state.roundDuration);
   const last = faNum(state.trackLength);
@@ -1213,6 +1375,7 @@ function attachBackButton(app){
   app.appendChild(btn);
 }
 function handleAppBack(){
+  if(state.homeSheet){ state.homeSheet = false; render(); return true; }
   // a mid-round decision must not be skipped by a stray back press
   if(state.showAbout){ state.showAbout = false; render(); return true; }
   if(state.foulPending || state.actionPickActive || state.roundEnded || state.animating) return true;
@@ -1384,11 +1547,50 @@ function startGame(){
   state.hasActiveGame = true;
   drawCard();
   state.viewerKey = describerKey();
+  saveLocalGame();
   state.screen = 'board';
   render();
 }
 
 function currentTeam(){ return state.teams[state.currentTeamIdx]; }
+
+// A local game is saved at the start of every turn, so closing the app
+// between rounds loses nothing.
+function saveLocalGame(){
+  if(!state.hasActiveGame || state.winner){ LS.del('game'); return; }
+  LS.set('game', { v:1, teams: JSON.parse(JSON.stringify(state.teams)), currentTeamIdx: state.currentTeamIdx, roundDuration: state.roundDuration, at: Date.now() });
+}
+function storedLocalGame(){
+  const g = LS.get('game', null);
+  const ok = g && Array.isArray(g.teams) && g.teams.length >= 2 &&
+    g.teams.every(t => t && typeof t.name === 'string' && Array.isArray(t.members) && t.members.length);
+  return ok ? g : null;
+}
+function hasSavedGame(){
+  return (state.hasActiveGame && !state.winner && state.teams.length >= 2) || !!storedLocalGame();
+}
+function resumeLocalGame(){
+  if(!(state.hasActiveGame && !state.winner)){
+    const g = storedLocalGame();
+    if(!g){ LS.del('game'); toastHome('بازی ذخیره‌شده پیدا نشد'); return; }
+    state.teams = g.teams;
+    state.currentTeamIdx = Math.min(Math.max(g.currentTeamIdx || 0, 0), g.teams.length - 1);
+    if(g.roundDuration >= 10 && g.roundDuration <= 180) state.roundDuration = g.roundDuration;
+    state.hasActiveGame = true;
+    state.winner = null;
+  }
+  stopTimerInterval();
+  // an unfinished round is replayed from its start
+  state.roundEnded = false; state.timerRunning = false; state.timeLeft = state.roundDuration;
+  state.correctCount = 0; state.skipCount = 0; state.foulCount = 0; state.foulPending = false;
+  state.animating = false; state.actionPickActive = false; state.actionChosenCard = null;
+  state.actionRevealedIdx = null;
+  resetWheel();
+  drawCard();
+  state.viewerKey = describerKey();
+  state.screen = 'board';
+  render();
+}
 function describerKey(){
   const t = currentTeam();
   return state.currentTeamIdx + ':' + (t.describerIdx % t.members.length);
@@ -1801,6 +2003,7 @@ function renderTimer(){
 }
 
 function haptic(pattern){
+  if(!prefs.haptic) return;
   try { if(navigator.vibrate) navigator.vibrate(pattern); } catch(e){}
 }
 
@@ -2512,10 +2715,12 @@ function nextTurn(){
   state.timeLeft = state.roundDuration;
   state.timerRunning = false;
   state.viewerKey = describerKey();
+  saveLocalGame();
 }
 
 function renderWinner(){
   const w = state.winner;
+  LS.del('game');
   const wrap = el(`<div></div>`);
   const confetti = el(`<div style="position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:50;"></div>`);
   const confColors = [TEAM_COLORS[0],TEAM_COLORS[1],TEAM_COLORS[2],TEAM_COLORS[3],'var(--gold)','var(--teal)'];
@@ -2544,6 +2749,26 @@ function renderWinner(){
 
 // after a round ends without win/obstacle, offer explicit "next turn" via re-drawing controls
 const origRenderBoard = renderBoard;
+
+// invite links look like  /?room=ABCDE  and open the join sheet with the code filled in
+try {
+  const q = new URLSearchParams(location.search).get('room');
+  if(q){
+    state.joinCode = q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    state.homeSheet = 'join';
+    history.replaceState(null, '', location.pathname);
+  }
+} catch(e){}
+
+// a soft tick on every button, except the ones that play their own game sound
+document.addEventListener('pointerdown', (e) => {
+  const b = e.target.closest && e.target.closest('button');
+  if(!b || b.disabled || b.closest('.play-actions, .foul-row, .wheel-stage')) return;
+  sfxTap();
+}, { passive: true });
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && state.homeSheet){ state.homeSheet = false; render(); }
+});
 
 render();
 installBackHandler();
