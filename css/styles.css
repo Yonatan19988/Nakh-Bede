@@ -1645,3 +1645,13 @@
   .tut-list--six li{ justify-content:center; }
   .tut-list--cards li{ flex-direction:column; gap:2px; }
   .tut-start{ width:100%; margin:4px 0 16px; padding:14px; font-size:15px; }
+
+  .play-note{
+    flex:0 0 auto; text-align:center; font-size:13.5px; line-height:1.8; color:var(--text-dim);
+    background:rgba(6,48,66,.7); border:1.5px solid rgba(217,173,76,.35);
+    border-radius:16px; padding:14px 12px;
+  }
+  .play-leave{
+    flex:0 0 auto; align-self:center; background:none; border:none; color:var(--text-dim);
+    font-family:inherit; font-size:12.5px; padding:6px 14px; cursor:pointer; text-decoration:underline;
+  }

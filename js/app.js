@@ -278,8 +278,9 @@ function render(){
   const roomScreen = ['online-home','online-create','online-join'].includes(state.screen);
   document.body.classList.toggle('room-mode', roomScreen);
   document.documentElement.classList.toggle('room-mode', roomScreen);
-  document.body.classList.toggle('play-mode', state.screen === 'board');
-  document.documentElement.classList.toggle('play-mode', state.screen === 'board');
+  const playScreen = state.screen === 'board' || state.screen === 'online-board';
+  document.body.classList.toggle('play-mode', playScreen);
+  document.documentElement.classList.toggle('play-mode', playScreen);
   app.innerHTML = '';
   app.appendChild(renderBrand());
   if(state.screen === 'home'){
@@ -465,7 +466,8 @@ function ensureOnlineTicker(){
     // round summary — re-rendering there only restarts their animations
     if(state.actionPickActive || state.roundEnded || state.animating) return;
     if(!state.timerRunning) return;
-    render();
+    syncStateFromOnlineRoom();
+    if(!tickTimerOnly()) render();
   }, 1000);
 }
 
@@ -931,7 +933,7 @@ function onlineContinueNextTurn(effectUpdates){
 function renderOnlineBoard(){
   ensureOnlineTicker();
   syncStateFromOnlineRoom();
-  const wrap = el(`<div></div>`);
+  const wrap = el(`<div class="play-screen"></div>`);
   const room = online.room;
   if(!room || !state.teams.length){
     wrap.appendChild(el(`<div class="card">در حال بارگذاری بازی…</div>`));
@@ -952,7 +954,20 @@ function renderOnlineBoard(){
   const describerPid = t.memberIds && t.memberIds.length ? t.memberIds[(t.describerIdx||0) % t.memberIds.length] : null;
   const isDescriber = isTurnTeam && describerPid === online.playerId;
 
-  wrap.appendChild(el(`<div style="margin-bottom:10px;"><span class="pill pill-turn">نوبت: ${t.name} — عدد خانه: ${currentTargetNumber(t)}</span></div>`));
+  let roleLabel = 'ناظر (تیم دیگر)';
+  if(isDescriber) roleLabel = 'توضیح‌دهنده';
+  else if(isTurnTeam) roleLabel = 'هم‌تیمی توضیح‌دهنده';
+
+  const header = el(`<div class="play-head"></div>`);
+  header.appendChild(el(`<div class="play-turn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Zm7.5.5c-.7 0-1.4.1-2 .3 1.2 1 2 2.3 2 3.7V19H22v-1.8c0-2-2.4-3.7-5.5-3.7Z"/></svg><span>نوبت ${t.name}</span></div>`));
+  header.appendChild(el(`<div class="play-brand">نخ بده<span class="play-brand-dot"></span></div>`));
+  wrap.appendChild(header);
+
+  const status = el(`<div class="play-status"></div>`);
+  status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(currentTargetNumber(t))}</span></div>`));
+  status.appendChild(el(`<span class="play-status__sep"></span>`));
+  status.appendChild(el(`<div class="play-status__item play-status__role">${roleLabel}</div>`));
+  wrap.appendChild(status);
 
   if(state.roundEnded){
     const pendingAction = state.actionPickActive;
@@ -970,7 +985,7 @@ function renderOnlineBoard(){
     wrap.appendChild(el(`<div class="action-banner" style="border-color:var(--teal); background:rgba(51,201,181,.12); text-align:right; margin-bottom:10px;">
       <div class="cardtag" style="color:var(--teal);">خلاصه‌ی این راند — ${s.teamName || ''}</div>
       <p style="margin:0 0 4px;">✓ درست: ${faNum(s.correct ?? 0)} &nbsp; | &nbsp; ✕ رد شده: ${faNum(s.skip ?? 0)}</p>
-      <p style="margin:0;">تغییر امتیاز: ${(s.scoreChange ?? 0) >= 0 ? '+' : '−'}${faNum(Math.abs(s.scoreChange ?? 0))}</p>
+      <p style="margin:0;">تغییر امتیاز: ${(s.scoreChange ?? 0) >= 0 ? '+' : '−'}${faNum(Math.abs(s.scoreChange ?? 0))} — حرکت: ${(s.moved ?? 0) >= 0 ? '+' : '−'}${faNum(Math.abs(s.moved ?? 0))} خانه</p>
     </div>`));
     const backdrop = el(`<div class="card-modal-backdrop"></div>`);
     const modal = el(`<div class="card-modal"></div>`);
@@ -1007,40 +1022,34 @@ function renderOnlineBoard(){
   const cardViewEl = renderCardView(isDescriber, isTurnTeam);
   if(state.flashFeedback === 'correct') cardViewEl.classList.add('flash-correct');
   if(state.flashFeedback === 'wrong') cardViewEl.classList.add('flash-wrong');
-  wrap.appendChild(renderTimer());
+  wrap.appendChild(renderPlayTimer());
   wrap.appendChild(cardViewEl);
+  wrap.appendChild(buildFoulRow(onlineFoul, onlineResolveFoul));
 
-  const controls = el(`<div class="card"></div>`);
   if(isDescriber){
-    controls.appendChild(el(`<h2>کنترل دور</h2>`));
-    if(state.timerRunning){
-      controls.appendChild(el(`<small class="hint" style="margin-bottom:8px;">این دور: ${state.correctCount} درست، ${state.skipCount} رد شده${state.foulCount ? `، ${state.foulCount} خطا` : ''}</small>`));
-    }
-    const row = el(`<div class="row" style="margin-bottom:8px;"></div>`);
-    const correctBtn = el(`<button class="btn btn-teal">✓ درست گفت</button>`);
+    const blocked = t.mods && t.mods.blockSkip;
+    const actions = el(`<div class="play-actions"></div>`);
+    const skipBtn = el(`<button class="play-act play-act--skip"><span class="play-act__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></span><span>رد شد${blocked ? ' (قفل)' : ''}</span></button>`);
+    skipBtn.disabled = !state.timerRunning || blocked;
+    skipBtn.addEventListener('click', onlineSkip);
+    const startBtn = el(`<button class="play-act play-act--start"><span class="play-act__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span><span>شروع تایمر</span></button>`);
+    startBtn.disabled = state.timerRunning;
+    startBtn.addEventListener('click', onlineStartTimer);
+    const correctBtn = el(`<button class="play-act play-act--ok"><span class="play-act__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg></span><span>درست گفت</span></button>`);
     correctBtn.disabled = !state.timerRunning;
     correctBtn.addEventListener('click', onlineCorrect);
-    const blocked1 = currentTeam().mods && currentTeam().mods.blockSkip;
-    const skipBtn = el(`<button class="btn btn-danger">✕ رد شد${blocked1?' (قفل شده)':''}</button>`);
-    skipBtn.disabled = !state.timerRunning || blocked1;
-    skipBtn.addEventListener('click', onlineSkip);
-    row.appendChild(correctBtn); row.appendChild(skipBtn);
-    controls.appendChild(row);
-    if(!state.timerRunning){
-      const startBtn = el(`<button class="btn btn-primary">شروع تایمر ${state.roundDuration} ثانیه</button>`);
-      startBtn.addEventListener('click', onlineStartTimer);
-      controls.appendChild(startBtn);
-    }
+    actions.appendChild(skipBtn);
+    actions.appendChild(startBtn);
+    actions.appendChild(correctBtn);
+    wrap.appendChild(actions);
   } else if(isTurnTeam){
-    controls.appendChild(el(`<div class="hidden-view"><div class="big">🙈</div><p>نوبت تیمته؛ فقط توضیح‌دهنده می‌تونه دکمه‌ها رو بزنه.</p></div>`));
+    wrap.appendChild(el(`<div class="play-note">🙈 نوبت تیمته؛ فقط توضیح‌دهنده دکمه‌ها رو می‌زنه.</div>`));
   } else {
-    controls.appendChild(el(`<div style="text-align:center; color:var(--text-dim); font-size:13px; padding:10px;">منتظر بمون، نوبت تیم «${t.name}»ه.</div>`));
+    wrap.appendChild(el(`<div class="play-note">منتظر بمون، نوبت تیم «${t.name}»ه.</div>`));
   }
-  wrap.appendChild(controls);
-  wrap.appendChild(buildFoulRow(onlineFoul, onlineResolveFoul));
-  wrap.appendChild(renderScoreboard());
 
-  const leaveBtn = el(`<button class="btn btn-ghost" style="margin-top:6px;">خروج از اتاق</button>`);
+  wrap.appendChild(buildPlayScore());
+  const leaveBtn = el(`<button class="play-leave">خروج از اتاق</button>`);
   leaveBtn.addEventListener('click', onlineLeaveRoom);
   wrap.appendChild(leaveBtn);
   return wrap;
@@ -1220,7 +1229,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -1521,7 +1530,12 @@ function renderBoard(){
   wrap.appendChild(buildFoulRow(onFoul, resolveFoul));
   wrap.appendChild(actions);
 
-  // ---- slim scoreboard ----
+  wrap.appendChild(buildPlayScore());
+
+  return wrap;
+}
+
+function buildPlayScore(){
   const sb = el(`<div class="play-score"></div>`);
   state.teams.forEach((t, i) => {
     if(i > 0) sb.appendChild(el(`<span class="play-score__sep"></span>`));
@@ -1530,9 +1544,7 @@ function renderBoard(){
       <div class="play-score__vals">امتیاز: ${faNum(t.score)} | خانه ${faNum(t.position+1)}</div>
     </div>`));
   });
-  wrap.appendChild(sb);
-
-  return wrap;
+  return sb;
 }
 
 function renderPlayTimer(){
