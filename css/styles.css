@@ -1111,28 +1111,10 @@
     box-shadow:0 12px 28px rgba(0,0,0,.4); overflow:hidden;
   }
   .play-card--spec{ opacity:.95; }
-  .play-card__badge{
-    position:absolute; top:-2px; left:50%; transform:translate(-50%,-0%);
-    min-width:36px; height:36px; padding:0 9px; border-radius:999px;
-    display:flex; align-items:center; justify-content:center;
-    color:#fff; font-size:16px; font-weight:800;
-    border:2.5px solid #F8EFD6; box-shadow:0 2px 6px rgba(0,0,0,.3); z-index:2;
-  }
-  .play-card__badge.n1{ background:#1D5AA8; } .play-card__badge.n2{ background:#23B3A6; }
-  .play-card__badge.n3{ background:#2FA14B; } .play-card__badge.n4{ background:#A8931B; }
-  .play-card__badge.n5{ background:#C0521F; } .play-card__badge.n6{ background:#A81F2C; }
   .play-card__word{
-    color:#123043; font-weight:800; text-align:center; padding:0 42px;
+    color:#123043; font-weight:800; text-align:center; padding:0 22px;
     font-size:56px; font-size:clamp(38px,12vw,68px); line-height:1.2; word-break:break-word;
   }
-  .play-card__arrow{
-    position:absolute; top:50%; transform:translateY(-50%);
-    width:38px; height:38px; border:none; background:none; cursor:pointer;
-    color:#8FA9B6; display:flex; align-items:center; justify-content:center;
-  }
-  .play-card__arrow:active{ color:#123043; }
-  .play-card__arrow--r{ right:6px; }
-  .play-card__arrow--l{ left:6px; }
   .play-card__corner{
     position:absolute; width:46px; height:46px; pointer-events:none; opacity:.30;
     background:
@@ -1145,12 +1127,6 @@
   .play-card__corner--tl{ top:8px; left:8px; transform:scaleX(-1); }
   .play-card__corner--br{ bottom:8px; right:8px; transform:scaleY(-1); }
   .play-card__corner--bl{ bottom:8px; left:8px; transform:scale(-1,-1); }
-  .play-card__hint{
-    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
-    background:rgba(18,48,67,.9); color:#F3D37A; border:1px solid #D4AA50;
-    border-radius:999px; padding:5px 12px; font-family:inherit; font-size:11.5px;
-    font-weight:600; white-space:nowrap; cursor:pointer;
-  }
   .play-card--hidden{ background:linear-gradient(180deg,#07384D,#042B3D); border-color:rgba(217,173,76,.45); }
   .play-card__hidden{ display:flex; flex-direction:column; align-items:center; gap:10px; font-size:42px; color:#CFE3E0; }
   .play-card__hidden span{ font-size:14.5px; font-weight:600; }
@@ -1939,3 +1915,5 @@
   .room-form-card .room-form__input--code{ text-align:center; font-size:26px; font-weight:800; letter-spacing:8px; padding-left:8px; }
   .room-form-card .room-form__error{ margin:0 2px; }
   .room-form-card .setup-start, .room-form-card .setup-addteam{ margin-top:4px; }
+
+  .deck-card__count{ display:block; margin-top:6px; font-size:12px; line-height:1.6; color:var(--text-dim); }
