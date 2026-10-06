@@ -398,7 +398,10 @@
   }
 
   /* keep every other screen element above the map layer */
-  .play-screen > *:not(.mapcam){ position:relative; z-index:2; }
+  /* :where() keeps this at zero specificity so it only sets the default and
+     never beats a child's own position (the fixed result panel and the
+     card-modal backdrop were being forced back into the flow by it) */
+  :where(.play-screen > *:not(.mapcam)){ position:relative; z-index:2; }
 
 
   /* over the board the panels need to be solid enough to read */
@@ -1695,3 +1698,10 @@
     .hm-play{ height:52px; }
     .hm-tile{ height:46px; }
   }
+
+  /* the backdrop sits over the live board (map + summary); make it opaque enough
+     that the text underneath cannot show through the wheel and card */
+  .play-screen .card-modal-backdrop{ background:rgba(6,14,24,.9); }
+
+  /* the pinned result panel spanned the full width and touched the screen edges */
+  .res--map .res__panel--bottom{ left:14px; right:14px; }
