@@ -1060,7 +1060,7 @@ function renderSettings(){
   });
   row.appendChild(durationInput);
   card.appendChild(row);
-  card.appendChild(el(`<small class="hint">مقدار رسمی بازی ۶۰ ثانیه‌ست؛ الان روی ${state.roundDuration} ثانیه تنظیمه.</small>`));
+  card.appendChild(el(`<small class="hint">مقدار رسمی بازی ۹۰ ثانیه‌ست؛ الان روی ${state.roundDuration} ثانیه تنظیمه.</small>`));
   wrap.appendChild(card);
 
   const infoCard = el(`<div class="card">
