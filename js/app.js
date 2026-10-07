@@ -468,7 +468,7 @@ function render(){
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -488,6 +488,10 @@ function render(){
     app.appendChild(renderProfile());
   } else if(state.screen === 'shop'){
     app.appendChild(renderShop());
+  } else if(state.screen === 'friends'){
+    app.appendChild(renderFriends());
+  } else if(state.screen === 'cards'){
+    app.appendChild(renderCards());
   } else if(state.screen === 'tutorial'){
     app.appendChild(renderTutorial());
   } else if(state.screen === 'setup'){
@@ -537,6 +541,99 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => { deferredInstall = null; LS.set('installDismissed', true); if(state.screen === 'home') render(); });
 
 // One banner at a time on the home screen: first the rules, then the install hint.
+// ---------------- FRIENDS ----------------
+function loadFriends(){
+  const f = LS.get('friends', []);
+  return Array.isArray(f) ? f.filter(x => x && typeof x.name === 'string' && x.name.trim()).map(x => ({ name: x.name.slice(0, 14), avatar: typeof x.avatar === 'string' ? x.avatar : '🙂' })).slice(0, 30) : [];
+}
+function saveFriends(f){ LS.set('friends', f); }
+const CARD_ICONS = ['⏱️','🕵️','🛡️','✨','⚡','🪬','🧿','🚫','🔒','👣','↩️'];
+
+function renderFriends(){
+  const friends = loadFriends();
+  const wrap = el(`<div class="setup-page frn"></div>`);
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">دوستان<span class="setup-brand-dot"></span></div></div>`));
+
+  const inv = el(`<div class="team-card frn-invite">
+    <h2 class="set-card__title">دوستانت را به بازی دعوت کن</h2>
+    <p>لینک بازی را بفرست تا روی گوشی خودشان باز کنند. برای بازی هم‌زمان از راه دور، یکی اتاق آنلاین می‌سازد و کد را برای بقیه می‌فرستد.</p>
+    <button class="hm-btn hm-btn--teal frn-share"><span class="hm-btn__gloss"></span><span class="hm-out hm-out--teal" data-text="فرستادن لینک بازی">فرستادن لینک بازی</span></button>
+  </div>`);
+  inv.querySelector('.frn-share').addEventListener('click', () => {
+    const link = location.origin + location.pathname;
+    const text = 'بیا «نخ بده» بازی کنیم! بازی حدس کلمات گروهی:';
+    if(navigator.share){ navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {}); }
+    else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text + '\n' + link).then(() => toastHome('لینک کپی شد')).catch(() => {}); }
+    else toastHome(link);
+  });
+  wrap.appendChild(inv);
+
+  const add = el(`<div class="team-card frn-add">
+    <h2 class="set-card__title">افزودن دوست</h2>
+    <p class="frn-hint">دوستان فقط روی همین گوشی ذخیره می‌شوند و موقع ساخت تیم می‌توانی با یک لمس آن‌ها را اضافه کنی.</p>
+    <div class="frn-add__row"><input class="prof-name frn-name" id="frnName" type="text" maxlength="14" placeholder="نام دوست" autocomplete="off" /><button class="frn-add__btn">افزودن</button></div>
+    <div class="prof-avs frn-avs"></div>
+  </div>`);
+  let pick = AVATARS[0];
+  const avs = add.querySelector('.frn-avs');
+  AVATARS.forEach(av => {
+    const b = el(`<button class="prof-avs__btn ${av === pick ? 'is-on' : ''}">${av}</button>`);
+    b.addEventListener('click', () => { pick = av; avs.querySelectorAll('.prof-avs__btn').forEach(x => x.classList.toggle('is-on', x === b)); });
+    avs.appendChild(b);
+  });
+  const doAdd = () => {
+    const inp = add.querySelector('#frnName'); const name = inp.value.trim();
+    if(!name){ inp.focus(); return; }
+    const f = loadFriends();
+    if(f.some(x => x.name === name)){ toastHome('این دوست قبلاً هست'); return; }
+    if(f.length >= 30){ toastHome('حداکثر ۳۰ دوست'); return; }
+    f.push({ name, avatar: pick }); saveFriends(f); render();
+  };
+  add.querySelector('.frn-add__btn').addEventListener('click', doAdd);
+  add.querySelector('#frnName').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
+  wrap.appendChild(add);
+
+  const list = el(`<div class="team-card set-card"><h2 class="set-card__title">دوستان من (${faNum(friends.length)})</h2></div>`);
+  if(!friends.length) list.appendChild(el(`<p class="prof-empty">هنوز دوستی اضافه نکرده‌ای.</p>`));
+  friends.forEach((fr, i) => {
+    const row = el(`<div class="frn-row"><span class="frn-row__av"></span><b class="frn-row__name"></b><button class="frn-row__x" aria-label="حذف"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div>`);
+    row.querySelector('.frn-row__av').textContent = fr.avatar;
+    row.querySelector('.frn-row__name').textContent = fr.name;
+    row.querySelector('.frn-row__x').addEventListener('click', () => { const f = loadFriends(); f.splice(i, 1); saveFriends(f); render(); });
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+  return wrap;
+}
+
+// ---------------- CARDS ----------------
+function renderCards(){
+  const seen = LS.get('seenCards', {}) || {};
+  const got = ACTION_CARDS.filter((_, i) => seen[i] > 0).length;
+  const wrap = el(`<div class="setup-page crd"></div>`);
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">کارت‌ها<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="team-card crd-top">
+    <div class="crd-top__num"><b>${faNum(got)}</b><span>از ${faNum(ACTION_CARDS.length)}</span></div>
+    <div class="crd-top__txt"><h2 class="set-card__title">کارت‌های اکشن</h2><p>وقتی تیمی روی خانه‌ی ویژه می‌افتد، یکی از این کارت‌ها برایش درمی‌آید. هر کارتی که اولین بار ببینی در مجموعه‌ات باز می‌شود.</p></div>
+    <div class="crd-bar"><i style="width:${Math.round(got * 100 / ACTION_CARDS.length)}%"></i></div>
+  </div>`));
+  const grid = el(`<div class="crd-grid"></div>`);
+  ACTION_CARDS.forEach((c, i) => {
+    const n = seen[i] | 0;
+    const cell = el(`<div class="crd-card ${n ? 'is-got' : ''}"><span class="crd-card__ico"></span><b class="crd-card__t"></b><p class="crd-card__d"></p><i class="crd-card__n"></i></div>`);
+    cell.querySelector('.crd-card__ico').textContent = n ? CARD_ICONS[i % CARD_ICONS.length] : '❔';
+    cell.querySelector('.crd-card__t').textContent = n ? c.title : 'کارت ناشناخته';
+    cell.querySelector('.crd-card__d').textContent = n ? c.instruction : 'روی یک خانه‌ی ویژه بیفت تا این کارت را ببینی.';
+    cell.querySelector('.crd-card__n').textContent = n ? `${faNum(n)} بار دیده‌ای` : '';
+    grid.appendChild(cell);
+  });
+  wrap.appendChild(grid);
+  wrap.appendChild(el(`<div class="team-card set-card"><h2 class="set-card__title">کارت‌های کلمه</h2>
+    <div class="set-stats"><div class="set-stat"><b>${faNum(state.wordSource.length)}</b><span>کلمه در بازی</span></div>
+    <div class="set-stat"><b>${faNum(loadProfile().stats.correct)}</b><span>درست گفته‌ای</span></div></div></div>`));
+  return wrap;
+}
+
 // ---------------- SHOP ----------------
 // Coins are earned by playing (no real money). Items are cosmetic only.
 const SHOP_ITEMS = [
@@ -750,7 +847,7 @@ function renderHome(){
       const item = el(`<button class="hm-nav__item ${isHome ? 'is-home' : ''}">
         <span class="hm-nav__ico">${ico[key]}</span><span class="hm-nav__lbl">${label}</span></button>`);
       if(key === 'profile') item.addEventListener('click', () => { state.screen = 'profile'; render(); });
-      else if(key === 'shop') item.addEventListener('click', () => { state.screen = 'shop'; render(); });
+      else if(key === 'shop' || key === 'friends' || key === 'cards') item.addEventListener('click', () => { state.screen = key; render(); });
       else if(!isHome) item.addEventListener('click', () => toastHome(label + ' به زودی'));
       nav.appendChild(item);
     });
@@ -1776,7 +1873,7 @@ function goBack(){
   if(s === 'online-create' || s === 'online-join'){
     state.screen = 'online-home';
     render();
-  } else if(s === 'settings' || s === 'profile' || s === 'shop' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
+  } else if(s === 'settings' || s === 'profile' || s === 'shop' || s === 'friends' || s === 'cards' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
     state.screen = 'home';
     render();
   } else if(s === 'online-lobby'){
@@ -1798,7 +1895,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','tutorial'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -1850,6 +1947,24 @@ function renderSetup(){
       grid.appendChild(cell);
     });
     block.appendChild(grid);
+
+    const frs = loadFriends().filter(f => !state.teams.some(t => t.members.includes(f.name)));
+    if(frs.length){
+      const row = el(`<div class="frn-pick"><span>از دوستان:</span></div>`);
+      frs.slice(0, 8).forEach(f => {
+        const chip = el(`<button class="frn-pick__chip"></button>`);
+        chip.textContent = f.avatar + ' ' + f.name;
+        chip.addEventListener('click', () => {
+          const slot = team.members.findIndex(m => /^بازیکن\s*[0-9۰-۹]+$/.test(String(m).trim()) || !String(m).trim());
+          if(slot >= 0) team.members[slot] = f.name;
+          else if(team.members.length < 10) team.members.push(f.name);
+          else { toastHome('این تیم پر است'); return; }
+          render();
+        });
+        row.appendChild(chip);
+      });
+      block.appendChild(row);
+    }
 
     if(team.members.length < 10){
       const addMember = el(`<button class="team-card__add">+ افزودن بازیکن</button>`);
@@ -2547,6 +2662,7 @@ function renderActionCard(card, idx){
 
 function drawActionCard(){
   const idx = Math.floor(Math.random() * ACTION_CARDS.length);
+  try{ const seen = LS.get('seenCards', {}) || {}; seen[idx] = (seen[idx] | 0) + 1; LS.set('seenCards', seen); }catch(e){}
   return idx;
 }
 

@@ -2167,3 +2167,27 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .shop-buy.is-own{ background:rgba(46,211,198,.18); color:#4FE0D0; box-shadow:none; border:1px solid rgba(46,211,198,.5); }
 .st-coins{ display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 10px; border-radius:14px; background:rgba(255,209,92,.12); border:1px solid rgba(255,209,92,.45); font-size:14px; color:#EAD9A0; }
 .st-coins b{ color:#FFD15C; font-size:18px; } .st-coins__ico{ font-size:20px; }
+
+
+/* ---------- friends & cards ---------- */
+.frn-invite p, .frn-hint{ margin:0 0 10px; font-size:12.5px; color:#9FB4C2; line-height:1.8; }
+.frn-share{ width:100%; height:56px; border-radius:20px; font-size:20px; }
+.frn-share .hm-out{ font-family:'Lalezar','Vazirmatn',sans-serif; text-shadow:0 3px 0 var(--hm-teal-ink); }
+.frn-add__row{ display:flex; gap:8px; margin-bottom:10px; }
+.frn-add__row .prof-name{ flex:1; min-width:0; height:46px; font-size:16px; }
+.frn-add__btn{ flex:none; padding:0 18px; height:46px; border-radius:14px; border:none; cursor:pointer; font:inherit; font-weight:800; font-size:14px; color:#5A3200; background:linear-gradient(180deg,#FFE27A,#F7BC33); box-shadow:0 3px 0 #9A6A0A; }
+.frn-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:14px; background:rgba(255,255,255,.05); margin-top:6px; }
+.frn-row__av{ width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; background:radial-gradient(circle at 35% 30%, #FFE9A3, #F2A81C); flex:none; }
+.frn-row__name{ flex:1; font-size:16px; color:#FFF6E3; }
+.frn-row__x{ width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:rgba(255,255,255,.08); color:#B7CAD5; display:flex; align-items:center; justify-content:center; }
+.frn-pick{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:#9FB4C2; }
+.frn-pick__chip{ height:32px; padding:0 11px; border-radius:99px; border:1px solid rgba(255,209,92,.5); background:rgba(255,209,92,.1); color:#FFD15C; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.crd-top{ display:grid; grid-template-columns:auto 1fr; gap:6px 14px; align-items:center; }
+.crd-top__num{ display:flex; flex-direction:column; align-items:center; min-width:64px; } .crd-top__num b{ font-size:38px; color:#FFD15C; line-height:1; } .crd-top__num span{ font-size:12px; color:#9FB4C2; }
+.crd-top__txt p{ margin:4px 0 0; font-size:12.5px; color:#9FB4C2; line-height:1.75; }
+.crd-bar{ grid-column:1 / -1; height:9px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden; } .crd-bar i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,#2ED3C6,#FFD15C); }
+.crd-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+.crd-card{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:14px 10px 10px; border-radius:18px; background:rgba(4,35,50,.7); border:1.5px dashed rgba(255,255,255,.18); opacity:.7; }
+.crd-card.is-got{ opacity:1; border:1.5px solid rgba(255,209,92,.6); background:linear-gradient(180deg, rgba(255,209,92,.12), rgba(4,35,50,.75)); }
+.crd-card__ico{ font-size:34px; line-height:1.1; } .crd-card__t{ font-size:14.5px; color:#FFD15C; } .crd-card.is-got .crd-card__t{ color:#FFD15C; }
+.crd-card__d{ margin:0; font-size:12px; color:#CFE3E0; line-height:1.7; } .crd-card__n{ font-style:normal; font-size:11px; color:#8FA8B8; }
