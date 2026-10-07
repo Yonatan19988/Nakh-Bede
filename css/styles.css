@@ -2049,3 +2049,38 @@
 @media (prefers-reduced-motion: reduce){ .stats-card, .stats-overlay{ transition:none; } .st-acc__bar i{ animation:none; } }
 
 .confetti{ position:fixed; inset:0; width:100%; height:100%; z-index:130; pointer-events:none; }
+
+
+/* ---------- home buttons: one consistent system ----------
+   Every 3D button casts a 7px edge below itself, so the space between rows is
+   measured from that edge, not from the button. The play label now uses the
+   same outlined-white lettering as the other two buttons. */
+.hm{ padding-bottom:calc(132px + env(safe-area-inset-bottom, 0px)); }
+.hm-play{ margin-top:18px; margin-bottom:0; height:76px; border-radius:24px; }
+.hm-play .hm-play__txt{ color:#fff; -webkit-text-stroke:0; font-size:32px; line-height:1.15; text-shadow:0 3px 0 var(--hm-gold-ink); }
+.hm-play .hm-out::before{ color:var(--hm-gold-ink); }
+.hm-quick{ margin-top:16px; gap:10px; }
+.hm-chip{ height:40px; border-radius:14px; }
+.hm-tiles{ margin-top:22px; gap:14px; }
+.hm-quick + .hm-tiles{ margin-top:18px; }
+.hm-tile{ height:64px; border-radius:22px; gap:10px; }
+.hm-tile .hm-out{ font-size:22px; }
+.hm-tile svg{ flex:none; }
+.hm-btn{ border-width:3px; }
+@media (max-height:760px){
+  .hm-play{ height:66px; margin-top:14px; border-radius:21px; }
+  .hm-play .hm-play__txt{ font-size:28px; -webkit-text-stroke:0; }
+  .hm-play__ico{ width:40px; height:40px; }
+  .hm-tiles{ margin-top:18px; gap:12px; }
+  .hm-tile{ height:56px; border-radius:19px; }
+  .hm-tile .hm-out{ font-size:20px; }
+}
+@media (max-height:680px){
+  .hm{ padding-bottom:calc(124px + env(safe-area-inset-bottom, 0px)); }
+  .hm-play{ height:58px; margin-top:12px; border-radius:19px; }
+  .hm-play .hm-play__txt{ font-size:25px; }
+  .hm-play__ico{ width:34px; height:34px; }
+  .hm-tiles{ margin-top:16px; }
+  .hm-tile{ height:50px; border-radius:17px; }
+  .hm-tile .hm-out{ font-size:18px; }
+}
