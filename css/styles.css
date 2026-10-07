@@ -1975,3 +1975,75 @@
   .room-form-card .setup-start, .room-form-card .setup-addteam{ margin-top:4px; }
 
   .deck-card__count{ display:block; margin-top:6px; font-size:12px; line-height:1.6; color:var(--text-dim); }
+
+
+/* ---------- round stats screen: a centred card over the dimmed board ---------- */
+.res--map .mapcam__clip{ transition: clip-path 1.15s cubic-bezier(.22,.7,.2,1), filter .9s ease, opacity .9s ease; }
+.res--map.is-stats .mapcam__clip{ filter: blur(5px) brightness(.55) saturate(.85); }
+.res--map.is-stats .routebar{ opacity:0; transition: opacity .5s ease; }
+.res--map .mapcam::after{ display:none !important; }
+.stats-overlay{
+  position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+  padding:16px 14px; padding-top:calc(16px + env(safe-area-inset-top, 0px)); box-sizing:border-box;
+  opacity:0; pointer-events:none; transition: opacity .7s ease;
+}
+.stats-overlay.is-in{ opacity:1; pointer-events:auto; }
+.stats-card{
+  width:100%; max-width:430px; max-height:100%; overflow:auto; box-sizing:border-box;
+  padding:16px 16px 14px; border-radius:26px; color:#FFF6E3;
+  background:linear-gradient(180deg, rgba(8,48,66,.97), rgba(4,30,46,.98));
+  border:2px solid rgba(233,185,76,.75); box-shadow:0 22px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.12);
+  display:flex; flex-direction:column; gap:11px;
+  transform:translateY(26px) scale(.94); transition: transform .8s cubic-bezier(.2,.9,.3,1.1);
+  scrollbar-width:none;
+}
+.stats-card::-webkit-scrollbar{ display:none; }
+.stats-overlay.is-in .stats-card{ transform:none; }
+.st-head{ display:flex; align-items:center; gap:10px; }
+.st-head__badge{ width:34px; height:34px; border-radius:50%; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,.45); flex:none; }
+.st-head small{ display:block; font-size:12px; color:#9FC0CF; line-height:1.2; }
+.st-head h2{ margin:0; font-size:22px; line-height:1.2; color:#FFD15C; }
+.st-head__praise{ margin-inline-start:auto; font-size:12px; font-weight:700; padding:5px 11px; border-radius:99px; background:rgba(233,185,76,.16); border:1px solid rgba(233,185,76,.5); color:#FFD15C; white-space:nowrap; }
+.st-move{
+  text-align:center; padding:12px 10px 10px; border-radius:20px;
+  background:rgba(10,90,96,.42); border:1.5px solid rgba(46,211,198,.55);
+}
+.st-move.is-back{ background:rgba(96,36,28,.42); border-color:rgba(240,131,111,.6); }
+.st-move.is-stay{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.2); }
+.st-move b{ font-size:46px; line-height:1; font-weight:800; color:#6BE7DC; margin-inline-end:8px; }
+.st-move.is-back b{ color:#FF9C88; } .st-move.is-stay b{ color:#FFF1CD; }
+.st-move span{ font-size:17px; font-weight:700; color:#E3F1EE; }
+.st-move small{ display:block; margin-top:5px; font-size:13px; color:#B7CAD5; }
+.st-tiles{ display:grid; grid-template-columns:repeat(auto-fit, minmax(70px, 1fr)); gap:8px; }
+.st-tile{ display:flex; flex-direction:column; align-items:center; gap:1px; padding:9px 4px 7px; border-radius:16px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); }
+.st-tile__num{ font-size:26px; font-weight:800; line-height:1.1; min-height:29px; }
+.st-tile__lbl{ font-size:12px; color:#B7CAD5; }
+.st-tile--ok{ color:#4FE0D0; } .st-tile--no{ color:#FF9C88; } .st-tile--foul{ color:#FFB454; } .st-tile--pt{ color:#FFD15C; }
+.st-acc{ display:flex; align-items:center; gap:10px; font-size:13px; color:#B7CAD5; }
+.st-acc__bar{ flex:1; height:9px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden; }
+.st-acc__bar i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,#2ED3C6,#FFD15C); transform-origin:100% 50%; animation: stBar 1s ease .6s both; }
+@keyframes stBar{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
+.st-acc b{ color:#FFF6E3; min-width:34px; text-align:left; }
+.st-prog{ padding:4px 2px 0; }
+.st-prog__track{ position:relative; height:42px; margin:0 8px; }
+.st-prog__track::before{ content:''; position:absolute; left:0; right:0; top:14px; height:6px; border-radius:3px; background:linear-gradient(270deg, rgba(255,209,92,.95), rgba(255,255,255,.35)); }
+.st-prog__city{ position:absolute; right:calc(var(--f) * 100%); top:0; width:0; }
+.st-prog__city i{ position:absolute; top:11px; right:-6px; width:12px; height:12px; border-radius:50%; background:#FFF6E3; border:2px solid #C99A38; box-sizing:border-box; }
+.st-prog__city:last-of-type i{ background:#FFD15C; }
+.st-prog__city em{ position:absolute; top:26px; right:0; transform:translateX(50%); font-style:normal; font-size:10px; font-weight:700; color:#CFE3E0; white-space:nowrap; }
+.st-prog__dot{ position:absolute; right:calc(var(--f) * 100%); top:8px; width:18px; height:18px; margin-right:-9px; border-radius:50%; border:3px solid #fff; box-sizing:border-box; box-shadow:0 2px 6px rgba(0,0,0,.5); z-index:2; }
+.st-prog__txt{ text-align:center; font-size:13px; color:#B7CAD5; margin-top:2px; }
+.st-prog__txt b{ color:#FFD15C; }
+.st-special{ padding:9px 12px; border-radius:14px; text-align:center; font-size:14px; font-weight:700; color:#3A2A12; background:linear-gradient(180deg,#FFDDB8,#F6B88A); }
+.st-board{ display:flex; flex-direction:column; gap:5px; }
+.st-board small{ font-size:12px; color:#9FC0CF; }
+.st-row{ display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:12px; background:rgba(255,255,255,.05); font-size:14px; }
+.st-row.is-me{ background:rgba(233,185,76,.15); border:1px solid rgba(233,185,76,.5); }
+.st-row__rank{ width:18px; text-align:center; color:#9FC0CF; font-weight:700; }
+.st-row__dot{ width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-sizing:border-box; flex:none; }
+.st-row__name{ font-weight:700; }
+.st-row__cell{ margin-inline-start:auto; color:#B7CAD5; font-size:12.5px; }
+.st-row__score{ min-width:34px; text-align:left; color:#FFD15C; }
+.st-next{ margin-top:2px; }
+@media (max-height:700px){ .stats-card{ gap:8px; padding:12px; } .st-move b{ font-size:38px; } }
+@media (prefers-reduced-motion: reduce){ .stats-card, .stats-overlay{ transition:none; } .st-acc__bar i{ animation:none; } }
