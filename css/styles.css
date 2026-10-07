@@ -346,6 +346,11 @@
     position:fixed; top:0; right:0; bottom:0; left:0; z-index:0; overflow:hidden;
     background:#02283B;
   }
+  .mapcam__clip{ position:absolute; inset:0; transition: clip-path 1.15s cubic-bezier(.22,.7,.2,1); }
+  .mapcam__frame{
+    position:absolute; opacity:0; pointer-events:none; z-index:1; box-sizing:border-box;
+    border:2px solid var(--gold); border-radius:16px; transition: opacity .6s ease;
+  }
   .mapcam__world{
     position:absolute; top:0; left:0;
     transform-origin:0 0; will-change:transform;
