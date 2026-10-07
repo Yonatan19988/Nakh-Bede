@@ -582,6 +582,9 @@ function renderHome(){
   }
   const gear = el(`<button class="hm-gear" aria-label="تنظیمات"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#EAF6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg></button>`);
   gear.addEventListener('click', () => { state.screen = 'settings'; render(); });
+  const learn = el(`<button class="hm-learn" aria-label="آموزش بازی"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 12 5l9 4.2-9 4.2Z"/><path d="M7 11.4v4.1c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.1"/></svg>${LS.get('seenTutorial', false) ? '' : '<span class="hm-learn__dot" aria-label="جدید"></span>'}</button>`);
+  learn.addEventListener('click', () => { state.screen = 'tutorial'; render(); });
+  tools.appendChild(learn);
   tools.appendChild(gear);
   top.appendChild(tools);
   wrap.appendChild(top);
@@ -655,12 +658,7 @@ function renderHome(){
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="3.6"/><path d="M11.6 12H21"/><path d="M17.5 12v3.2"/><path d="M20.4 12v2.4"/></svg>
     <span class="hm-out hm-out--teal" data-text="ورود با کد">ورود با کد</span></button>`);
   joinTile.addEventListener('click', () => { state.homeSheet = 'join'; render(); });
-  const learnTile = el(`<button class="hm-btn hm-btn--red hm-tile"><span class="hm-btn__gloss"></span>
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 12 5l9 4.2-9 4.2Z"/><path d="M7 11.4v4.1c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.1"/></svg>
-    <span class="hm-out hm-out--red" data-text="آموزش">آموزش</span>${LS.get('seenTutorial', false) ? '' : '<span class="hm-tile__dot" aria-label="جدید"></span>'}</button>`);
-  learnTile.addEventListener('click', () => { state.screen = 'tutorial'; render(); });
   tiles.appendChild(joinTile);
-  tiles.appendChild(learnTile);
   wrap.appendChild(tiles);
 
   if(SHOW_BOTTOM_NAV){
