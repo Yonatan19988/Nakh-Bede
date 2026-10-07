@@ -625,8 +625,8 @@ function renderHome(){
   if(quick.length){
     const row = el(`<div class="hm-quick"></div>`);
     quick.forEach(([label, fn]) => {
-      const chip = el(`<button class="hm-chip"></button>`);
-      chip.textContent = label;
+      const chip = el(`<button class="hm-btn hm-btn--gold hm-qbtn"><span class="hm-btn__gloss"></span><span class="hm-out" data-text=""></span></button>`);
+      const lab = chip.querySelector('.hm-out'); lab.textContent = label; lab.dataset.text = label;
       chip.addEventListener('click', fn);
       row.appendChild(chip);
     });

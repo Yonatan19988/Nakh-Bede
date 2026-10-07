@@ -2084,3 +2084,15 @@
   .hm-tile{ height:50px; border-radius:17px; }
   .hm-tile .hm-out{ font-size:18px; }
 }
+
+
+/* quick actions (new game / back to room) are full buttons, same family as the rest */
+.hm-quick{ margin-top:18px; gap:12px; }
+.hm-qbtn{ flex:1 1 0; height:60px; border-radius:20px; font-size:20px; }
+.hm-qbtn .hm-out{ font-family:'Lalezar','Vazirmatn',sans-serif; font-size:20px; line-height:1.2; white-space:nowrap; text-shadow:0 3px 0 var(--hm-gold-ink); }
+.hm-quick + .hm-tiles{ margin-top:22px; }
+@media (max-height:760px){ .hm-qbtn{ height:52px; border-radius:18px; } .hm-qbtn .hm-out{ font-size:18px; } .hm-quick{ margin-top:14px; } }
+@media (max-height:680px){ .hm-qbtn{ height:46px; border-radius:16px; } .hm-qbtn .hm-out{ font-size:16px; } }
+.hm-quick .hm-qbtn:nth-child(2):last-child .hm-out, .hm-quick:has(.hm-qbtn + .hm-qbtn) .hm-out{ font-size:17px; }
+@media (max-height:760px){ .hm:has(.hm-quick) .hm-ribbon, .hm:has(.hm-quick) .hm-tag{ display:none; } }
+@media (max-height:680px){ .hm:has(.hm-quick) .hm-banner{ display:none; } .hm:has(.hm-quick) .hm-scene{ min-height:70px; } }
