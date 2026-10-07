@@ -2143,3 +2143,27 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .prof-badge span{ font-size:26px; line-height:1; } .prof-badge b{ font-size:12px; color:#EAF6FF; font-weight:700; }
 .prof-badge.is-got{ opacity:1; filter:none; border-color:rgba(255,209,92,.6); background:rgba(255,209,92,.12); }
 .prof-note{ margin:4px 4px 0; font-size:12px; color:#8FA8B8; text-align:center; }
+
+
+/* ---------- shop ---------- */
+.prof-coins{ display:flex; align-items:center; gap:6px; font-size:15px; color:#B7CAD5; } .prof-coins b{ color:#FFD15C; font-size:20px; }
+.prof-av{ border-color:#FFF6E3; }
+.prof-shopbtn{ margin-top:0; }
+.shop-wallet{ text-align:center; display:flex; flex-direction:column; gap:6px; }
+.shop-wallet__bal{ display:flex; align-items:center; justify-content:center; gap:10px; font-size:34px; } .shop-wallet__bal b{ color:#FFD15C; font-size:40px; line-height:1; }
+.shop-wallet p{ margin:0; font-size:12.5px; color:#9FB4C2; line-height:1.7; }
+.shop-tabs{ display:flex; gap:8px; }
+.shop-tab{ flex:1; height:44px; border-radius:14px; border:1.5px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#CFE3E0; font:inherit; font-weight:700; font-size:14px; cursor:pointer; }
+.shop-tab.is-on{ background:rgba(255,209,92,.16); border-color:#FFD15C; color:#FFD15C; }
+.shop-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+.shop-item{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px 10px 10px; border-radius:18px; background:rgba(4,35,50,.7); border:1.5px solid rgba(255,255,255,.12); }
+.shop-item.is-eq{ border-color:#2ED3C6; box-shadow:0 0 0 2px rgba(46,211,198,.3); }
+.shop-item__name{ font-size:14px; color:#FFF6E3; }
+.shop-prev{ width:100%; height:76px; display:flex; align-items:center; justify-content:center; position:relative; }
+.shop-prev--av{ width:68px; height:68px; border-radius:50%; font-size:36px; background:radial-gradient(circle at 35% 30%, #FFE9A3, #F2A81C); border:3.5px solid #FFF6E3; }
+.shop-prev--cf i{ position:absolute; width:10px; height:16px; border-radius:2px; }
+.shop-buy{ width:100%; height:38px; border-radius:12px; border:none; cursor:pointer; font:inherit; font-weight:800; font-size:14px; color:#5A3200; background:linear-gradient(180deg,#FFE27A,#F7BC33); box-shadow:0 3px 0 #9A6A0A; }
+.shop-buy.is-cant{ background:rgba(255,255,255,.12); color:#9FB4C2; box-shadow:none; }
+.shop-buy.is-own{ background:rgba(46,211,198,.18); color:#4FE0D0; box-shadow:none; border:1px solid rgba(46,211,198,.5); }
+.st-coins{ display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 10px; border-radius:14px; background:rgba(255,209,92,.12); border:1px solid rgba(255,209,92,.45); font-size:14px; color:#EAD9A0; }
+.st-coins b{ color:#FFD15C; font-size:18px; } .st-coins__ico{ font-size:20px; }
