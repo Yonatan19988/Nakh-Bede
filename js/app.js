@@ -2265,7 +2265,8 @@ function buildRoundResult(onNext, label){
 // the Azadi Tower at the top. It is followed vertically by the camera.
 const MAP_RATIO = 1080 / 5940;
 const MAP_FOLLOW_W = 980;       // board width in px while following a pawn
-const MAP_FIT_VIEW_RATIO = 1.4142;   // pulled-back window: width / height
+const MAP_FIT_VIEW_RATIO = 1.4142;   // sets where the round summary panel starts
+const MAP_SETTLE_SCALE = 0.78;       // how far the camera eases back once the pawn has landed
 const MAP_FIT_TOP = 50;         // gap above the board in the pulled-back view
 const MAP_FIT_MAX_W = 460;      // board never wider than the app's content column
 const MAP_SUMMARY_GAP = 10;     // space between the board and the summary
@@ -2313,25 +2314,21 @@ function positionMapCamera(cam, world){
   let s, x, y;
   const clip = mapClipEl, frame = mapFrameEl;
   if(state.mapFit){
-    // Pulled back: the whole width of the strip fits a window that is sized
-    // from the viewport WIDTH only (height changes whenever the browser bar
-    // slides), centred on the team that just moved. The summary below is
-    // offset by the same width-based formula.
-    const W = Math.min(cw, MAP_FIT_MAX_W);
-    const winH = W / MAP_FIT_VIEW_RATIO;
-    s = W / baseW;
-    x = (cw - W) / 2;
-    y = Math.min(MAP_FIT_TOP, Math.max(MAP_FIT_TOP + winH - baseH * s, MAP_FIT_TOP + winH / 2 - tokenY * s));
-    if(clip) clip.style.clipPath = `inset(${MAP_FIT_TOP}px ${x}px calc(100% - ${MAP_FIT_TOP + winH}px) ${x}px round 16px)`;
-    if(frame){
-      frame.style.cssText = `opacity:1; left:${x}px; top:${MAP_FIT_TOP}px; width:${W}px; height:${winH}px;`;
-    }
+    // Settle: ease back a little (not out to a tiny window) and keep the pawn in
+    // the middle of the part of the screen above the summary panel, which is
+    // pinned from the viewport WIDTH only.
+    const aboveH = summaryTopFor(cw);
+    s = MAP_SETTLE_SCALE;
+    const sw = baseW * s, sh = baseH * s;
+    x = Math.max(Math.min(0, cw - sw), Math.min(0, cw / 2 - tokenX * s));
+    y = Math.min(0, Math.max(ch - sh, aboveH / 2 + 30 - tokenY * s));
+    if(clip) clip.style.clipPath = '';
+    if(frame) frame.style.opacity = '0';
   } else {
     s = 1;
     // keep the moving pawn centred, but never show past the edges of the board
     x = Math.max(Math.min(0, cw - baseW), Math.min(0, cw / 2 - tokenX));
     y = Math.max(Math.min(0, ch - baseH), Math.min(0, ch / 2 - tokenY));
-    if(clip) clip.style.clipPath = 'inset(0px 0px calc(100% - 100%) 0px round 0px)';
     if(frame) frame.style.opacity = '0';
   }
   // the summary is pinned from the same numbers, in every state, so the two
@@ -2381,7 +2378,53 @@ function startMapZoomOut(){
   if(!mapWorldEl || !mapWorldEl.isConnected || !mapCamEl) return;
   state.mapFit = true;
   mapWorldEl.classList.add('is-fitting');
+  const cur = currentTeam();
+  const tk = cur && mapWorldEl.querySelector(`.mapcam__tok[data-team="${cur.id}"]`);
+  if(tk){ tk.classList.remove('is-arrive'); void tk.offsetWidth; tk.classList.add('is-arrive'); }
   positionMapCamera(mapCamEl, mapWorldEl);
+}
+
+
+// ---------- journey: cities, route bar, arrival banner ----------
+const CITIES = ['بندرعباس','شیراز','اصفهان','رشت','تهران'];
+const CELLS_PER_CITY = 10;
+function cityOf(cell){ return Math.max(0, Math.min(CITIES.length - 1, Math.floor(cell / CELLS_PER_CITY))); }
+
+function buildRouteBar(){
+  const bar = el(`<div class="routebar" aria-hidden="true"></div>`);
+  bar.appendChild(el(`<div class="routebar__line"></div>`));
+  CITIES.forEach((n, i) => {
+    const frac = (i * CELLS_PER_CITY) / (state.trackLength - 1);
+    const last = i === CITIES.length - 1;
+    bar.appendChild(el(`<div class="routebar__city ${last ? 'is-goal' : ''}" style="--f:${Math.min(frac, 1).toFixed(4)};"><i></i><span>${n}</span></div>`));
+  });
+  state.teams.forEach(t => {
+    bar.appendChild(el(`<div class="routebar__team" data-team="${t.id}" style="--f:${routeFrac(t)}; background:${t.color};"></div>`));
+  });
+  return bar;
+}
+function routeFrac(t){ return Math.max(0, Math.min(1, t.position / (state.trackLength - 1))).toFixed(4); }
+function updateRouteBar(){
+  if(!mapCamEl) return;
+  state.teams.forEach(t => {
+    const d = mapCamEl.querySelector(`.routebar__team[data-team="${t.id}"]`);
+    if(d) d.style.setProperty('--f', routeFrac(t));
+  });
+}
+
+let cityBannerTimer = null;
+function showCityBanner(fromPos, toPos){
+  const a = cityOf(fromPos), b = cityOf(toPos);
+  if(a === b) return;
+  const forward = b > a;
+  const goal = b === CITIES.length - 1 && forward;
+  const text = goal ? 'به تهران رسیدی! برج آزادی منتظرته'
+             : forward ? `وارد ${CITIES[b]} شدی` : `برگشتی به ${CITIES[b]}`;
+  document.querySelectorAll('.city-banner').forEach(n => n.remove());
+  const b2 = el(`<div class="city-banner ${goal ? 'is-goal' : ''}"><small>${forward ? 'منزل بعدی' : 'عقب‌نشینی'}</small><b>${text}</b></div>`);
+  document.body.appendChild(b2);
+  clearTimeout(cityBannerTimer);
+  cityBannerTimer = setTimeout(() => { b2.classList.add('is-out'); setTimeout(() => b2.remove(), 500); }, 2800);
 }
 
 function renderMapFullScreen(){
@@ -2426,9 +2469,9 @@ function renderMapFullScreen(){
 
   const clip = el(`<div class="mapcam__clip"></div>`);
   clip.appendChild(world);
-  const frame = el(`<div class="mapcam__frame"></div>`);
+  const frame = null;
   cam.appendChild(clip);
-  cam.appendChild(frame);
+  cam.appendChild(buildRouteBar());
   mapCamEl = cam; mapWorldEl = world; mapClipEl = clip; mapFrameEl = frame;
   requestAnimationFrame(() => positionMapCamera(cam, world));
   return cam;
@@ -2458,6 +2501,7 @@ function stepMapToken(team){
   tokLastPos[team.id] = { x: nx, y: ny };
 
   positionMapCamera(mapCamEl, mapWorldEl);
+  updateRouteBar();
   return true;
 }
 
@@ -2644,6 +2688,7 @@ function animateMove(team, fromPos, toPos, onDone){
     if(!stepMapToken(team)) render();
     if(cur === toPos){
       clearInterval(iv);
+      showCityBanner(fromPos, toPos);
       onDone();
       // The summary render sets the close-up transform in the next frame. The
       // zoom must start after that has actually been painted, otherwise both
