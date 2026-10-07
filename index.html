@@ -24,7 +24,16 @@
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+          .then((reg) => reg.update().catch(() => {})).catch(() => {});
+        // a new version took over: reload on the home screen right away; during a
+        // game wait until the player is back home so nothing is lost
+        const had = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if(!had) return;
+          window.__needsReload = true;
+          if(window.state && state.screen === 'home') location.reload();
+        });
       });
     }
   </script>

@@ -460,6 +460,7 @@ function el(html){
 }
 
 function render(){
+  if(window.__needsReload && state.screen === 'home'){ window.__needsReload = false; location.reload(); return; }
   // the wheel owns the screen for the length of its spin — but never block
   // a navigation away from the board, or the UI would freeze for 4s
   if(state.wheelTimer && (state.screen === 'board' || state.screen === 'online-board')) return;

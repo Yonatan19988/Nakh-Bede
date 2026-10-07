@@ -1,5 +1,5 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v24';
+const CACHE = 'nakh-bede-v25';
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
 const LAZY = ['./assets/map-hd.webp'];
@@ -57,6 +57,26 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   if (url.origin !== self.location.origin) return;   // Firebase stays online
+
+  // Code and pages: ask the network first (bypassing the HTTP cache) so a new
+  // version shows up on the very next open; fall back to the stored copy when
+  // offline or slow. Images and other assets stay cache-first.
+  const isCode = req.mode === 'navigate' || /\.(?:js|css|html|webmanifest)$/.test(url.pathname) || url.pathname.endsWith('/');
+  if (isCode) {
+    e.respondWith(
+      caches.open(CACHE).then((cache) => {
+        const live = fetch(req, { cache: 'no-cache' }).then((res) => {
+          if (res && res.ok) cache.put(req, res.clone());
+          return res;
+        });
+        const timeout = new Promise((_, rej) => setTimeout(rej, 4000));
+        return Promise.race([live, timeout]).catch(() =>
+          cache.match(req, { ignoreSearch: true }).then((hit) => hit || live.catch(() => cache.match('./index.html')))
+        );
+      })
+    );
+    return;
+  }
 
   e.respondWith(
     caches.open(CACHE).then((cache) =>
