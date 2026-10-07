@@ -2118,3 +2118,28 @@
 .hm-learn__dot{ position:absolute; top:-4px; right:-4px; width:13px; height:13px; border-radius:50%;
   background:#FFD24A; border:2px solid #7A1B12; animation:hmDot 2s ease-out infinite; }
 .hm-tiles .hm-tile{ flex:1 1 100%; }
+
+
+/* ---------- profile ---------- */
+button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:right; }
+.hm-prof__emoji{ font-size:22px; line-height:1; }
+.hm-prof:active{ transform:scale(.97); }
+.prof-head{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.prof-av{ width:92px; height:92px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:52px;
+  background:radial-gradient(circle at 35% 30%, #FFE9A3, #F2A81C); border:4px solid #FFF6E3; box-shadow:0 8px 20px rgba(0,0,0,.35); }
+.prof-lbl{ align-self:flex-start; font-size:13px; color:#B7CAD5; }
+.prof-name{ width:100%; box-sizing:border-box; height:50px; border-radius:16px; padding:0 14px; font:inherit; font-size:18px; font-weight:700;
+  color:#FFF6E3; background:rgba(4,35,50,.72); border:1.5px solid rgba(217,173,76,.55); text-align:right; }
+.prof-name:focus{ outline:none; border-color:#FFD15C; box-shadow:0 0 0 3px rgba(255,209,92,.25); }
+.prof-hint{ align-self:flex-start; font-size:12px; color:#8FA8B8; }
+.prof-avs{ width:100%; display:grid; grid-template-columns:repeat(6, 1fr); gap:8px; margin-top:4px; }
+.prof-avs__btn{ aspect-ratio:1; border-radius:14px; border:1.5px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); font-size:24px; cursor:pointer; padding:0; }
+.prof-avs__btn.is-on{ border-color:#FFD15C; background:rgba(255,209,92,.18); box-shadow:0 0 0 2px rgba(255,209,92,.35); }
+.prof-stats{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.prof-empty{ margin:10px 0 0; font-size:13px; color:#9FB4C2; text-align:center; }
+.prof-badges{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.prof-badge{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; border-radius:14px; text-align:center;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); opacity:.45; filter:grayscale(1); }
+.prof-badge span{ font-size:26px; line-height:1; } .prof-badge b{ font-size:12px; color:#EAF6FF; font-weight:700; }
+.prof-badge.is-got{ opacity:1; filter:none; border-color:rgba(255,209,92,.6); background:rgba(255,209,92,.12); }
+.prof-note{ margin:4px 4px 0; font-size:12px; color:#8FA8B8; text-align:center; }

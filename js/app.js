@@ -467,7 +467,7 @@ function render(){
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -483,6 +483,8 @@ function render(){
     app.appendChild(renderHome());
   } else if(state.screen === 'settings'){
     app.appendChild(renderSettings());
+  } else if(state.screen === 'profile'){
+    app.appendChild(renderProfile());
   } else if(state.screen === 'tutorial'){
     app.appendChild(renderTutorial());
   } else if(state.screen === 'setup'){
@@ -532,6 +534,38 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => { deferredInstall = null; LS.set('installDismissed', true); if(state.screen === 'home') render(); });
 
 // One banner at a time on the home screen: first the rules, then the install hint.
+// ---------------- PROFILE ----------------
+const AVATARS = ['🦁','🦅','🐎','🐪','🌹','🏺','⭐','🔥','🌙','🕊️','🏔️','🎯'];
+const PROFILE_BADGES = [
+  ['🎬','اولین راند',      p => p.stats.rounds >= 1],
+  ['📚','۵۰ کلمه‌ی درست',  p => p.stats.correct >= 50],
+  ['💯','۲۰۰ کلمه‌ی درست', p => p.stats.correct >= 200],
+  ['⚡','راند ۸ کلمه‌ای',   p => p.stats.best >= 8],
+  ['🏁','اولین بازی کامل', p => p.stats.games >= 1],
+  ['🧭','۱۰ بازی کامل',    p => p.stats.games >= 10],
+];
+function loadProfile(){
+  const p = LS.get('profile', null) || {};
+  const s = p.stats || {};
+  return {
+    name: typeof p.name === 'string' ? p.name.slice(0, 14) : '',
+    avatar: AVATARS.includes(p.avatar) ? p.avatar : '',
+    stats: { games: s.games|0, rounds: s.rounds|0, correct: s.correct|0, skip: s.skip|0, best: s.best|0, cells: s.cells|0 }
+  };
+}
+function saveProfile(p){ LS.set('profile', p); }
+function recordRound(sum){
+  try{
+    const p = loadProfile(), s = p.stats;
+    s.rounds++; s.correct += sum.correct || 0; s.skip += sum.skip || 0;
+    s.best = Math.max(s.best, sum.correct || 0); s.cells += Math.max(0, sum.moved || 0);
+    saveProfile(p);
+  }catch(e){}
+}
+function recordGameFinished(){
+  try{ const p = loadProfile(); p.stats.games++; saveProfile(p); }catch(e){}
+}
+
 let resumeMsgDismissed = false;
 function resumeBanner(){
   if(resumeMsgDismissed || !hasSavedGame()) return null;
@@ -570,10 +604,14 @@ function renderHome(){
   const wrap = el(`<div class="hm"></div>`);
 
   const top = el(`<div class="hm-top"></div>`);
-  top.appendChild(el(`<div class="hm-prof">
-    <span class="hm-prof__av"><svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><circle cx="12" cy="9" r="4"/><path d="M12 14.1c-4.1 0-7.2 2.6-7.4 6.1-.02.46.35.8.8.8h13.2c.45 0 .82-.34.8-.8-.2-3.5-3.3-6.1-7.4-6.1Z"/></svg></span>
-    <span class="hm-prof__txt"><b>بازیکن مهمان</b><i>نسخه آزمایشی</i></span>
-  </div>`));
+  const prof = loadProfile();
+  const profChip = el(`<button class="hm-prof" aria-label="پروفایل">
+    <span class="hm-prof__av">${prof.avatar ? `<span class="hm-prof__emoji">${prof.avatar}</span>` : '<svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><circle cx="12" cy="9" r="4"/><path d="M12 14.1c-4.1 0-7.2 2.6-7.4 6.1-.02.46.35.8.8.8h13.2c.45 0 .82-.34.8-.8-.2-3.5-3.3-6.1-7.4-6.1Z"/></svg>'}</span>
+    <span class="hm-prof__txt"><b></b><i>${prof.stats.rounds ? faNum(prof.stats.correct) + ' کلمه‌ی درست' : 'پروفایل من'}</i></span>
+  </button>`);
+  profChip.querySelector('b').textContent = prof.name || 'بازیکن مهمان';
+  profChip.addEventListener('click', () => { state.screen = 'profile'; render(); });
+  top.appendChild(profChip);
   const tools = el(`<div class="hm-tools"></div>`);
   if(SHOW_FUTURE_FEATURES){
     tools.appendChild(el(`<div class="hm-coins">
@@ -674,7 +712,8 @@ function renderHome(){
      ['کارت‌ها','cards',0], ['فروشگاه','shop',0]].forEach(([label, key, isHome]) => {
       const item = el(`<button class="hm-nav__item ${isHome ? 'is-home' : ''}">
         <span class="hm-nav__ico">${ico[key]}</span><span class="hm-nav__lbl">${label}</span></button>`);
-      if(!isHome) item.addEventListener('click', () => toastHome(label + ' به زودی'));
+      if(key === 'profile') item.addEventListener('click', () => { state.screen = 'profile'; render(); });
+      else if(!isHome) item.addEventListener('click', () => toastHome(label + ' به زودی'));
       nav.appendChild(item);
     });
     wrap.appendChild(nav);
@@ -1439,6 +1478,67 @@ function renderSettings(){
   return wrap;
 }
 
+// ---------------- PROFILE SCREEN ----------------
+function renderProfile(){
+  const p = loadProfile(), s = p.stats;
+  const wrap = el(`<div class="setup-page prof"></div>`);
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">پروفایل<span class="setup-brand-dot"></span></div></div>`));
+
+  const head = el(`<div class="team-card prof-head">
+    <div class="prof-av" id="profAv">${p.avatar || '🙂'}</div>
+    <label class="prof-lbl" for="profName">نام تو</label>
+    <input class="prof-name" id="profName" type="text" maxlength="14" autocomplete="off" placeholder="بازیکن مهمان" />
+    <div class="prof-hint">این نام بالای صفحه‌ی اول نشان داده می‌شود.</div>
+  </div>`);
+  const nameIn = head.querySelector('#profName');
+  nameIn.value = p.name;
+  nameIn.addEventListener('input', () => { const q = loadProfile(); q.name = nameIn.value.trim().slice(0, 14); saveProfile(q); });
+  const grid = el(`<div class="prof-avs" role="radiogroup" aria-label="آواتار"></div>`);
+  AVATARS.forEach(av => {
+    const b = el(`<button class="prof-avs__btn ${av === p.avatar ? 'is-on' : ''}" role="radio" aria-checked="${av === p.avatar}">${av}</button>`);
+    b.addEventListener('click', () => {
+      const q = loadProfile(); q.avatar = av; saveProfile(q);
+      head.querySelector('#profAv').textContent = av;
+      grid.querySelectorAll('.prof-avs__btn').forEach(x => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-checked', on); });
+      sfxTap();
+    });
+    grid.appendChild(b);
+  });
+  head.appendChild(grid);
+  wrap.appendChild(head);
+
+  const total = s.correct + s.skip;
+  const acc = total ? Math.round(s.correct * 100 / total) : 0;
+  const stat = (n, l) => `<div class="set-stat"><b>${faNum(n)}</b><span>${l}</span></div>`;
+  const statsCard = el(`<div class="team-card set-card"></div>`);
+  statsCard.appendChild(el(`<h2 class="set-card__title">آمار من</h2>`));
+  statsCard.appendChild(el(`<div class="set-stats prof-stats">
+    ${stat(s.games, 'بازی کامل')}${stat(s.rounds, 'راند')}${stat(s.correct, 'کلمه‌ی درست')}
+    ${stat(s.best, 'بهترین راند')}${stat(acc, 'دقت (٪)')}${stat(s.cells, 'خانه جلو رفتی')}
+  </div>`));
+  if(!s.rounds) statsCard.appendChild(el(`<p class="prof-empty">هنوز راندی نبازی کرده‌ای. بعد از اولین راند، آمار اینجا ساخته می‌شود.</p>`));
+  wrap.appendChild(statsCard);
+
+  const badgeCard = el(`<div class="team-card set-card"></div>`);
+  badgeCard.appendChild(el(`<h2 class="set-card__title">نشان‌ها</h2>`));
+  const bg = el(`<div class="prof-badges"></div>`);
+  PROFILE_BADGES.forEach(([ico, label, test]) => {
+    const got = test(p);
+    bg.appendChild(el(`<div class="prof-badge ${got ? 'is-got' : ''}"><span>${ico}</span><b>${label}</b></div>`));
+  });
+  badgeCard.appendChild(bg);
+  wrap.appendChild(badgeCard);
+
+  wrap.appendChild(el(`<p class="prof-note">آمار فقط روی همین گوشی ذخیره می‌شود و از بازی‌های محلی ساخته می‌شود.</p>`));
+  const reset = el(`<button class="team-card__add set-learn prof-reset">پاک کردن آمار</button>`);
+  reset.addEventListener('click', () => {
+    if(!confirm('آمار و نشان‌ها پاک شود؟ نام و آواتار می‌ماند.')) return;
+    const q = loadProfile(); q.stats = { games:0, rounds:0, correct:0, skip:0, best:0, cells:0 }; saveProfile(q); render();
+  });
+  wrap.appendChild(reset);
+  return wrap;
+}
+
 // ---------------- TUTORIAL SCREEN ----------------
 function renderTutorial(){
   LS.set('seenTutorial', true);
@@ -1574,7 +1674,7 @@ function goBack(){
   if(s === 'online-create' || s === 'online-join'){
     state.screen = 'online-home';
     render();
-  } else if(s === 'settings' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
+  } else if(s === 'settings' || s === 'profile' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
     state.screen = 'home';
     render();
   } else if(s === 'online-lobby'){
@@ -1596,7 +1696,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','tutorial'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','tutorial'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -2872,6 +2972,7 @@ function finishRound(){
   const toPos = Math.max(0, Math.min(t.position + moved, state.trackLength - 1));
   t.score += scoreChange;
   clearOneRoundMods(t);
+  recordRound({ correct: state.correctCount, skip: state.skipCount, moved: moved });
   state.pendingSummary = {
     teamName: t.name,
     correct: state.correctCount,
@@ -2921,6 +3022,7 @@ function checkWinOrObstacle(){
     stopTimerInterval();
     state.timerRunning = false;
     state.winner = t;
+    recordGameFinished();
     sfxWin();
     render();
     return;
