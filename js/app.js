@@ -296,7 +296,8 @@ function launchConfetti(host, big){
   cv.width = W*dpr; cv.height = H*dpr;
   host.appendChild(cv);
   const g = cv.getContext('2d'); g.scale(dpr, dpr);
-  const cols = ['#FFD15C','#2ED3C6','#FF6B5E','#8FB8FF','#F6B88A','#FFFFFF','#B58CFF'];
+  let cols = ['#FFD15C','#2ED3C6','#FF6B5E','#8FB8FF','#F6B88A','#FFFFFF','#B58CFF'];
+  try{ const pf = loadProfile(); const it = SHOP_ITEMS.find(i => i.id === pf.confetti && pf.owned.includes(i.id)); if(it) cols = it.value; }catch(e){}
   const N = big ? 170 : 90, ps = [];
   for(let i=0;i<N;i++){
     const fromSide = i % 3 === 0;             // a third burst from the lower corners, the rest rain from the top
@@ -467,7 +468,7 @@ function render(){
   const app = document.getElementById('app');
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -485,6 +486,8 @@ function render(){
     app.appendChild(renderSettings());
   } else if(state.screen === 'profile'){
     app.appendChild(renderProfile());
+  } else if(state.screen === 'shop'){
+    app.appendChild(renderShop());
   } else if(state.screen === 'tutorial'){
     app.appendChild(renderTutorial());
   } else if(state.screen === 'setup'){
@@ -534,6 +537,29 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => { deferredInstall = null; LS.set('installDismissed', true); if(state.screen === 'home') render(); });
 
 // One banner at a time on the home screen: first the rules, then the install hint.
+// ---------------- SHOP ----------------
+// Coins are earned by playing (no real money). Items are cosmetic only.
+const SHOP_ITEMS = [
+  { id:'av_lion',   kind:'avatar',   name:'شیر',          value:'🦁', price:0,   free:true },
+  { id:'av_crown',  kind:'avatar',   name:'تاج',          value:'👑', price:60 },
+  { id:'av_falcon', kind:'avatar',   name:'طاووس',        value:'🦚', price:60 },
+  { id:'av_sun',    kind:'avatar',   name:'خورشید',       value:'☀️', price:80 },
+  { id:'av_cat',    kind:'avatar',   name:'گربه‌ی ایرانی', value:'🐈', price:80 },
+  { id:'av_dragon', kind:'avatar',   name:'سیمرغ',        value:'🐉', price:140 },
+  { id:'fr_teal',   kind:'frame',    name:'قاب فیروزه‌ای', value:'#2ED3C6', price:70 },
+  { id:'fr_ruby',   kind:'frame',    name:'قاب یاقوتی',   value:'#FF4D5E', price:70 },
+  { id:'fr_violet', kind:'frame',    name:'قاب ارغوانی',  value:'#B58CFF', price:90 },
+  { id:'fr_gold',   kind:'frame',    name:'قاب زرین',     value:'#FFD15C', price:120 },
+  { id:'cf_persian',kind:'confetti', name:'جشن ایرانی',   value:['#2ED3C6','#1D6FB8','#FFD15C','#FFF6E3','#0FA3B1'], price:100 },
+  { id:'cf_rose',   kind:'confetti', name:'جشن گل سرخ',   value:['#FF4D5E','#FF8FA3','#FFD15C','#FFF6E3','#C23B33'], price:100 },
+  { id:'cf_night',  kind:'confetti', name:'جشن شبانه',    value:['#FFFFFF','#B8C7FF','#8FB8FF','#FFD15C','#B58CFF'], price:130 },
+];
+const SHOP_TABS = [['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی']];
+function coinsForRound(correct, moved, newCity){
+  return correct * 2 + (correct >= 5 ? 5 : 0) + (newCity ? 15 : 0) + (moved >= 5 ? 3 : 0);
+}
+const COINS_PER_GAME = 30;
+
 // ---------------- PROFILE ----------------
 const AVATARS = ['🦁','🦅','🐎','🐪','🌹','🏺','⭐','🔥','🌙','🕊️','🏔️','🎯'];
 const PROFILE_BADGES = [
@@ -549,21 +575,32 @@ function loadProfile(){
   const s = p.stats || {};
   return {
     name: typeof p.name === 'string' ? p.name.slice(0, 14) : '',
-    avatar: AVATARS.includes(p.avatar) ? p.avatar : '',
+    avatar: (AVATARS.includes(p.avatar) || SHOP_ITEMS.some(i => i.kind === 'avatar' && i.value === p.avatar)) ? p.avatar : '',
+    coins: p.coins === undefined ? 50 : Math.max(0, p.coins|0),       // a welcome gift of 50 for new players
+    owned: Array.isArray(p.owned) ? p.owned.filter(id => SHOP_ITEMS.some(i => i.id === id)) : [],
+    frame: typeof p.frame === 'string' ? p.frame : '',
+    confetti: typeof p.confetti === 'string' ? p.confetti : '',
     stats: { games: s.games|0, rounds: s.rounds|0, correct: s.correct|0, skip: s.skip|0, best: s.best|0, cells: s.cells|0 }
   };
+}
+function frameStyle(p){
+  const it = SHOP_ITEMS.find(i => i.id === p.frame && p.owned.includes(i.id));
+  return it ? `border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55, 0 8px 20px rgba(0,0,0,.35);` : '';
 }
 function saveProfile(p){ LS.set('profile', p); }
 function recordRound(sum){
   try{
     const p = loadProfile(), s = p.stats;
+    const newCity = sum.to !== undefined && sum.from !== undefined && sum.to > sum.from && cityOf(sum.to) > cityOf(sum.from);
+    sum.earned = coinsForRound(sum.correct || 0, sum.moved || 0, newCity);
+    p.coins += sum.earned;
     s.rounds++; s.correct += sum.correct || 0; s.skip += sum.skip || 0;
     s.best = Math.max(s.best, sum.correct || 0); s.cells += Math.max(0, sum.moved || 0);
     saveProfile(p);
   }catch(e){}
 }
 function recordGameFinished(){
-  try{ const p = loadProfile(); p.stats.games++; saveProfile(p); }catch(e){}
+  try{ const p = loadProfile(); p.stats.games++; p.coins += COINS_PER_GAME; saveProfile(p); }catch(e){}
 }
 
 let resumeMsgDismissed = false;
@@ -606,8 +643,8 @@ function renderHome(){
   const top = el(`<div class="hm-top"></div>`);
   const prof = loadProfile();
   const profChip = el(`<button class="hm-prof" aria-label="پروفایل">
-    <span class="hm-prof__av">${prof.avatar ? `<span class="hm-prof__emoji">${prof.avatar}</span>` : '<svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><circle cx="12" cy="9" r="4"/><path d="M12 14.1c-4.1 0-7.2 2.6-7.4 6.1-.02.46.35.8.8.8h13.2c.45 0 .82-.34.8-.8-.2-3.5-3.3-6.1-7.4-6.1Z"/></svg>'}</span>
-    <span class="hm-prof__txt"><b></b><i>${prof.stats.rounds ? faNum(prof.stats.correct) + ' کلمه‌ی درست' : 'پروفایل من'}</i></span>
+    <span class="hm-prof__av" style="${frameStyle(prof).replace(/box-shadow:[^;]*;/,'')}">${prof.avatar ? `<span class="hm-prof__emoji">${prof.avatar}</span>` : '<svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><circle cx="12" cy="9" r="4"/><path d="M12 14.1c-4.1 0-7.2 2.6-7.4 6.1-.02.46.35.8.8.8h13.2c.45 0 .82-.34.8-.8-.2-3.5-3.3-6.1-7.4-6.1Z"/></svg>'}</span>
+    <span class="hm-prof__txt"><b></b><i>🪙 ${faNum(prof.coins)}</i></span>
   </button>`);
   profChip.querySelector('b').textContent = prof.name || 'بازیکن مهمان';
   profChip.addEventListener('click', () => { state.screen = 'profile'; render(); });
@@ -713,6 +750,7 @@ function renderHome(){
       const item = el(`<button class="hm-nav__item ${isHome ? 'is-home' : ''}">
         <span class="hm-nav__ico">${ico[key]}</span><span class="hm-nav__lbl">${label}</span></button>`);
       if(key === 'profile') item.addEventListener('click', () => { state.screen = 'profile'; render(); });
+      else if(key === 'shop') item.addEventListener('click', () => { state.screen = 'shop'; render(); });
       else if(!isHome) item.addEventListener('click', () => toastHome(label + ' به زودی'));
       nav.appendChild(item);
     });
@@ -1478,6 +1516,64 @@ function renderSettings(){
   return wrap;
 }
 
+// ---------------- SHOP SCREEN ----------------
+let shopTab = 'avatar';
+function renderShop(){
+  const p = loadProfile();
+  const wrap = el(`<div class="setup-page shop"></div>`);
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">فروشگاه<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="team-card shop-wallet">
+    <div class="shop-wallet__bal"><span>🪙</span><b>${faNum(p.coins)}</b></div>
+    <p>سکه را با بازی کردن به دست می‌آوری: هر کلمه‌ی درست ۲ سکه، راند ۵ کلمه‌ای ۵ سکه‌ی جایزه، ورود به شهر جدید ۱۵ سکه و تمام کردن بازی ۳۰ سکه.</p>
+  </div>`));
+  const tabs = el(`<div class="shop-tabs" role="tablist"></div>`);
+  SHOP_TABS.forEach(([k, label]) => {
+    const t = el(`<button class="shop-tab ${k === shopTab ? 'is-on' : ''}" role="tab" aria-selected="${k === shopTab}">${label}</button>`);
+    t.addEventListener('click', () => { shopTab = k; render(); });
+    tabs.appendChild(t);
+  });
+  wrap.appendChild(tabs);
+
+  const grid = el(`<div class="shop-grid"></div>`);
+  SHOP_ITEMS.filter(i => i.kind === shopTab && !i.free).forEach(it => {
+    const owned = p.owned.includes(it.id);
+    const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id);
+    let preview = '';
+    if(it.kind === 'avatar') preview = `<div class="shop-prev shop-prev--av">${it.value}</div>`;
+    else if(it.kind === 'frame') preview = `<div class="shop-prev shop-prev--av" style="border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55;">${p.avatar || '🙂'}</div>`;
+    else preview = `<div class="shop-prev shop-prev--cf">${it.value.map((c, i) => `<i style="background:${c}; left:${8 + i * 17}%; top:${14 + (i % 2) * 26}%; transform:rotate(${i * 37}deg);"></i>`).join('')}</div>`;
+    const cell = el(`<div class="shop-item ${owned ? 'is-owned' : ''} ${equipped ? 'is-eq' : ''}">${preview}<b class="shop-item__name"></b><button class="shop-buy"></button></div>`);
+    cell.querySelector('.shop-item__name').textContent = it.name;
+    const btn = cell.querySelector('.shop-buy');
+    if(!owned){
+      btn.innerHTML = `🪙 ${faNum(it.price)}`;
+      btn.classList.toggle('is-cant', p.coins < it.price);
+      btn.addEventListener('click', () => {
+        const q = loadProfile();
+        if(q.coins < it.price){ toastHome(`برای «${it.name}» ${faNum(it.price - q.coins)} سکه‌ی دیگر لازم داری`); return; }
+        if(!confirm(`«${it.name}» را با ${it.price} سکه می‌خری؟`)) return;
+        q.coins -= it.price; q.owned.push(it.id);
+        if(it.kind === 'avatar') q.avatar = it.value; else if(it.kind === 'frame') q.frame = it.id; else q.confetti = it.id;
+        saveProfile(q); sfxWin(); render();
+      });
+    } else {
+      btn.textContent = equipped ? (it.kind === 'avatar' ? 'در حال استفاده' : 'برداشتن') : 'استفاده';
+      btn.classList.add('is-own');
+      btn.addEventListener('click', () => {
+        const q = loadProfile();
+        if(it.kind === 'avatar') q.avatar = it.value;
+        else if(it.kind === 'frame') q.frame = equipped ? '' : it.id;
+        else q.confetti = equipped ? '' : it.id;
+        saveProfile(q); sfxTap(); render();
+      });
+    }
+    grid.appendChild(cell);
+  });
+  wrap.appendChild(grid);
+  wrap.appendChild(el(`<p class="prof-note">همه‌ی چیزها فقط ظاهری‌اند و روی امتیاز بازی اثری ندارند. سکه‌ها روی همین گوشی ذخیره می‌شوند.</p>`));
+  return wrap;
+}
+
 // ---------------- PROFILE SCREEN ----------------
 function renderProfile(){
   const p = loadProfile(), s = p.stats;
@@ -1485,7 +1581,8 @@ function renderProfile(){
   wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">پروفایل<span class="setup-brand-dot"></span></div></div>`));
 
   const head = el(`<div class="team-card prof-head">
-    <div class="prof-av" id="profAv">${p.avatar || '🙂'}</div>
+    <div class="prof-av" id="profAv" style="${frameStyle(p)}">${p.avatar || '🙂'}</div>
+    <div class="prof-coins"><span>🪙</span><b>${faNum(p.coins)}</b><span>سکه</span></div>
     <label class="prof-lbl" for="profName">نام تو</label>
     <input class="prof-name" id="profName" type="text" maxlength="14" autocomplete="off" placeholder="بازیکن مهمان" />
     <div class="prof-hint">این نام بالای صفحه‌ی اول نشان داده می‌شود.</div>
@@ -1494,7 +1591,8 @@ function renderProfile(){
   nameIn.value = p.name;
   nameIn.addEventListener('input', () => { const q = loadProfile(); q.name = nameIn.value.trim().slice(0, 14); saveProfile(q); });
   const grid = el(`<div class="prof-avs" role="radiogroup" aria-label="آواتار"></div>`);
-  AVATARS.forEach(av => {
+  const ownedAv = SHOP_ITEMS.filter(i => i.kind === 'avatar' && (i.free || p.owned.includes(i.id))).map(i => i.value);
+  [...new Set([...AVATARS, ...ownedAv])].forEach(av => {
     const b = el(`<button class="prof-avs__btn ${av === p.avatar ? 'is-on' : ''}" role="radio" aria-checked="${av === p.avatar}">${av}</button>`);
     b.addEventListener('click', () => {
       const q = loadProfile(); q.avatar = av; saveProfile(q);
@@ -1506,6 +1604,10 @@ function renderProfile(){
   });
   head.appendChild(grid);
   wrap.appendChild(head);
+
+  const shopBtn = el(`<button class="team-card__add set-learn prof-shopbtn">🛍️ رفتن به فروشگاه</button>`);
+  shopBtn.addEventListener('click', () => { state.screen = 'shop'; render(); });
+  wrap.appendChild(shopBtn);
 
   const total = s.correct + s.skip;
   const acc = total ? Math.round(s.correct * 100 / total) : 0;
@@ -1674,7 +1776,7 @@ function goBack(){
   if(s === 'online-create' || s === 'online-join'){
     state.screen = 'online-home';
     render();
-  } else if(s === 'settings' || s === 'profile' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
+  } else if(s === 'settings' || s === 'profile' || s === 'shop' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
     state.screen = 'home';
     render();
   } else if(s === 'online-lobby'){
@@ -1696,7 +1798,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','tutorial'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','tutorial'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -2536,6 +2638,7 @@ function buildRoundResult(onNext, label){
         ${foul ? tile('foul', ICO_FOUL, foul, 'خطا') : ''}
         ${tile('pt', ICO_PT, Math.abs(score), 'امتیاز راند', score >= 0 ? '+' : '−')}
       </div>
+      ${s.coins ? `<div class="st-coins"><span class="st-coins__ico">🪙</span><b>+${faNum(s.coins)}</b><span>سکه گرفتی</span></div>` : ''}
       ${acc === null ? '' : `<div class="st-acc"><span>دقت راند</span><div class="st-acc__bar"><i style="width:${acc}%"></i></div><b>${faNum(acc)}٪</b></div>`}
       <div class="st-prog">
         <div class="st-prog__track">${marks}${dots}</div>
@@ -2972,8 +3075,10 @@ function finishRound(){
   const toPos = Math.max(0, Math.min(t.position + moved, state.trackLength - 1));
   t.score += scoreChange;
   clearOneRoundMods(t);
-  recordRound({ correct: state.correctCount, skip: state.skipCount, moved: moved });
+  const earnedSum = { correct: state.correctCount, skip: state.skipCount, moved: moved, from: fromPos, to: toPos };
+  recordRound(earnedSum);
   state.pendingSummary = {
+    coins: earnedSum.earned || 0,
     teamName: t.name,
     correct: state.correctCount,
     skip: state.skipCount,
