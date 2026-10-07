@@ -613,7 +613,7 @@ function renderHome(){
   const play = el(`<button class="hm-btn hm-btn--gold hm-play">
     <span class="hm-btn__gloss"></span>
     <span class="hm-play__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span>
-    <span class="hm-play__txt">${hasSavedGame() ? 'ادامه‌ی بازی' : 'ساخت بازی'}</span></button>`);
+    <span class="hm-play__txt hm-out hm-out--gold" data-text="${hasSavedGame() ? 'ادامه‌ی بازی' : 'ساخت بازی'}">${hasSavedGame() ? 'ادامه‌ی بازی' : 'ساخت بازی'}</span></button>`);
   play.addEventListener('click', () => { if(hasSavedGame()) resumeLocalGame(); else { state.homeSheet = 'new'; render(); } });
   wrap.appendChild(play);
 
