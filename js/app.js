@@ -61,7 +61,7 @@ const HOME_CARD_BACK = "assets/card-back.webp";
 const HOME_CARD_WORD = "assets/card-word.webp";
 const HOME_CARD_ACT = "assets/card-action.webp";
 const HOME_LOGO = "assets/logo.webp";
-const MAP_IMAGE = "assets/map-50.webp";
+const MAP_IMAGE = "assets/map-hd.webp";
 
 // Index-aligned with ACTION_CARDS. needsTarget = must pick a rival team.
 
@@ -2458,9 +2458,9 @@ function buildRoundResult(onNext, label){
   return box;
 }
 
-// The board is a tall portrait strip (1080 x 5940): Bandar Abbas at the bottom,
+// The board is a tall portrait strip (2160 x 11880): Bandar Abbas at the bottom,
 // the Azadi Tower at the top. It is followed vertically by the camera.
-const MAP_RATIO = 1080 / 5940;
+const MAP_RATIO = 2160 / 11880;
 const MAP_FOLLOW_W = 640;       // board width in px while following a pawn
 const MAP_FIT_VIEW_RATIO = 1.4142;   // sets where the round summary panel starts
 const MAP_SETTLE_SCALE = 0.78;       // how far the camera eases back once the pawn has landed
