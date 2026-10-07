@@ -532,7 +532,19 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => { deferredInstall = null; LS.set('installDismissed', true); if(state.screen === 'home') render(); });
 
 // One banner at a time on the home screen: first the rules, then the install hint.
+let resumeMsgDismissed = false;
+function resumeBanner(){
+  if(resumeMsgDismissed || !hasSavedGame()) return null;
+  const g = (state.hasActiveGame && !state.winner && state.teams.length >= 2) ? { teams: state.teams } : storedLocalGame();
+  const lead = g && g.teams ? g.teams.reduce((m, t) => (t.position || 0) > (m.position || 0) ? t : m, g.teams[0]) : null;
+  const where = lead ? ` (${lead.name} روی خانه‌ی ${faNum(Math.min((lead.position || 0) + 1, state.trackLength))} از ${faNum(state.trackLength)})` : '';
+  return { kind:'resume', icon:'▶️', text:`بازی نیمه‌کاره‌ات منتظرته${where}. برای ادامه، همین پیام را لمس کن.`, cta:'',
+    go(){ resumeLocalGame(); }, close(){ resumeMsgDismissed = true; } };
+}
+
 function homeBanner(){
+  const rb = resumeBanner();
+  if(rb) return rb;
   if(!LS.get('seenTutorial', false)){
     return { kind:'learn', icon:'🎓', text:'اولین بازی‌ته؟ قانون‌ها رو تو یک دقیقه یاد بگیر.', cta:'آموزش',
       go(){ state.screen = 'tutorial'; render(); }, close(){ LS.set('seenTutorial', true); } };
@@ -585,6 +597,11 @@ function renderHome(){
     </div>`);
     const cta = b.querySelector('.hm-banner__cta');
     if(cta) cta.addEventListener('click', banner.go);
+    if(banner.kind === 'resume'){
+      b.setAttribute('role', 'button'); b.tabIndex = 0;
+      b.addEventListener('click', (ev) => { if(!ev.target.closest('.hm-banner__x')) banner.go(); });
+      b.addEventListener('keydown', (ev) => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); banner.go(); } });
+    }
     b.querySelector('.hm-banner__x').addEventListener('click', () => { banner.close(); render(); });
     wrap.appendChild(b);
   }
@@ -614,13 +631,12 @@ function renderHome(){
   const play = el(`<button class="hm-btn hm-btn--gold hm-play">
     <span class="hm-btn__gloss"></span>
     <span class="hm-play__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span>
-    <span class="hm-play__txt hm-out hm-out--gold" data-text="${hasSavedGame() ? 'ادامه‌ی بازی' : 'ساخت بازی'}">${hasSavedGame() ? 'ادامه‌ی بازی' : 'ساخت بازی'}</span></button>`);
-  play.addEventListener('click', () => { if(hasSavedGame()) resumeLocalGame(); else { state.homeSheet = 'new'; render(); } });
+    <span class="hm-play__txt hm-out hm-out--gold" data-text="ساخت بازی">ساخت بازی</span></button>`);
+  play.addEventListener('click', () => { state.homeSheet = 'new'; render(); });
   wrap.appendChild(play);
 
   // quick ways back in: a fresh game next to a saved one, and the room you left
   const quick = [];
-  if(hasSavedGame()) quick.push(['بازی جدید', () => { state.homeSheet = 'new'; render(); }]);
   const sr = savedRoom();
   if(sr) quick.push([`بازگشت به اتاق ${sr.code}`, rejoinSavedRoom]);
   if(quick.length){
