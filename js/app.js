@@ -2200,64 +2200,84 @@ function buildRoundResult(onNext, label){
   const s = state.lastRoundSummary || {};
   const correct = s.correct ?? 0, skip = s.skip ?? 0, foul = s.foul ?? 0;
   const score = s.scoreChange ?? 0, moved = s.moved ?? 0;
-  const landed = (s.landedCell ?? 0) + 1;
+  const cell0 = s.landedCell ?? 0, landed = cell0 + 1;
+  const team = state.teams.find(t => t.name === s.teamName) || currentTeam() || state.teams[0];
   const box = el(`<div class="res res--map"></div>`);
   box.appendChild(renderMapFullScreen());
-  const top = el(`<div class="res__panel res__panel--top"></div>`);
-  const bottom = el(`<div class="res__panel res__panel--bottom"></div>`);
-  const appEl = document.getElementById('app');
-  pinSummary(bottom, (appEl && appEl.clientWidth) || window.innerWidth);
 
-  bottom.appendChild(el(`<div class="res-head">
-    <h2 class="res-title">نتیجه راند</h2>
-    <span class="res-team">${s.teamName || ''}</span>
-  </div>`));
-
-  const statsEl = el(`<div class="res-stats">
-    <div class="res-stat res-stat--ok">
-      <span class="res-stat__ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg></span>
-      <span class="res-stat__num js-count" data-to="${correct}"></span>
-      <span class="res-stat__lbl">درست</span>
-    </div>
-    <div class="res-stat res-stat--no">
-      <span class="res-stat__ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></span>
-      <span class="res-stat__num js-count" data-to="${skip}"></span>
-      <span class="res-stat__lbl">رد شده</span>
-    </div>
-    ${foul ? `<div class="res-stat res-stat--foul">
-      <span class="res-stat__ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L22 20 L2 20 Z"/><path d="M12 9.6v4.2"/><path d="M12 17h.01"/></svg></span>
-      <span class="res-stat__num js-count" data-to="${foul}"></span>
-      <span class="res-stat__lbl">خطا</span>
-    </div>` : ''}
-    <div class="res-stat res-stat--pt">
-      <span class="res-stat__ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2.6l2.9 5.9 6.5.95-4.7 4.6 1.1 6.5L12 17.5l-5.8 3.05 1.1-6.5-4.7-4.6 6.5-.95L12 2.6Z"/></svg></span>
-      <span class="res-stat__num js-count" data-to="${Math.abs(score)}" data-sign="${score >= 0 ? '+' : '−'}"></span>
-      <span class="res-stat__lbl">امتیاز راند</span>
-    </div>
-  </div>`);
-  bottom.appendChild(statsEl);
-  // run the tallies up as each tile lands
-  const delays = [1120, 1220, 1320, 1420];
-  statsEl.querySelectorAll('.js-count').forEach((n, i) => {
-    n.dataset.sign = n.dataset.sign || '';
-    n.textContent = '';
-    setTimeout(() => countUp(n, Number(n.dataset.to) || 0, 620), delays[i] || 1420);
-  });
-
+  // ---- the stats screen: a centred card over the dimmed board ----
+  const total = correct + skip + foul;
+  const acc = total ? Math.round(correct * 100 / total) : null;
+  const left = Math.max(0, state.trackLength - landed);
+  const nextSpecial = state.obstacles.filter(o => o > cell0).sort((x, y) => x - y)[0];
+  const onSpecial = state.obstacles.includes(cell0);
+  const city = CITIES[cityOf(cell0)];
   const dirCls = moved > 0 ? 'is-fwd' : (moved < 0 ? 'is-back' : 'is-stay');
   const dirTxt = moved > 0 ? 'به جلو' : (moved < 0 ? 'به عقب' : 'بدون حرکت');
-  bottom.appendChild(el(`<div class="res-move ${dirCls}">
-    <div class="res-move__main">
-      <span class="res-move__val">${moved > 0 ? '+' : (moved < 0 ? '−' : '')}${faNum(Math.abs(moved))}</span>
-      <span class="res-move__unit">خانه ${dirTxt}</span>
-    </div>
-    <div class="res-move__land">خانه <b>${faNum(landed)}</b> / ${faNum(state.trackLength)}</div>
-  </div>`));
+  const praise = (s.correct ?? 0) >= 8 ? 'راند فوق‌العاده!' : (correct >= 5 ? 'راند عالی!' : (correct >= 2 ? 'راند خوبی بود' : (correct === 0 ? 'راند سختی بود' : 'ادامه بده!')));
+  const tile = (cls, ico, to, lbl, sign) => `<div class="st-tile st-tile--${cls}">${ico}<span class="st-tile__num js-count" data-to="${to}" ${sign ? `data-sign="${sign}"` : ''}></span><span class="st-tile__lbl">${lbl}</span></div>`;
+  const ICO_OK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
+  const ICO_NO = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>';
+  const ICO_FOUL = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L22 20 L2 20 Z"/><path d="M12 9.6v4.2"/><path d="M12 17h.01"/></svg>';
+  const ICO_PT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2.6l2.9 5.9 6.5.95-4.7 4.6 1.1 6.5L12 17.5l-5.8 3.05 1.1-6.5-4.7-4.6 6.5-.95L12 2.6Z"/></svg>';
 
-  const next = el(`<button class="res-next">${label || 'ادامه — نوبت بعدی'}<span class="res-next__chev"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></span></button>`);
-  next.addEventListener('click', onNext);
-  bottom.appendChild(next);
-  box.appendChild(bottom);
+  const ranked = state.teams.slice().sort((x, y) => (y.position - x.position) || (y.score - x.score));
+  const rows = ranked.map((t, i) => `<div class="st-row ${t === team ? 'is-me' : ''}">
+      <span class="st-row__rank">${faNum(i + 1)}</span>
+      <i class="st-row__dot" style="background:${t.color}"></i>
+      <span class="st-row__name">${t.name}</span>
+      <span class="st-row__cell">خانه ${faNum(Math.min(t.position, state.trackLength - 1) + 1)}</span>
+      <b class="st-row__score">${faNum(t.score)}</b>
+    </div>`).join('');
+  const dots = state.teams.map(t => `<i class="st-prog__dot" style="--f:${routeFrac(t)}; background:${t.color};"></i>`).join('');
+  const marks = CITIES.map((n, i) => `<span class="st-prog__city" style="--f:${(i * CELLS_PER_CITY / (state.trackLength - 1)).toFixed(4)}"><i></i><em>${n}</em></span>`).join('');
+
+  const overlay = el(`<div class="stats-overlay">
+    <div class="stats-card">
+      <div class="st-head">
+        <span class="st-head__badge" style="background:${team ? team.color : '#E9B94C'}"></span>
+        <div><small>نتیجه راند</small><h2>${s.teamName || ''}</h2></div>
+        <span class="st-head__praise">${praise}</span>
+      </div>
+      <div class="st-move ${dirCls}">
+        <b>${moved > 0 ? '+' : (moved < 0 ? '−' : '')}${faNum(Math.abs(moved))}</b>
+        <span>خانه ${dirTxt}</span>
+        <small>رسیدی به خانه‌ی ${faNum(landed)} در ${city}</small>
+      </div>
+      <div class="st-tiles">
+        ${tile('ok', ICO_OK, correct, 'درست')}
+        ${tile('no', ICO_NO, skip, 'رد شده')}
+        ${foul ? tile('foul', ICO_FOUL, foul, 'خطا') : ''}
+        ${tile('pt', ICO_PT, Math.abs(score), 'امتیاز راند', score >= 0 ? '+' : '−')}
+      </div>
+      ${acc === null ? '' : `<div class="st-acc"><span>دقت راند</span><div class="st-acc__bar"><i style="width:${acc}%"></i></div><b>${faNum(acc)}٪</b></div>`}
+      <div class="st-prog">
+        <div class="st-prog__track">${marks}${dots}</div>
+        <div class="st-prog__txt">${left ? `<b>${faNum(left)}</b> خانه تا برج آزادی` : 'به برج آزادی رسیدی!'}${nextSpecial !== undefined && left ? ` · خانه‌ی ویژه‌ی بعدی: <b>${faNum(nextSpecial + 1)}</b>` : ''}</div>
+      </div>
+      ${onSpecial ? '<div class="st-special">روی خانه‌ی ویژه افتادی! یک کارت اکشن در انتظار توست.</div>' : ''}
+      <div class="st-board"><small>جدول</small>${rows}</div>
+      <button class="res-next st-next">${label || 'ادامه — نوبت بعدی'}<span class="res-next__chev"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></span></button>
+    </div>
+  </div>`);
+  overlay.querySelector('.st-next').addEventListener('click', onNext);
+  box.appendChild(overlay);
+
+  // the card appears once the camera has eased back; a fallback covers boards that never zoom
+  let shown = false;
+  const reveal = () => {
+    if(shown || !overlay.isConnected) return;
+    shown = true;
+    box.classList.add('is-stats');
+    overlay.classList.add('is-in');
+    overlay.querySelectorAll('.js-count').forEach((n, i) => {
+      n.dataset.sign = n.dataset.sign || '';
+      n.textContent = '';
+      setTimeout(() => countUp(n, Number(n.dataset.to) || 0, 650), 380 + i * 110);
+    });
+  };
+  overlay._reveal = reveal;
+  setTimeout(reveal, 2600);
   return box;
 }
 
@@ -2317,11 +2337,11 @@ function positionMapCamera(cam, world){
     // Settle: ease back a little (not out to a tiny window) and keep the pawn in
     // the middle of the part of the screen above the summary panel, which is
     // pinned from the viewport WIDTH only.
-    const aboveH = summaryTopFor(cw);
+    const aboveH = ch;
     s = MAP_SETTLE_SCALE;
     const sw = baseW * s, sh = baseH * s;
     x = Math.max(Math.min(0, cw - sw), Math.min(0, cw / 2 - tokenX * s));
-    y = Math.min(0, Math.max(ch - sh, aboveH / 2 + 30 - tokenY * s));
+    y = Math.min(0, Math.max(ch - sh, aboveH / 2 - tokenY * s));
     if(clip) clip.style.clipPath = '';
     if(frame) frame.style.opacity = '0';
   } else {
@@ -2381,6 +2401,8 @@ function startMapZoomOut(){
   const cur = currentTeam();
   const tk = cur && mapWorldEl.querySelector(`.mapcam__tok[data-team="${cur.id}"]`);
   if(tk){ tk.classList.remove('is-arrive'); void tk.offsetWidth; tk.classList.add('is-arrive'); }
+  const ov = document.querySelector('.stats-overlay');
+  if(ov && ov._reveal) setTimeout(ov._reveal, 1500);   // let the camera ease back and the ring play first
   positionMapCamera(mapCamEl, mapWorldEl);
 }
 
