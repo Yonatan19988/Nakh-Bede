@@ -221,8 +221,8 @@ let state = {
     { id:1, name:'تیم ۱', color: TEAM_COLORS[0], icon: TEAM_ICONS[0], members:['بازیکن ۱','بازیکن ۲'], position:0, score:0, describerIdx:0, timerOverride:null, mods:{} },
     { id:2, name:'تیم ۲', color: TEAM_COLORS[1], icon: TEAM_ICONS[1], members:['بازیکن ۳','بازیکن ۴'], position:0, score:0, describerIdx:0, timerOverride:null, mods:{} },
   ],
-  trackLength: 66,
-  obstacles: [2,6,11,17,20,26,30,35,39,43,48,52,57,61,64],
+  trackLength: 50,
+  obstacles: [2,6,11,15,19,23,28,32,36,41,45,48],
   twistActive: false,
   currentTeamIdx: 0,
   currentCard: null,
@@ -2261,14 +2261,17 @@ function buildRoundResult(onNext, label){
   return box;
 }
 
-const MAP_RATIO = 4961 / 3508;
-const MAP_ZOOM = 1.8;           // board height vs screen height
+// The board is a tall portrait strip (1080 x 5940): Bandar Abbas at the bottom,
+// the Azadi Tower at the top. It is followed vertically by the camera.
+const MAP_RATIO = 1080 / 5940;
+const MAP_FOLLOW_W = 980;       // board width in px while following a pawn
+const MAP_FIT_VIEW_RATIO = 1.4142;   // pulled-back window: width / height
 const MAP_FIT_TOP = 50;         // gap above the board in the pulled-back view
 const MAP_FIT_MAX_W = 460;      // board never wider than the app's content column
 const MAP_SUMMARY_GAP = 10;     // space between the board and the summary
 let camLastX = null, camLastY = null, camLastS = 1;
 let tokLastPos = {};
-let mapCamEl = null, mapWorldEl = null;
+let mapCamEl = null, mapWorldEl = null, mapClipEl = null, mapFrameEl = null;
 let lastShownWord = null;
 let lastRenderedScreen = null;
 let lastTimerSecond = null;
@@ -2276,13 +2279,13 @@ let lastStreakShown = 0;
 let timerEl = null;
 let screenInTimer = null;
 
-function resetMapCamera(){ timerEl = null; lastShownWord = null; lastTimerSecond = null; camLastX = null; camLastY = null; camLastS = 1; tokLastPos = {}; mapCamEl = null; mapWorldEl = null; state.mapFit = false; }
+function resetMapCamera(){ timerEl = null; lastShownWord = null; lastTimerSecond = null; camLastX = null; camLastY = null; camLastS = 1; tokLastPos = {}; mapCamEl = null; mapWorldEl = null; mapClipEl = null; mapFrameEl = null; state.mapFit = false; }
 
 function summaryTopFor(cw){
   // The board is pinned MAP_FIT_TOP from the top and its height is a pure
   // function of width, so the summary's place never depends on the viewport
   // height (which moves as the browser bar slides).
-  const boardH = Math.min(cw, MAP_FIT_MAX_W) / MAP_RATIO;
+  const boardH = Math.min(cw, MAP_FIT_MAX_W) / MAP_FIT_VIEW_RATIO;
   return Math.round(MAP_FIT_TOP + boardH + MAP_SUMMARY_GAP);
 }
 
@@ -2295,31 +2298,41 @@ function positionMapCamera(cam, world){
   const cw = cam.clientWidth, ch = cam.clientHeight;
   if(!cw || !ch) return;
 
-  // The board is always laid out at the close-up size; zooming is done with a
-  // transform scale so it can animate smoothly instead of relaying out.
-  const baseH = ch * MAP_ZOOM;
-  const baseW = baseH * MAP_RATIO;
+  // The board is always laid out at the close-up size; zooming out is done
+  // with a transform scale so it can animate smoothly instead of relaying out.
+  const baseW = MAP_FOLLOW_W;
+  const baseH = baseW / MAP_RATIO;
   world.style.width = baseW + 'px';
   world.style.height = baseH + 'px';
 
-  let s, x, y;
-  if(state.mapFit){
-    // Board size comes from the viewport WIDTH only. Height changes whenever
-    // the browser bar slides in or out, so anything derived from it drifts.
-    // The summary below is offset by exactly the same width-based formula.
-    s = Math.min(cw, MAP_FIT_MAX_W) / baseW;
-    x = (cw - baseW * s) / 2;
-    y = MAP_FIT_TOP;
+  const t = currentTeam();
+  const cell = Math.max(0, Math.min(t ? t.position : 0, CELL_COORDS.length - 1));
+  const tokenX = baseW * CELL_COORDS[cell][0] / 100;
+  const tokenY = baseH * CELL_COORDS[cell][1] / 100;
 
+  let s, x, y;
+  const clip = mapClipEl, frame = mapFrameEl;
+  if(state.mapFit){
+    // Pulled back: the whole width of the strip fits a window that is sized
+    // from the viewport WIDTH only (height changes whenever the browser bar
+    // slides), centred on the team that just moved. The summary below is
+    // offset by the same width-based formula.
+    const W = Math.min(cw, MAP_FIT_MAX_W);
+    const winH = W / MAP_FIT_VIEW_RATIO;
+    s = W / baseW;
+    x = (cw - W) / 2;
+    y = Math.min(MAP_FIT_TOP, Math.max(MAP_FIT_TOP + winH - baseH * s, MAP_FIT_TOP + winH / 2 - tokenY * s));
+    if(clip) clip.style.clipPath = `inset(${MAP_FIT_TOP}px ${x}px calc(100% - ${MAP_FIT_TOP + winH}px) ${x}px round 16px)`;
+    if(frame){
+      frame.style.cssText = `opacity:1; left:${x}px; top:${MAP_FIT_TOP}px; width:${W}px; height:${winH}px;`;
+    }
   } else {
     s = 1;
-    const t = currentTeam();
-    const cell = Math.max(0, Math.min(t ? t.position : 0, CELL_COORDS.length - 1));
-    const tokenX = baseW * CELL_COORDS[cell][0] / 100;
-    const tokenY = baseH * CELL_COORDS[cell][1] / 100;
     // keep the moving pawn centred, but never show past the edges of the board
     x = Math.max(Math.min(0, cw - baseW), Math.min(0, cw / 2 - tokenX));
     y = Math.max(Math.min(0, ch - baseH), Math.min(0, ch / 2 - tokenY));
+    if(clip) clip.style.clipPath = 'inset(0px 0px calc(100% - 100%) 0px round 0px)';
+    if(frame) frame.style.opacity = '0';
   }
   // the summary is pinned from the same numbers, in every state, so the two
   // can never disagree and it never shifts once drawn
@@ -2387,8 +2400,8 @@ function renderMapFullScreen(){
     const [px, py] = CELL_COORDS[parseInt(c)];
     group.forEach((g, gi) => {
       const ang = (gi / group.length) * 2 * Math.PI;
-      const r = group.length > 1 ? 1.4 : 0;
-      const ox = r * Math.cos(ang), oy = r * Math.sin(ang);
+      const r = group.length > 1 ? 1.5 : 0;               // % of the board width
+      const ox = r * Math.cos(ang), oy = r * Math.sin(ang) * MAP_RATIO;
       const isTurn = g.t === currentTeam();
       const nx = px + ox, ny = py + oy;
       const prev = tokLastPos[g.t.id];
@@ -2411,8 +2424,12 @@ function renderMapFullScreen(){
     });
   });
 
-  cam.appendChild(world);
-  mapCamEl = cam; mapWorldEl = world;
+  const clip = el(`<div class="mapcam__clip"></div>`);
+  clip.appendChild(world);
+  const frame = el(`<div class="mapcam__frame"></div>`);
+  cam.appendChild(clip);
+  cam.appendChild(frame);
+  mapCamEl = cam; mapWorldEl = world; mapClipEl = clip; mapFrameEl = frame;
   requestAnimationFrame(() => positionMapCamera(cam, world));
   return cam;
 }
@@ -2462,7 +2479,7 @@ function buildMapWrap(large){
       const offsetAngle = (gi/group.length) * 2*Math.PI;
       const offsetR = group.length>1 ? 1.4 : 0;
       const ox = offsetR*Math.cos(offsetAngle);
-      const oy = offsetR*Math.sin(offsetAngle);
+      const oy = offsetR*Math.sin(offsetAngle)*MAP_RATIO;
       const tok = el(`<div style="position:absolute; left:${(px+ox).toFixed(2)}%; top:${(py+oy).toFixed(2)}%; width:${tokSize}px; height:${tokSize*1.35}px; margin-left:-${tokSize/2}px; margin-top:-${tokSize*1.15}px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.55)); transition:left .4s ease, top .4s ease;">${PAWN_SVG(g.t.color)}</div>`);
       mapWrap.appendChild(tok);
     });
