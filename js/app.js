@@ -2461,7 +2461,7 @@ function buildRoundResult(onNext, label){
 // The board is a tall portrait strip (1080 x 5940): Bandar Abbas at the bottom,
 // the Azadi Tower at the top. It is followed vertically by the camera.
 const MAP_RATIO = 1080 / 5940;
-const MAP_FOLLOW_W = 980;       // board width in px while following a pawn
+const MAP_FOLLOW_W = 640;       // board width in px while following a pawn
 const MAP_FIT_VIEW_RATIO = 1.4142;   // sets where the round summary panel starts
 const MAP_SETTLE_SCALE = 0.78;       // how far the camera eases back once the pawn has landed
 const MAP_FIT_TOP = 50;         // gap above the board in the pulled-back view
@@ -2539,7 +2539,7 @@ function positionMapCamera(cam, world){
   // Pawns shrink with the board. The only correction is a floor so they do
   // not vanish at full zoom-out: aim for about 15px on screen, and never
   // enlarge beyond what that floor needs.
-  const TOK_H = 56, TOK_MIN_PX = 15;
+  const TOK_H = 44, TOK_MIN_PX = 15;
   const natural = TOK_H * s;
   const tokScale = natural >= TOK_MIN_PX ? 1 : Math.min(TOK_MIN_PX / natural, 1.7);
   world.style.setProperty('--tok-scale', tokScale.toFixed(3));
