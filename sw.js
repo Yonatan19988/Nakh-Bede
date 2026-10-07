@@ -1,8 +1,8 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v16';
+const CACHE = 'nakh-bede-v17';
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
-const LAZY = ['./assets/map.webp'];
+const LAZY = ['./assets/map-50.webp'];
 const FONT_CACHE = 'nakh-bede-fonts-v1';
 const CORE = [
   './', './index.html',
@@ -20,9 +20,9 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE)
       // one missing file must not fail the whole install
-      .then((c) => Promise.allSettled(CORE.map((u) => c.add(u))))
+      .then((c) => Promise.allSettled(CORE.map((u) => c.add(new Request(u, { cache: 'reload' })))))
       .then(() => {
-        caches.open(CACHE).then((c) => Promise.allSettled(LAZY.map((u) => c.add(u))));
+        caches.open(CACHE).then((c) => Promise.allSettled(LAZY.map((u) => c.add(new Request(u, { cache: 'reload' })))));
         return self.skipWaiting();
       })
   );
