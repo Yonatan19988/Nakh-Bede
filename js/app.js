@@ -8,7 +8,7 @@ const LS = {
   set(k, v){ try{ localStorage.setItem('nb_' + k, JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem('nb_' + k); }catch(e){} },
 };
-const prefs = { sound: LS.get('sound', true) !== false, haptic: LS.get('haptic', true) !== false };
+const prefs = { sound: LS.get('sound', true) !== false, haptic: LS.get('haptic', true) !== false, music: LS.get('music', true) !== false };
 
 function PERSIAN_ORNAMENT(size){
   size = size || 20;
@@ -325,6 +325,131 @@ function launchConfetti(host, big){
 }
 function celebrate(host, big){ sfxCheer(big); launchConfetti(host, big); }
 
+// ---------------- BACKGROUND MUSIC (synthesised, no audio files) ----------------
+// A gentle Persian-modal loop: a santur-like plucked melody in dastgah Shur
+// (with the quarter-tone second), a drone on the tonic and fifth, and a soft
+// daf pattern. Each city nudges the key and tempo, so the journey changes
+// colour as the pawns travel from Bandar Abbas to Tehran.
+const MUSIC = {
+  on: false, timer: null, ctx: null, master: null, bus: null, noise: null,
+  step: 0, next: 0, deg: 4, lastCity: -1,
+  cents: [0,150,300,500,700,800,1000,1200,1350,1500,1700,1900],   // Shur from the tonic, two octaves
+  tonic: [62,64,62,60,62],          // D, E, D, C, D  (Bandar Abbas, Shiraz, Isfahan, Rasht, Tehran)
+  bpm:   [104,92,96,84,100]
+};
+function musicCtx(){
+  const ctx = window.__audioCtx || (window.__audioCtx = new (window.AudioContext||window.webkitAudioContext)());
+  return ctx;
+}
+function musicCity(){
+  const t = state.teams && state.teams.length ? state.teams.reduce((m, x) => x.position > m.position ? x : m, state.teams[0]) : null;
+  return cityOf(t ? t.position : 0);
+}
+function musicBuild(){
+  const ctx = musicCtx(); MUSIC.ctx = ctx;
+  MUSIC.master = ctx.createGain(); MUSIC.master.gain.value = 0;
+  // echo: a short feedback delay gives the pluck some air
+  const dl = ctx.createDelay(1); dl.delayTime.value = 0.36;
+  const fb = ctx.createGain(); fb.gain.value = 0.34;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+  dl.connect(lp); lp.connect(fb); fb.connect(dl);
+  MUSIC.bus = ctx.createGain();
+  MUSIC.bus.connect(MUSIC.master); MUSIC.bus.connect(dl); lp.connect(MUSIC.master);
+  MUSIC.master.connect(ctx.destination);
+  const len = ctx.sampleRate * 0.5, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  for(let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  MUSIC.noise = buf;
+}
+function mFreq(tonicMidi, cents){ return 440 * Math.pow(2, (tonicMidi - 69) / 12 + cents / 1200); }
+function mPluck(t, f, vol, dur){
+  const ctx = MUSIC.ctx;
+  [[1,'triangle',1],[2.004,'sine',.35]].forEach(([mul, type, amp]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = f * mul;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol * amp, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(MUSIC.bus); o.start(t); o.stop(t + dur + 0.05);
+  });
+}
+function mDrone(t, tonicMidi, dur){
+  const ctx = MUSIC.ctx;
+  [[mFreq(tonicMidi - 24, 0), .05], [mFreq(tonicMidi - 24, 700), .028]].forEach(([f, v]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(v, t + dur * 0.35);
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(MUSIC.master); o.start(t); o.stop(t + dur + 0.05);
+  });
+}
+function mDaf(t, kind){
+  const ctx = MUSIC.ctx;
+  const src = ctx.createBufferSource(); src.buffer = MUSIC.noise;
+  const bp = ctx.createBiquadFilter(), g = ctx.createGain();
+  if(kind === 'dum'){
+    bp.type = 'lowpass'; bp.frequency.value = 220;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(.2, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    const o = ctx.createOscillator(), og = ctx.createGain();     // the body of the drum
+    o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.16);
+    og.gain.setValueAtTime(.16, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    o.connect(og); og.connect(MUSIC.master); o.start(t); o.stop(t + 0.3);
+  } else {
+    bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.9;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(.07, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+  }
+  src.connect(bp); bp.connect(g); g.connect(MUSIC.master); src.start(t); src.stop(t + 0.3);
+}
+function musicSchedule(){
+  if(!MUSIC.ctx) return;
+  const ctx = MUSIC.ctx;
+  // quieter while a round is being timed so the describer can be heard
+  const target = MUSIC.on ? (state.timerRunning ? 0.3 : 0.55) : 0;
+  MUSIC.master.gain.setTargetAtTime(target, ctx.currentTime, MUSIC.on ? 0.6 : 0.3);
+  if(!MUSIC.on || ctx.state !== 'running') return;
+  const city = musicCity();
+  if(city !== MUSIC.lastCity){ MUSIC.lastCity = city; MUSIC.deg = 4; }
+  const tonic = MUSIC.tonic[city], eighth = 60 / MUSIC.bpm[city] / 2;
+  if(MUSIC.next < ctx.currentTime) MUSIC.next = ctx.currentTime + 0.05;
+  while(MUSIC.next < ctx.currentTime + 0.45){
+    const i = MUSIC.step % 16, t = MUSIC.next;                  // two bars of eight
+    if(i === 0) mDrone(t, tonic, eighth * 16);
+    if(i === 0 || i === 8) mDaf(t, 'dum');
+    if(i === 4 || i === 12) mDaf(t, 'dum');
+    if(i % 2 === 1 && i !== 7) mDaf(t, 'tak');
+    // melody: a wandering line that likes the tonic and the fifth at phrase ends
+    const phraseEnd = i === 14, strong = i % 4 === 0;
+    if(strong || Math.random() < 0.62 || phraseEnd){
+      let step = [-2,-1,-1,0,1,1,1,2][Math.floor(Math.random() * 8)];
+      if(i === 0 && Math.random() < .5) step = 0;
+      MUSIC.deg = Math.max(0, Math.min(MUSIC.cents.length - 1, MUSIC.deg + step));
+      if(phraseEnd){ MUSIC.deg = Math.random() < .6 ? 0 : 4; }
+      if(MUSIC.deg > 9 && Math.random() < .5) MUSIC.deg -= 2;
+      mPluck(t, mFreq(tonic + 12, MUSIC.cents[MUSIC.deg]), strong ? .1 : .075, phraseEnd ? 1.6 : 0.9);
+    }
+    MUSIC.next += eighth; MUSIC.step++;
+  }
+}
+function musicSync(){
+  const playScreen = state.screen === 'board' || state.screen === 'online-board';
+  const want = prefs.music && playScreen && !document.hidden;
+  if(want){
+    try{
+      if(!MUSIC.ctx) musicBuild();
+      if(MUSIC.ctx.state === 'suspended') MUSIC.ctx.resume();
+    }catch(e){ return; }
+    MUSIC.on = true;
+    if(!MUSIC.timer) MUSIC.timer = setInterval(musicSchedule, 120);
+  } else if(MUSIC.on){
+    MUSIC.on = false;                       // musicSchedule fades the master gain out
+    if(MUSIC.master && MUSIC.ctx) MUSIC.master.gain.setTargetAtTime(0, MUSIC.ctx.currentTime, 0.25);
+    setTimeout(() => { if(!MUSIC.on && MUSIC.timer){ clearInterval(MUSIC.timer); MUSIC.timer = null; } }, 1400);
+  }
+}
+// browsers keep audio locked until the first touch, so retry on the first few
+['pointerdown','keydown'].forEach(ev => document.addEventListener(ev, () => { if(prefs.music) musicSync(); }, { passive:true }));
+document.addEventListener('visibilitychange', () => { musicSync(); });
+
 function sfxHop(){ haptic(12); playTone(520,0.08,'square',0.12); setTimeout(()=>playTone(700,0.06,'square',0.08),50); }
 function sfxCardReveal(){ haptic([15,50,30]); playTone(300,0.1,'triangle',0.12); setTimeout(()=>playTone(500,0.12,'triangle',0.14),80); setTimeout(()=>playTone(750,0.18,'triangle',0.16),160); }
 
@@ -348,6 +473,7 @@ function render(){
   document.body.classList.toggle('scroll-lock', boardScreen);
   document.documentElement.classList.toggle('scroll-lock', boardScreen);
   const playScreen = state.screen === 'board' || state.screen === 'online-board';
+  musicSync();
   document.body.classList.toggle('play-mode', playScreen);
   document.documentElement.classList.toggle('play-mode', playScreen);
   app.innerHTML = '';
@@ -1268,7 +1394,7 @@ function renderSettings(){
   // ---- sound & vibration ----
   const fbCard = el(`<div class="team-card set-card"></div>`);
   fbCard.appendChild(el(`<h2 class="set-card__title">صدا و لرزش</h2>`));
-  [['sound', 'صدای بازی'], ['haptic', 'لرزش']].forEach(([key, label]) => {
+  [['sound', 'صدای بازی'], ['music', 'موسیقی'], ['haptic', 'لرزش']].forEach(([key, label]) => {
     const row = el(`<button class="set-switch" role="switch" aria-checked="${prefs[key]}"><span class="set-switch__lbl">${label}</span><span class="set-switch__knob" aria-hidden="true"></span></button>`);
     row.addEventListener('click', () => {
       prefs[key] = !prefs[key];
