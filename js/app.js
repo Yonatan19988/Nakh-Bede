@@ -280,6 +280,51 @@ function sfxCorrect(){ haptic(18); playTone(880,0.14,'sine',0.18); setTimeout(()
 function sfxWrong(){ haptic([28,40,28]); playTone(180,0.25,'sawtooth',0.14); }
 function sfxTick(){ playTone(1000,0.05,'square',0.05); }
 function sfxWin(){ haptic([40,60,40,60,120]); [660,880,990,1320].forEach((f,i)=>setTimeout(()=>playTone(f,0.28,'triangle',0.18), i*140)); }
+function sfxCheer(big){
+  haptic(big ? [30,40,30,40,30,40,160] : [30,40,60]);
+  const seq = big ? [523,659,784,1047,784,1047,1319] : [659,784,1047];
+  seq.forEach((f,i)=>setTimeout(()=>playTone(f,0.22,'triangle',0.17), i*(big?110:130)));
+  const n = big ? 14 : 7;            // little sparkles on top
+  for(let i=0;i<n;i++) setTimeout(()=>playTone(1800+Math.random()*1800,0.05,'sine',0.05), 200+i*70+Math.random()*40);
+}
+function launchConfetti(host, big){
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = document.createElement('canvas');
+  cv.className = 'confetti';
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = window.innerWidth, H = window.innerHeight;
+  cv.width = W*dpr; cv.height = H*dpr;
+  host.appendChild(cv);
+  const g = cv.getContext('2d'); g.scale(dpr, dpr);
+  const cols = ['#FFD15C','#2ED3C6','#FF6B5E','#8FB8FF','#F6B88A','#FFFFFF','#B58CFF'];
+  const N = big ? 170 : 90, ps = [];
+  for(let i=0;i<N;i++){
+    const fromSide = i % 3 === 0;             // a third burst from the lower corners, the rest rain from the top
+    const left = i % 2 === 0;
+    ps.push(fromSide ? { x: left ? -10 : W+10, y: H*0.78, vx:(left?1:-1)*(3+Math.random()*7), vy:-(9+Math.random()*10) }
+                     : { x: Math.random()*W, y: -20-Math.random()*H*0.5, vx:(Math.random()-.5)*3, vy:1.5+Math.random()*3 });
+    Object.assign(ps[i], { w:6+Math.random()*7, h:9+Math.random()*9, r:Math.random()*6, vr:(Math.random()-.5)*.35,
+      c:cols[i%cols.length], sw:Math.random()*6, ssw:.04+Math.random()*.06, round:Math.random()<.2 });
+  }
+  const t0 = performance.now(), dur = big ? 4800 : 3400;
+  (function frame(now){
+    const t = now - t0;
+    g.clearRect(0,0,W,H);
+    const fade = t > dur-900 ? Math.max(0,(dur-t)/900) : 1;
+    ps.forEach(p=>{
+      p.vy += .16; p.vx *= .995; p.vy = Math.min(p.vy, 6.5);
+      p.x += p.vx + Math.sin(p.sw)*.8; p.y += p.vy; p.sw += p.ssw; p.r += p.vr;
+      g.save(); g.globalAlpha = fade; g.translate(p.x,p.y); g.rotate(p.r);
+      g.scale(1, Math.cos(p.sw*2.2));            // flutter: the sheet flips as it falls
+      g.fillStyle = p.c;
+      if(p.round){ g.beginPath(); g.arc(0,0,p.w/2,0,7); g.fill(); } else g.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      g.restore();
+    });
+    if(t < dur && cv.isConnected) requestAnimationFrame(frame); else cv.remove();
+  })(t0);
+}
+function celebrate(host, big){ sfxCheer(big); launchConfetti(host, big); }
+
 function sfxHop(){ haptic(12); playTone(520,0.08,'square',0.12); setTimeout(()=>playTone(700,0.06,'square',0.08),50); }
 function sfxCardReveal(){ haptic([15,50,30]); playTone(300,0.1,'triangle',0.12); setTimeout(()=>playTone(500,0.12,'triangle',0.14),80); setTimeout(()=>playTone(750,0.18,'triangle',0.16),160); }
 
@@ -2270,6 +2315,12 @@ function buildRoundResult(onNext, label){
     shown = true;
     box.classList.add('is-stats');
     overlay.classList.add('is-in');
+    const fromCell = cell0 - moved;
+    const newCity = moved > 0 && cityOf(cell0) > cityOf(fromCell);
+    const goal = landed >= state.trackLength;
+    if(goal || newCity || correct >= 5 || moved >= 5){
+      setTimeout(() => celebrate(document.body, goal || (newCity && correct >= 5) || correct >= 8), 250);
+    }
     overlay.querySelectorAll('.js-count').forEach((n, i) => {
       n.dataset.sign = n.dataset.sign || '';
       n.textContent = '';

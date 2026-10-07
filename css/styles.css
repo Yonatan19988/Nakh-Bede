@@ -2047,3 +2047,5 @@
 .st-next{ margin-top:2px; }
 @media (max-height:700px){ .stats-card{ gap:8px; padding:12px; } .st-move b{ font-size:38px; } }
 @media (prefers-reduced-motion: reduce){ .stats-card, .stats-overlay{ transition:none; } .st-acc__bar i{ animation:none; } }
+
+.confetti{ position:fixed; inset:0; width:100%; height:100%; z-index:130; pointer-events:none; }
