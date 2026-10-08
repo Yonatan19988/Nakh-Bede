@@ -61,7 +61,7 @@ const HOME_CARD_BACK = "assets/card-back.webp";
 const HOME_CARD_WORD = "assets/card-word.webp";
 const HOME_CARD_ACT = "assets/card-action.webp";
 const HOME_LOGO = "assets/logo.webp";
-const MAP_IMAGE = "assets/map-hd2.webp";
+const MAP_IMAGE = "assets/map-60.webp";
 
 // Index-aligned with ACTION_CARDS. needsTarget = must pick a rival team.
 
@@ -221,8 +221,8 @@ let state = {
     { id:1, name:'تیم ۱', color: TEAM_COLORS[0], icon: TEAM_ICONS[0], members:['بازیکن ۱','بازیکن ۲'], position:0, score:0, describerIdx:0, timerOverride:null, mods:{} },
     { id:2, name:'تیم ۲', color: TEAM_COLORS[1], icon: TEAM_ICONS[1], members:['بازیکن ۳','بازیکن ۴'], position:0, score:0, describerIdx:0, timerOverride:null, mods:{} },
   ],
-  trackLength: 50,
-  obstacles: [2,6,11,15,19,23,28,32,36,41,45,48],
+  trackLength: 60,
+  obstacles: [2,7,12,17,22,27,31,35,39,43,47,51,55,58],
   twistActive: false,
   currentTeamIdx: 0,
   currentCard: null,
@@ -2734,7 +2734,7 @@ function buildRoundResult(onNext, label){
       <b class="st-row__score">${faNum(t.score)}</b>
     </div>`).join('');
   const dots = state.teams.map(t => `<i class="st-prog__dot" style="--f:${routeFrac(t)}; background:${t.color};"></i>`).join('');
-  const marks = CITIES.map((n, i) => `<span class="st-prog__city" style="--f:${(i * CELLS_PER_CITY / (state.trackLength - 1)).toFixed(4)}"><i></i><em>${n}</em></span>`).join('');
+  const marks = CITIES.map((n, i) => `<span class="st-prog__city" style="--f:${(CITY_START[i] / (state.trackLength - 1)).toFixed(4)}"><i></i><em>${n}</em></span>`).join('');
 
   const overlay = el(`<div class="stats-overlay">
     <div class="stats-card">
@@ -2920,14 +2920,14 @@ function startMapZoomOut(){
 
 // ---------- journey: cities, route bar, arrival banner ----------
 const CITIES = ['بندرعباس','شیراز','اصفهان','رشت','تهران'];
-const CELLS_PER_CITY = 10;
-function cityOf(cell){ return Math.max(0, Math.min(CITIES.length - 1, Math.floor(cell / CELLS_PER_CITY))); }
+const CITY_START = CITIES.map((_, i) => Math.max(0, CELL_CITY.indexOf(i)));
+function cityOf(cell){ return CELL_CITY[Math.max(0, Math.min(CELL_CITY.length - 1, cell | 0))] ?? 0; }
 
 function buildRouteBar(){
   const bar = el(`<div class="routebar" aria-hidden="true"></div>`);
   bar.appendChild(el(`<div class="routebar__line"></div>`));
   CITIES.forEach((n, i) => {
-    const frac = (i * CELLS_PER_CITY) / (state.trackLength - 1);
+    const frac = CITY_START[i] / (state.trackLength - 1);
     const last = i === CITIES.length - 1;
     bar.appendChild(el(`<div class="routebar__city ${last ? 'is-goal' : ''}" style="--f:${Math.min(frac, 1).toFixed(4)};"><i></i><span>${n}</span></div>`));
   });
