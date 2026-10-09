@@ -677,12 +677,34 @@ function loadProfile(){
     owned: Array.isArray(p.owned) ? p.owned.filter(id => SHOP_ITEMS.some(i => i.id === id)) : [],
     frame: typeof p.frame === 'string' ? p.frame : '',
     confetti: typeof p.confetti === 'string' ? p.confetti : '',
-    stats: { games: s.games|0, rounds: s.rounds|0, correct: s.correct|0, skip: s.skip|0, best: s.best|0, cells: s.cells|0 }
+    stats: { games: s.games|0, rounds: s.rounds|0, correct: s.correct|0, skip: s.skip|0, best: s.best|0, cells: s.cells|0 },
+    ...sanitizeLook(p)
   };
 }
-function frameStyle(p){
+
+// ---- built avatars (see js/avatar.js) ----
+// look = indexes into the part lists; cover/ring pick the banner and the circle colour;
+// parts = locked pieces the player has bought, as 'kind:index'.
+function partPrice(kind, i){ return (NBAvatar.PRICES[kind] || {})[i] || 0; }
+function sanitizeLook(p){
+  const L = NBAvatar.LISTS, src = (p.look && typeof p.look === 'object') ? p.look : {};
+  const parts = Array.isArray(p.parts) ? p.parts.filter(x => typeof x === 'string') : [];
+  const fix = (kind, v, dflt) => {
+    const n = Number.isInteger(v) && v >= 0 && v < L[kind].length ? v : dflt;
+    return partPrice(kind, n) && !parts.includes(kind + ':' + n) ? 0 : n;
+  };
+  const look = {};
+  Object.keys(NBAvatar.DEFAULT_LOOK).forEach(k => { look[k] = fix(k, src[k], NBAvatar.DEFAULT_LOOK[k]); });
+  return { look, cover: fix('cover', p.cover, 0), ring: fix('ring', p.ring, 0), parts };
+}
+function ringColor(p){
   const it = SHOP_ITEMS.find(i => i.id === p.frame && p.owned.includes(i.id));
-  return it ? `border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55, 0 8px 20px rgba(0,0,0,.35);` : '';
+  return it ? it.value : NBAvatar.RING[p.ring][0];
+}
+function avatarMarkup(p){ return p.avatar ? `<span class="av-emoji">${p.avatar}</span>` : NBAvatar.svg(p.look); }
+function frameStyle(p){
+  const c = ringColor(p);
+  return `border-color:${c}; box-shadow:0 0 0 3px ${c}55, 0 8px 20px rgba(0,0,0,.35);`;
 }
 function saveProfile(p){ LS.set('profile', p); }
 function recordRound(sum){
@@ -740,7 +762,7 @@ function renderHome(){
   const top = el(`<div class="hm-top"></div>`);
   const prof = loadProfile();
   const profChip = el(`<button class="hm-prof" aria-label="پروفایل">
-    <span class="hm-prof__av" style="${frameStyle(prof).replace(/box-shadow:[^;]*;/,'')}">${prof.avatar ? `<span class="hm-prof__emoji">${prof.avatar}</span>` : '<svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><circle cx="12" cy="9" r="4"/><path d="M12 14.1c-4.1 0-7.2 2.6-7.4 6.1-.02.46.35.8.8.8h13.2c.45 0 .82-.34.8-.8-.2-3.5-3.3-6.1-7.4-6.1Z"/></svg>'}</span>
+    <span class="hm-prof__av" style="${frameStyle(prof).replace(/box-shadow:[^;]*;/,'')}">${avatarMarkup(prof)}</span>
     <span class="hm-prof__txt"><b></b><i>🪙 ${faNum(prof.coins)}</i></span>
   </button>`);
   profChip.querySelector('b').textContent = prof.name || 'بازیکن مهمان';
@@ -1637,7 +1659,7 @@ function renderShop(){
     const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id);
     let preview = '';
     if(it.kind === 'avatar') preview = `<div class="shop-prev shop-prev--av">${it.value}</div>`;
-    else if(it.kind === 'frame') preview = `<div class="shop-prev shop-prev--av" style="border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55;">${p.avatar || '🙂'}</div>`;
+    else if(it.kind === 'frame') preview = `<div class="shop-prev shop-prev--av" style="border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55;">${avatarMarkup(p)}</div>`;
     else preview = `<div class="shop-prev shop-prev--cf">${it.value.map((c, i) => `<i style="background:${c}; left:${8 + i * 17}%; top:${14 + (i % 2) * 26}%; transform:rotate(${i * 37}deg);"></i>`).join('')}</div>`;
     const cell = el(`<div class="shop-item ${owned ? 'is-owned' : ''} ${equipped ? 'is-eq' : ''}">${preview}<b class="shop-item__name"></b><button class="shop-buy"></button></div>`);
     cell.querySelector('.shop-item__name').textContent = it.name;
@@ -1671,36 +1693,150 @@ function renderShop(){
   return wrap;
 }
 
+// ---------------- PROFILE EDITOR (avatar builder + banner) ----------------
+let profTab = 'face';
+const PROF_TABS = [['face','چهره'],['hair','مو و ریش'],['acc','عینک و کلاه'],['look','لباس و پس‌زمینه'],['cover','کاور و قاب'],['emoji','شکلک']];
+function buildProfileEditor(){
+  const A = NBAvatar;
+  const card = el(`<div class="team-card pe">
+    <div class="pe-cover"></div>
+    <div class="pe-who">
+      <div class="pe-av"></div>
+      <div class="prof-coins"><span>🪙</span><b></b><span>سکه</span></div>
+    </div>
+    <label class="prof-lbl" for="profName">نام تو</label>
+    <input class="prof-name" id="profName" type="text" maxlength="14" autocomplete="off" placeholder="بازیکن مهمان" />
+    <div class="prof-hint">این نام بالای صفحه‌ی اول نشان داده می‌شود.</div>
+    <div class="pe-tabs" role="tablist"></div>
+    <div class="pe-panel"></div>
+    <div class="pe-acts"><button type="button" class="pe-btn" data-a="rnd">🎲 تصادفی</button><button type="button" class="pe-btn" data-a="rst">بازنشانی چهره</button></div>
+  </div>`);
+  const nameIn = card.querySelector('#profName');
+  nameIn.value = loadProfile().name;
+  nameIn.addEventListener('input', () => { const q = loadProfile(); q.name = nameIn.value.trim().slice(0, 14); saveProfile(q); });
+
+  const zoom = svg => svg.replace('viewBox="0 0 100 100"', 'viewBox="12 6 76 76"');
+  const lockedLabel = (kind, i, p) => { const pr = partPrice(kind, i); return pr && !p.parts.includes(kind + ':' + i) ? pr : 0; };
+
+  // buy a locked piece, or just pick an owned one; returns true if the pick went through
+  function pick(kind, i){
+    const q = loadProfile(), pr = lockedLabel(kind, i, q);
+    if(pr){
+      if(q.coins < pr){ toastHome(`برای این گزینه ${faNum(pr - q.coins)} سکه‌ی دیگر لازم داری`); return false; }
+      if(!confirm(`این گزینه را با ${pr} سکه می‌خری؟`)) return false;
+      q.coins -= pr; q.parts.push(kind + ':' + i); sfxWin();
+    } else sfxTap();
+    if(kind === 'cover' || kind === 'ring') q[kind] = i; else q.look[kind] = i;
+    q.avatar = '';
+    saveProfile(q); return true;
+  }
+
+  function sw(title, kind, arr, names){
+    const p = loadProfile(), cur = kind === 'ring' ? p.ring : p.look[kind];
+    const row = el(`<div class="pe-row"><h3></h3><div class="pe-sws"></div></div>`);
+    row.querySelector('h3').textContent = title;
+    arr.forEach((c, i) => {
+      const lk = lockedLabel(kind, i, p);
+      const b = el(`<button type="button" class="pe-sw ${i === cur && !p.avatar ? 'is-on' : ''}" style="background:${c}" aria-pressed="${i === cur}"></button>`);
+      b.setAttribute('aria-label', names ? names[i] : String(c));
+      if(lk) b.innerHTML = `<span class="pe-sw__lock">🔒</span>`;
+      b.addEventListener('click', () => { if(pick(kind, i)) refresh(); });
+      row.querySelector('.pe-sws').appendChild(b);
+    });
+    return row;
+  }
+  function grid(title, kind, list, render){
+    const p = loadProfile(), cur = kind === 'cover' ? p.cover : p.look[kind];
+    const row = el(`<div class="pe-row"><h3></h3><div class="pe-opts"></div></div>`);
+    row.querySelector('h3').textContent = title;
+    list.forEach((it, i) => {
+      const lk = lockedLabel(kind, i, p);
+      const b = el(`<button type="button" class="pe-opt ${i === cur && !(p.avatar && kind !== 'cover') ? 'is-on' : ''}" aria-pressed="${i === cur}">${render(i, p)}${lk ? `<span class="pe-opt__lock">🔒 ${faNum(lk)}</span>` : ''}</button>`);
+      b.setAttribute('aria-label', it[0]);
+      b.addEventListener('click', () => { if(pick(kind, i)) refresh(); });
+      row.querySelector('.pe-opts').appendChild(b);
+    });
+    return row;
+  }
+  const variant = (p, k, i) => { const l = Object.assign({}, p.look); l[k] = i; return zoom(A.svg(l)); };
+
+  function panel(){
+    const p = loadProfile(), box = card.querySelector('.pe-panel');
+    box.textContent = '';
+    if(profTab === 'face'){
+      box.appendChild(sw('رنگ پوست', 'skin', A.SKIN));
+      box.appendChild(grid('شکل صورت', 'head', A.HEAD, (i, q) => variant(q, 'head', i)));
+      box.appendChild(grid('چشم', 'eyes', A.EYES, (i, q) => variant(q, 'eyes', i)));
+      box.appendChild(grid('دهان', 'mouth', A.MOUTH, (i, q) => variant(q, 'mouth', i)));
+    } else if(profTab === 'hair'){
+      box.appendChild(grid('مدل مو', 'hair', A.HAIR, (i, q) => variant(q, 'hair', i)));
+      box.appendChild(sw('رنگ مو', 'hairC', A.HAIRC));
+      box.appendChild(grid('ریش و سبیل', 'beard', A.BEARD, (i, q) => variant(q, 'beard', i)));
+    } else if(profTab === 'acc'){
+      box.appendChild(grid('عینک', 'glass', A.GLASS, (i, q) => variant(q, 'glass', i)));
+      box.appendChild(grid('کلاه و تاج', 'hat', A.HAT, (i, q) => variant(q, 'hat', i)));
+    } else if(profTab === 'look'){
+      box.appendChild(sw('رنگ لباس', 'cloth', A.CLOTH));
+      box.appendChild(sw('پس‌زمینه‌ی آواتار', 'bg', A.BG));
+    } else if(profTab === 'cover'){
+      box.appendChild(grid('کاور پشت عکس', 'cover', A.COVERS, i => A.cover(i)));
+      box.appendChild(sw('رنگ قاب دور آواتار', 'ring', A.RING.map(r => r[0]), A.RING.map(r => r[1])));
+    } else {
+      const row = el(`<div class="pe-row"><h3>شکلک به جای چهره</h3><div class="prof-avs" role="radiogroup" aria-label="شکلک"></div></div>`);
+      const g = row.querySelector('.prof-avs');
+      const mine = el(`<button type="button" class="prof-avs__btn ${p.avatar ? '' : 'is-on'}" aria-label="چهره‌ی ساخته‌شده" style="padding:2px">${zoom(A.svg(p.look))}</button>`);
+      mine.addEventListener('click', () => { const q = loadProfile(); q.avatar = ''; saveProfile(q); sfxTap(); refresh(); });
+      g.appendChild(mine);
+      const ownedAv = SHOP_ITEMS.filter(i => i.kind === 'avatar' && (i.free || p.owned.includes(i.id))).map(i => i.value);
+      [...new Set([...AVATARS, ...ownedAv])].forEach(av => {
+        const b = el(`<button type="button" class="prof-avs__btn ${av === p.avatar ? 'is-on' : ''}" aria-label="شکلک"></button>`);
+        b.textContent = av;
+        b.addEventListener('click', () => { const q = loadProfile(); q.avatar = av; saveProfile(q); sfxTap(); refresh(); });
+        g.appendChild(b);
+      });
+      box.appendChild(row);
+    }
+  }
+  function head(){
+    const p = loadProfile();
+    card.querySelector('.pe-cover').innerHTML = A.cover(p.cover);
+    const av = card.querySelector('.pe-av');
+    av.innerHTML = avatarMarkup(p); av.style.cssText = frameStyle(p);
+    card.querySelector('.prof-coins b').textContent = faNum(p.coins);
+  }
+  function tabs(){
+    const t = card.querySelector('.pe-tabs'); t.textContent = '';
+    PROF_TABS.forEach(([k, label]) => {
+      const b = el(`<button type="button" class="pe-tab ${k === profTab ? 'is-on' : ''}" role="tab" aria-selected="${k === profTab}"></button>`);
+      b.textContent = label;
+      b.addEventListener('click', () => { profTab = k; tabs(); panel(); sfxTap(); });
+      t.appendChild(b);
+    });
+  }
+  function refresh(){ head(); panel(); }
+  card.querySelector('[data-a="rnd"]').addEventListener('click', () => {
+    const q = loadProfile(), r = n => Math.floor(Math.random() * n), L = A.LISTS;
+    // only pieces that are free or already bought
+    const free = (kind, n) => { for(let t = 0; t < 12; t++){ const v = r(n); if(!lockedLabel(kind, v, q)) return v; } return 0; };
+    Object.keys(A.DEFAULT_LOOK).forEach(k => { q.look[k] = free(k, L[k].length); });
+    q.cover = free('cover', L.cover.length); q.avatar = '';
+    saveProfile(q); sfxTap(); refresh();
+  });
+  card.querySelector('[data-a="rst"]').addEventListener('click', () => {
+    if(!confirm('چهره به حالت اول برگردد؟ چیزهایی که خریده‌ای می‌ماند.')) return;
+    const q = loadProfile(); q.look = Object.assign({}, A.DEFAULT_LOOK); q.avatar = ''; saveProfile(q); sfxTap(); refresh();
+  });
+  tabs(); refresh();
+  return card;
+}
+
 // ---------------- PROFILE SCREEN ----------------
 function renderProfile(){
   const p = loadProfile(), s = p.stats;
   const wrap = el(`<div class="setup-page prof"></div>`);
   wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">پروفایل</div></div>`));
 
-  const head = el(`<div class="team-card prof-head">
-    <div class="prof-av" id="profAv" style="${frameStyle(p)}">${p.avatar || '🙂'}</div>
-    <div class="prof-coins"><span>🪙</span><b>${faNum(p.coins)}</b><span>سکه</span></div>
-    <label class="prof-lbl" for="profName">نام تو</label>
-    <input class="prof-name" id="profName" type="text" maxlength="14" autocomplete="off" placeholder="بازیکن مهمان" />
-    <div class="prof-hint">این نام بالای صفحه‌ی اول نشان داده می‌شود.</div>
-  </div>`);
-  const nameIn = head.querySelector('#profName');
-  nameIn.value = p.name;
-  nameIn.addEventListener('input', () => { const q = loadProfile(); q.name = nameIn.value.trim().slice(0, 14); saveProfile(q); });
-  const grid = el(`<div class="prof-avs" role="radiogroup" aria-label="آواتار"></div>`);
-  const ownedAv = SHOP_ITEMS.filter(i => i.kind === 'avatar' && (i.free || p.owned.includes(i.id))).map(i => i.value);
-  [...new Set([...AVATARS, ...ownedAv])].forEach(av => {
-    const b = el(`<button class="prof-avs__btn ${av === p.avatar ? 'is-on' : ''}" role="radio" aria-checked="${av === p.avatar}">${av}</button>`);
-    b.addEventListener('click', () => {
-      const q = loadProfile(); q.avatar = av; saveProfile(q);
-      head.querySelector('#profAv').textContent = av;
-      grid.querySelectorAll('.prof-avs__btn').forEach(x => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-checked', on); });
-      sfxTap();
-    });
-    grid.appendChild(b);
-  });
-  head.appendChild(grid);
-  wrap.appendChild(head);
+  wrap.appendChild(buildProfileEditor());
 
   const shopBtn = el(`<button class="team-card__add set-learn prof-shopbtn">🛍️ رفتن به فروشگاه</button>`);
   shopBtn.addEventListener('click', () => { state.screen = 'shop'; render(); });
