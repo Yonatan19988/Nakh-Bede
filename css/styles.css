@@ -1377,13 +1377,16 @@
   /* as tall as the fixed back button, so the first card starts below it */
   .setup-head{ display:flex; align-items:center; justify-content:center; flex:0 0 auto; min-height:44px; }
   .setup-brand{
-    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:27px; line-height:1;
-    background:linear-gradient(180deg,#FFF0B7,#E0B34E);
+    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:31px; line-height:1.1; letter-spacing:.5px;
+    /* knitted-yarn look to match the logo: orange-gold body, braid stripes, dark brown outline */
+    background:
+      repeating-linear-gradient(118deg, rgba(120,45,0,0) 0 3px, rgba(120,45,0,.28) 3px 4px),
+      linear-gradient(180deg,#FFE066 0%,#FFB81F 55%,#F58A0A 100%);
     -webkit-background-clip:text; background-clip:text;
-    color:#E0B34E; -webkit-text-fill-color:transparent;
-    display:flex; align-items:center; gap:6px;
+    color:#FFB81F; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(1.5px 0 0 #5A1E0A) drop-shadow(-1.5px 0 0 #5A1E0A) drop-shadow(0 1.5px 0 #5A1E0A) drop-shadow(0 -1.5px 0 #5A1E0A) drop-shadow(0 3px 2px rgba(0,0,0,.35));
+    display:flex; align-items:center; gap:6px; padding:2px 4px;
   }
-  .setup-brand-dot{ width:8px; height:8px; border-radius:50%; background:#EF5C48; -webkit-text-fill-color:initial; flex:none; }
   .setup-back{
     display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 15px;
     border-radius:999px; background:rgba(4,35,50,.9); border:1.5px solid #D4AA50;
@@ -1492,7 +1495,7 @@
 
   @media (max-height:800px){
     .setup-page{ gap:8px; }
-    .setup-brand{ font-size:24px; }
+    .setup-brand{ font-size:27px; }
     .setup-intro{ padding:9px 13px; }
     .setup-intro__title{ font-size:18px; }
     .setup-intro__sub{ font-size:11.5px; }
