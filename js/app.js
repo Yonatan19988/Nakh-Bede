@@ -552,7 +552,7 @@ const CARD_ICONS = ['⏱️','🕵️','🛡️','✨','⚡','🪬','🧿','🚫
 function renderFriends(){
   const friends = loadFriends();
   const wrap = el(`<div class="setup-page frn"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">دوستان<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">دوستان</div></div>`));
 
   const inv = el(`<div class="team-card frn-invite">
     <h2 class="set-card__title">دوستانت را به بازی دعوت کن</h2>
@@ -611,7 +611,7 @@ function renderCards(){
   const seen = LS.get('seenCards', {}) || {};
   const got = ACTION_CARDS.filter((_, i) => seen[i] > 0).length;
   const wrap = el(`<div class="setup-page crd"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">کارت‌ها<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">کارت‌ها</div></div>`));
   wrap.appendChild(el(`<div class="team-card crd-top">
     <div class="crd-top__num"><b>${faNum(got)}</b><span>از ${faNum(ACTION_CARDS.length)}</span></div>
     <div class="crd-top__txt"><h2 class="set-card__title">کارت‌های اکشن</h2><p>وقتی تیمی روی خانه‌ی ویژه می‌افتد، یکی از این کارت‌ها برایش درمی‌آید. هر کارتی که اولین بار ببینی در مجموعه‌ات باز می‌شود.</p></div>
@@ -953,7 +953,7 @@ function ensureOnlineTicker(){
 
 // ---------------- ONLINE ROOM SCREENS (choose / create / join) ----------------
 function roomHead(){
-  return el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`);
+  return el(`<div class="setup-head"><div class="setup-brand">نخ بده</div></div>`);
 }
 
 function roomField(id, label, opts){
@@ -1086,7 +1086,7 @@ function renderOnlineJoin(){
 
 function renderOnlineLobby(){
   const wrap = el(`<div class="setup-page lobby"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده</div></div>`));
   const room = online.room;
   if(!room){
     wrap.appendChild(el(`<div class="lobby-wait">در حال اتصال به اتاق…</div>`));
@@ -1552,7 +1552,7 @@ function renderOnlineBoard(){
 
 function renderSettings(){
   const wrap = el(`<div class="setup-page settings"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">تنظیمات</div></div>`));
 
   // ---- round length ----
   const MIN = 10, MAX = 180, STEP = 5, OFFICIAL = 90;
@@ -1618,7 +1618,7 @@ let shopTab = 'avatar';
 function renderShop(){
   const p = loadProfile();
   const wrap = el(`<div class="setup-page shop"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">فروشگاه<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">فروشگاه</div></div>`));
   wrap.appendChild(el(`<div class="team-card shop-wallet">
     <div class="shop-wallet__bal"><span>🪙</span><b>${faNum(p.coins)}</b></div>
     <p>سکه را با بازی کردن به دست می‌آوری: هر کلمه‌ی درست ۲ سکه، راند ۵ کلمه‌ای ۵ سکه‌ی جایزه، ورود به شهر جدید ۱۵ سکه و تمام کردن بازی ۳۰ سکه.</p>
@@ -1675,7 +1675,7 @@ function renderShop(){
 function renderProfile(){
   const p = loadProfile(), s = p.stats;
   const wrap = el(`<div class="setup-page prof"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">پروفایل<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">پروفایل</div></div>`));
 
   const head = el(`<div class="team-card prof-head">
     <div class="prof-av" id="profAv" style="${frameStyle(p)}">${p.avatar || '🙂'}</div>
@@ -1742,7 +1742,7 @@ function renderProfile(){
 function renderTutorial(){
   LS.set('seenTutorial', true);
   const wrap = el(`<div class="setup-page tut"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">آموزش بازی</div></div>`));
   const dur = faNum(state.roundDuration);
   const last = faNum(state.trackLength);
 
@@ -1911,7 +1911,7 @@ function renderSetup(){
 
   // ---- header ----
   const header = el(`<div class="setup-head"></div>`);
-  header.appendChild(el(`<div class="setup-brand">نخ بده<span class="setup-brand-dot"></span></div>`));
+  header.appendChild(el(`<div class="setup-brand">نخ بده</div>`));
   wrap.appendChild(header);
 
   // ---- team cards ----
