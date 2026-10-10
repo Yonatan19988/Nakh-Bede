@@ -2243,15 +2243,13 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 /* ring: a big clock ring around a free word on a light page */
 .sc-ring{ --sc-track:rgba(43,26,16,.12); --sc-calm:#0E8B7D; color:#2b1a10;
   background:#f4ecda; }
-.sc-ring .sc-stage{ display:block; position:relative; flex:1 1 auto; min-height:300px; }
-.sc-ring .play-timer{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:0; }
-.sc-ring .play-timer__ring{ width:min(86vw,330px); height:min(86vw,330px); padding:13px; box-shadow:none; }
+.sc-ring .play-timer__ring{ box-shadow:none; }
 .sc-ring .play-timer.is-warm .play-timer__ring, .sc-ring .play-timer.is-hot .play-timer__ring{ box-shadow:none; }
-.sc-ring .play-timer__face{ background:#f4ecda; color:rgba(43,26,16,.11); font-size:min(34vw,128px); font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400; }
-.sc-ring .play-timer.is-warm .play-timer__face{ color:rgba(224,120,20,.22); }
-.sc-ring .play-timer.is-hot .play-timer__face{ color:rgba(200,40,50,.28); }
-.sc-ring .play-card{ position:absolute; inset:0; max-height:none; min-height:0; background:none; border:0; box-shadow:none; overflow:visible; }
-.sc-ring .play-card__word{ color:#2b1a10; font-size:clamp(44px,16vw,80px); padding:0 10%; position:relative; z-index:2; }
+.sc-ring .play-timer__face{ background:#f4ecda; color:#2b1a10; }
+.sc-ring .play-timer.is-warm .play-timer__face{ color:#c45c10; }
+.sc-ring .play-timer.is-hot .play-timer__face{ color:#c8283a; }
+.sc-ring .play-card{ background:none; border:0; box-shadow:none; overflow:visible; max-height:none; }
+.sc-ring .play-card__word{ color:#2b1a10; font-size:clamp(52px,19vw,96px); padding:0 6%; }
 .sc-ring .play-card--hidden .play-card__hidden{ color:#2b1a10; }
 .sc-ring .play-brand{ background:none; -webkit-text-fill-color:#2b1a10; color:#2b1a10; }
 .sc-ring .play-back, .sc-ring .play-turn, .sc-ring .play-status, .sc-ring .play-score{ background:rgba(43,26,16,.07); border-color:rgba(43,26,16,.22); color:#2b1a10; }
