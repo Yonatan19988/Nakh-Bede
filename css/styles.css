@@ -2348,3 +2348,20 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .shop-prev--sc[data-sc="spot"]{ background:#05080f; color:#FFF3CC; text-shadow:0 0 14px rgba(255,214,107,.9); }
 .shop-prev--sc[data-sc="neon"]{ background:#1a1030; } .shop-prev--sc[data-sc="neon"] span{ background:linear-gradient(180deg,#ffe8a6,#ff7aa8 60%,#7a5cff); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
 .shop-prev--sc[data-sc="yarn"]{ background:repeating-linear-gradient(115deg,#FFC935 0 6px,#F6B31E 6px 12px); color:#FFF3C4; -webkit-text-stroke:2px #5a1e0a; paint-order:stroke fill; }
+
+/* friends: list first, one-row add form, compact invite */
+.frn{ gap:12px; }
+.frn-list__head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.frn-count{ font-size:12px; font-weight:700; color:#9FB4C2; background:rgba(255,255,255,.07); border-radius:99px; padding:3px 10px; }
+.frn-rows{ display:flex; flex-direction:column; }
+.frn-empty{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:18px 8px 10px; text-align:center; color:#CFE3E0; }
+.frn-empty span{ font-size:34px; } .frn-empty b{ font-size:15px; color:#FFF1CD; } .frn-empty small{ font-size:12.5px; color:#9FB4C2; line-height:1.8; max-width:30ch; }
+.frn-add .set-card__title{ margin-bottom:10px; }
+.frn-avbtn{ flex:none; width:46px; height:46px; border-radius:14px; border:1.5px solid rgba(255,209,92,.55); background:rgba(255,209,92,.12); font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+.frn-avbtn[aria-expanded="true"]{ background:rgba(255,209,92,.28); }
+.frn-add .frn-avs{ margin:0 0 10px; }
+.frn-add .frn-avs[hidden]{ display:none; }
+.frn-add .frn-hint{ margin:0; }
+.frn-invite{ display:flex; flex-direction:column; gap:10px; }
+.frn-invite__txt p{ margin:2px 0 0; }
+.frn-share{ height:50px; font-size:18px; }
