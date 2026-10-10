@@ -56,7 +56,7 @@ function avatarSvg(s){
   // soft light spot on the background
   o+='<ellipse cx="30" cy="22" rx="26" ry="16" fill="#fff" opacity=".12"/>';
   // ---- back hair ----
-  if(s.hair===3) o+='<path d="M30 46C24 28 36 15 50 15C64 15 76 28 70 46L73 80Q50 88 27 80Z" fill="url(#'+n+'h)"/>';
+  if(s.hair===3) o+='<path d="M29 47C22 28 34 13.5 50 13.5C66 13.5 78 28 71 47C74.5 58 76.5 70 74 86C66 90 34 90 26 86C23.5 70 25.5 58 29 47Z" fill="url(#'+n+'h)"/><path d="M33 60C32 72 33 80 35 87M67 60C68 72 67 80 65 87" stroke="'+hD+'" stroke-width="1" fill="none" opacity=".35" stroke-linecap="round"/>';
   if(s.hair===4) o+='<circle cx="50" cy="16" r="7.5" fill="url(#'+n+'h)"/><path d="M45 14.5C48 12 52 12 55 14.5" stroke="'+hL+'" stroke-width="1.1" fill="none" opacity=".7" stroke-linecap="round"/>';
   // ---- torso ----
   o+='<path d="M8 101C9 82 26 73 50 73C74 73 91 82 92 101Z" fill="url(#'+n+'c)"/>'+
@@ -123,9 +123,11 @@ function avatarSvg(s){
   if(s.hair===2){ var cs=[[33,41,5],[31,34,5.6],[34,27,6],[41,22,6.3],[50,20,6.4],[59,22,6.3],[66,27,6],[69,34,5.6],[67,41,5],[41,33,5],[50,31.5,5.2],[59,33,5],[45,27,5.3],[55,27,5.3]];
     cs.forEach(function(c){o+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" '+hf+' stroke="'+hD+'" stroke-width=".5" stroke-opacity=".5"/>';});
     [[41,21,2.2],[52,19,2.4],[62,24,2],[33,31,1.8]].forEach(function(c){o+='<path d="M'+(c[0]-c[2])+' '+c[1]+'q'+c[2]+' -'+c[2]+' '+(c[2]*2)+' 0" stroke="'+hL+'" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".65"/>';});}
-  if(s.hair===3) o+='<path d="M30.4 47C27.4 28 37 19 50 19C63 19 72.6 28 69.6 47C68 40 64.6 36 59.6 33.6C57 36 53.4 37.4 50 37.4C46.6 37.4 43 36 40.4 33.6C35.4 36 32 40 30.4 47Z" '+hf+'/>'+
-     '<path d="M50 19.5L50 37" stroke="'+hD+'" stroke-width=".7" opacity=".45"/><path d="M38 24C42 21.5 46 20.6 50 20.5M34.5 33C35.4 30 37 28 39.6 26" stroke="'+hL+'" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>'+
-     '<path d="M30 52C27 62 26.5 72 28.5 82L35 80C33.6 71 33.4 62 35 52Z" '+hf+'/><path d="M70 52C73 62 73.5 72 71.5 82L65 80C66.4 71 66.6 62 65 52Z" '+hf+'/>';
+  if(s.hair===3) o+='<path d="M50 19C38 19.4 30.4 28 30.4 47C33 41.6 37 38.2 42 35.8C46.6 33.4 49.4 27.4 50 19Z" '+hf+'/><path d="M50 19C62 19.4 69.6 28 69.6 47C67 41.6 63 38.2 58 35.8C53.4 33.4 50.6 27.4 50 19Z" '+hf+'/>'+
+     '<path d="M44.5 21.5C38 23.5 33.6 29 32.4 37M55.5 21.5C62 23.5 66.4 29 67.6 37" stroke="'+hL+'" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>'+
+     '<path d="M36.5 33C40 32 43 30.4 45.6 27M63.5 33C60 32 57 30.4 54.4 27" stroke="'+hD+'" stroke-width=".8" fill="none" stroke-linecap="round" opacity=".4"/>'+
+     '<path d="M30.2 49C25.6 58 29.4 64 26.6 73C24.6 79 26.6 84 30.4 87.4C35.2 84.4 37.8 79 36.8 72C36 65 37.2 58.4 33.6 51Z" '+hf+'/><path d="M69.8 49C74.4 58 70.6 64 73.4 73C75.4 79 73.4 84 69.6 87.4C64.8 84.4 62.2 79 63.2 72C64 65 62.8 58.4 66.4 51Z" '+hf+'/>'+
+     '<path d="M30.6 55C28.8 62 31 68 29.2 76M69.4 55C71.2 62 69 68 70.8 76" stroke="'+hL+'" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".55"/><path d="M33.4 60C33 68 34.2 75 33 82M66.6 60C67 68 65.8 75 67 82" stroke="'+hD+'" stroke-width=".8" fill="none" stroke-linecap="round" opacity=".4"/>';
   if(s.hair===4) o+='<path d="M30.4 46C28.4 30 38 21.6 50 21.6C62 21.6 71.6 30 69.6 46C67.6 40 64.4 36.4 59.6 34.6C55.6 36.8 44.4 36.8 40.4 34.6C35.6 36.4 32.4 40 30.4 46Z" '+hf+'/>'+
      '<path d="M40 25.5C44 23.4 48 22.8 52 23" stroke="'+hL+'" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/><rect x="45.5" y="19.5" width="9" height="2.6" rx="1.3" fill="'+hD+'"/>';
   if(s.hair===5) o+='<path d="M30.2 47.5C27 29 36.4 19.6 50 19.6C64 19.6 72.8 29 69.6 47.5C68.6 42 66.4 38.4 62.4 36.2C56 33.6 48 36.2 43 41.4C40.4 38.4 37 38.2 34.2 41.6C32.2 43.2 31 45.4 30.2 47.5Z" '+hf+'/>'+
