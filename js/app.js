@@ -428,31 +428,41 @@ function renderFriends(){
   const wrap = el(`<div class="setup-page frn"></div>`);
   wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">دوستان</div></div>`));
 
-  const inv = el(`<div class="team-card frn-invite">
-    <h2 class="set-card__title">دوستانت را به بازی دعوت کن</h2>
-    <p>لینک بازی را بفرست تا روی گوشی خودشان باز کنند. برای بازی هم‌زمان از راه دور، یکی اتاق آنلاین می‌سازد و کد را برای بقیه می‌فرستد.</p>
-    <button class="hm-btn hm-btn--teal frn-share"><span class="hm-btn__gloss"></span><span class="hm-out hm-out--teal" data-text="فرستادن لینک بازی">فرستادن لینک بازی</span></button>
-  </div>`);
-  inv.querySelector('.frn-share').addEventListener('click', () => {
-    const link = location.origin + location.pathname;
-    const text = 'بیا «نخ بده» بازی کنیم! بازی حدس کلمات گروهی:';
-    if(navigator.share){ navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {}); }
-    else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text + '\n' + link).then(() => toastHome('لینک کپی شد')).catch(() => {}); }
-    else toastHome(link);
+  // ---- my friends first: that is what people come here to see ----
+  const list = el(`<div class="team-card frn-list"><div class="frn-list__head"><h2 class="set-card__title">دوستان من</h2><span class="frn-count"></span></div><div class="frn-rows"></div></div>`);
+  list.querySelector('.frn-count').textContent = `${faNum(friends.length)} از ۳۰`;
+  const rows = list.querySelector('.frn-rows');
+  if(!friends.length){
+    rows.appendChild(el(`<div class="frn-empty"><span aria-hidden="true">👥</span><b>هنوز دوستی اضافه نکرده‌ای</b><small>نام و یک آواتار بنویس تا موقع ساخت تیم با یک لمس اضافه‌شان کنی.</small></div>`));
+  }
+  friends.forEach((fr, i) => {
+    const row = el(`<div class="frn-row"><span class="frn-row__av"></span><b class="frn-row__name"></b><button class="frn-row__x" aria-label="حذف"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div>`);
+    row.querySelector('.frn-row__av').textContent = fr.avatar;
+    row.querySelector('.frn-row__name').textContent = fr.name;
+    row.querySelector('.frn-row__x').addEventListener('click', () => { const f = loadFriends(); f.splice(i, 1); saveFriends(f); render(); });
+    rows.appendChild(row);
   });
-  wrap.appendChild(inv);
+  wrap.appendChild(list);
 
+  // ---- add: one row (avatar button, name, add) and a picker that opens on demand ----
   const add = el(`<div class="team-card frn-add">
     <h2 class="set-card__title">افزودن دوست</h2>
-    <p class="frn-hint">دوستان فقط روی همین گوشی ذخیره می‌شوند و موقع ساخت تیم می‌توانی با یک لمس آن‌ها را اضافه کنی.</p>
-    <div class="frn-add__row"><input class="prof-name frn-name" id="frnName" type="text" maxlength="14" placeholder="نام دوست" autocomplete="off" /><button class="frn-add__btn">افزودن</button></div>
-    <div class="prof-avs frn-avs"></div>
+    <div class="frn-add__row">
+      <button type="button" class="frn-avbtn" aria-label="انتخاب آواتار" aria-expanded="false"></button>
+      <input class="prof-name frn-name" id="frnName" type="text" maxlength="14" placeholder="نام دوست" autocomplete="off" />
+      <button type="button" class="frn-add__btn">افزودن</button>
+    </div>
+    <div class="prof-avs frn-avs" hidden></div>
+    <p class="frn-hint">دوستان فقط روی همین گوشی ذخیره می‌شوند.</p>
   </div>`);
   let pick = AVATARS[0];
-  const avs = add.querySelector('.frn-avs');
+  const avBtn = add.querySelector('.frn-avbtn'), avs = add.querySelector('.frn-avs');
+  avBtn.textContent = pick;
+  avBtn.addEventListener('click', () => { avs.hidden = !avs.hidden; avBtn.setAttribute('aria-expanded', String(!avs.hidden)); });
   AVATARS.forEach(av => {
-    const b = el(`<button class="prof-avs__btn ${av === pick ? 'is-on' : ''}">${av}</button>`);
-    b.addEventListener('click', () => { pick = av; avs.querySelectorAll('.prof-avs__btn').forEach(x => x.classList.toggle('is-on', x === b)); });
+    const b = el(`<button type="button" class="prof-avs__btn ${av === pick ? 'is-on' : ''}"></button>`);
+    b.textContent = av;
+    b.addEventListener('click', () => { pick = av; avBtn.textContent = av; avs.hidden = true; avBtn.setAttribute('aria-expanded', 'false'); avs.querySelectorAll('.prof-avs__btn').forEach(x => x.classList.toggle('is-on', x === b)); });
     avs.appendChild(b);
   });
   const doAdd = () => {
@@ -467,16 +477,19 @@ function renderFriends(){
   add.querySelector('#frnName').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
   wrap.appendChild(add);
 
-  const list = el(`<div class="team-card set-card"><h2 class="set-card__title">دوستان من (${faNum(friends.length)})</h2></div>`);
-  if(!friends.length) list.appendChild(el(`<p class="prof-empty">هنوز دوستی اضافه نکرده‌ای.</p>`));
-  friends.forEach((fr, i) => {
-    const row = el(`<div class="frn-row"><span class="frn-row__av"></span><b class="frn-row__name"></b><button class="frn-row__x" aria-label="حذف"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div>`);
-    row.querySelector('.frn-row__av').textContent = fr.avatar;
-    row.querySelector('.frn-row__name').textContent = fr.name;
-    row.querySelector('.frn-row__x').addEventListener('click', () => { const f = loadFriends(); f.splice(i, 1); saveFriends(f); render(); });
-    list.appendChild(row);
+  // ---- invite: a compact card at the end ----
+  const inv = el(`<div class="team-card frn-invite">
+    <div class="frn-invite__txt"><h2 class="set-card__title">دوستانت را دعوت کن</h2><p>لینک بازی را بفرست. برای بازی هم‌زمان از راه دور، یکی اتاق آنلاین می‌سازد و کد را می‌فرستد.</p></div>
+    <button class="hm-btn hm-btn--teal frn-share"><span class="hm-btn__gloss"></span><span class="hm-out hm-out--teal" data-text="فرستادن لینک بازی">فرستادن لینک بازی</span></button>
+  </div>`);
+  inv.querySelector('.frn-share').addEventListener('click', () => {
+    const link = location.origin + location.pathname;
+    const text = 'بیا «نخ بده» بازی کنیم! بازی حدس کلمات گروهی:';
+    if(navigator.share){ navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {}); }
+    else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text + '\n' + link).then(() => toastHome('لینک کپی شد')).catch(() => {}); }
+    else toastHome(link);
   });
-  wrap.appendChild(list);
+  wrap.appendChild(inv);
   return wrap;
 }
 
