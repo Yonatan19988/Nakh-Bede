@@ -650,8 +650,19 @@ const SHOP_ITEMS = [
   { id:'cf_persian',kind:'confetti', name:'جشن ایرانی',   value:['#2ED3C6','#1D6FB8','#FFD15C','#FFF6E3','#0FA3B1'], price:100 },
   { id:'cf_rose',   kind:'confetti', name:'جشن گل سرخ',   value:['#FF4D5E','#FF8FA3','#FFD15C','#FFF6E3','#C23B33'], price:100 },
   { id:'cf_night',  kind:'confetti', name:'جشن شبانه',    value:['#FFFFFF','#B8C7FF','#8FB8FF','#FFD15C','#B58CFF'], price:130 },
+  { id:'sc_ring',   kind:'scene', name:'حلقه‌ی زمان',  value:'ring',    price:0,   free:true },
+  { id:'sc_classic',kind:'scene', name:'کارت کلاسیک',  value:'classic', price:0,   free:true },
+  { id:'sc_carpet', kind:'scene', name:'فرش ایرانی',   value:'carpet',  price:80 },
+  { id:'sc_tile',   kind:'scene', name:'کاشی هشت‌پر',  value:'tile',    price:100 },
+  { id:'sc_poster', kind:'scene', name:'پوستر',        value:'poster',  price:90 },
+  { id:'sc_sunset', kind:'scene', name:'غروب خلیج',    value:'sunset',  price:110 },
+  { id:'sc_ribbon', kind:'scene', name:'روبان طلایی',  value:'ribbon',  price:100 },
+  { id:'sc_stack',  kind:'scene', name:'دسته‌ی کارت',  value:'stack',   price:90 },
+  { id:'sc_spot',   kind:'scene', name:'نور صحنه',     value:'spot',    price:120 },
+  { id:'sc_neon',   kind:'scene', name:'نئون شبانه',   value:'neon',    price:130 },
+  { id:'sc_yarn',   kind:'scene', name:'کلاف نخ',      value:'yarn',    price:140 },
 ];
-const SHOP_TABS = [['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی']];
+const SHOP_TABS = [['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی'],['scene','صحنه‌ی کلمه']];
 function coinsForRound(correct, moved, newCity){
   return correct * 2 + (correct >= 5 ? 5 : 0) + (newCity ? 15 : 0) + (moved >= 5 ? 3 : 0);
 }
@@ -677,6 +688,7 @@ function loadProfile(){
     owned: Array.isArray(p.owned) ? p.owned.filter(id => SHOP_ITEMS.some(i => i.id === id)) : [],
     frame: typeof p.frame === 'string' ? p.frame : '',
     confetti: typeof p.confetti === 'string' ? p.confetti : '',
+    scene: sceneIdOf(p),
     stats: { games: s.games|0, rounds: s.rounds|0, correct: s.correct|0, skip: s.skip|0, best: s.best|0, cells: s.cells|0 },
     ...sanitizeLook(p)
   };
@@ -702,6 +714,12 @@ function ringColor(p){
   return it ? it.value : NBAvatar.RING[p.ring][0];
 }
 function avatarMarkup(p){ return p.avatar ? `<span class="av-emoji">${p.avatar}</span>` : NBAvatar.svg(p.look); }
+function sceneIdOf(p){
+  const it = SHOP_ITEMS.find(i => i.kind === 'scene' && i.id === p.scene);
+  const owned = Array.isArray(p.owned) && it && p.owned.includes(it.id);
+  return it && (it.free || owned) ? it.id : 'sc_ring';
+}
+function sceneName(){ const it = SHOP_ITEMS.find(i => i.id === loadProfile().scene); return it ? it.value : 'ring'; }
 function frameStyle(p){
   const c = ringColor(p);
   return `border-color:${c}; box-shadow:0 0 0 3px ${c}55, 0 8px 20px rgba(0,0,0,.35);`;
@@ -1539,8 +1557,8 @@ function renderOnlineBoard(){
   const cardViewEl = renderCardView(isDescriber, isTurnTeam);
   if(state.flashFeedback === 'correct') cardViewEl.classList.add('flash-correct');
   if(state.flashFeedback === 'wrong') cardViewEl.classList.add('flash-wrong');
-  wrap.appendChild(renderPlayTimer());
-  wrap.appendChild(cardViewEl);
+  applyScene(wrap);
+  wrap.appendChild(sceneStage(renderPlayTimer(), cardViewEl));
   wrap.appendChild(buildFoulRow(onlineFoul, onlineResolveFoul));
 
   if(isDescriber){
@@ -1654,12 +1672,13 @@ function renderShop(){
   wrap.appendChild(tabs);
 
   const grid = el(`<div class="shop-grid"></div>`);
-  SHOP_ITEMS.filter(i => i.kind === shopTab && !i.free).forEach(it => {
-    const owned = p.owned.includes(it.id);
-    const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id);
+  SHOP_ITEMS.filter(i => i.kind === shopTab && (!i.free || i.kind === 'scene')).forEach(it => {
+    const owned = it.free || p.owned.includes(it.id);
+    const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id) || (it.kind === 'scene' && p.scene === it.id);
     let preview = '';
     if(it.kind === 'avatar') preview = `<div class="shop-prev shop-prev--av">${it.value}</div>`;
     else if(it.kind === 'frame') preview = `<div class="shop-prev shop-prev--av" style="border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55;">${avatarMarkup(p)}</div>`;
+    else if(it.kind === 'scene') preview = `<div class="shop-prev shop-prev--sc" data-sc="${it.value}"><span>نخ بده</span></div>`;
     else preview = `<div class="shop-prev shop-prev--cf">${it.value.map((c, i) => `<i style="background:${c}; left:${8 + i * 17}%; top:${14 + (i % 2) * 26}%; transform:rotate(${i * 37}deg);"></i>`).join('')}</div>`;
     const cell = el(`<div class="shop-item ${owned ? 'is-owned' : ''} ${equipped ? 'is-eq' : ''}">${preview}<b class="shop-item__name"></b><button class="shop-buy"></button></div>`);
     cell.querySelector('.shop-item__name').textContent = it.name;
@@ -1672,16 +1691,17 @@ function renderShop(){
         if(q.coins < it.price){ toastHome(`برای «${it.name}» ${faNum(it.price - q.coins)} سکه‌ی دیگر لازم داری`); return; }
         if(!confirm(`«${it.name}» را با ${it.price} سکه می‌خری؟`)) return;
         q.coins -= it.price; q.owned.push(it.id);
-        if(it.kind === 'avatar') q.avatar = it.value; else if(it.kind === 'frame') q.frame = it.id; else q.confetti = it.id;
+        if(it.kind === 'avatar') q.avatar = it.value; else if(it.kind === 'frame') q.frame = it.id; else if(it.kind === 'scene') q.scene = it.id; else q.confetti = it.id;
         saveProfile(q); sfxWin(); render();
       });
     } else {
-      btn.textContent = equipped ? (it.kind === 'avatar' ? 'در حال استفاده' : 'برداشتن') : 'استفاده';
+      btn.textContent = equipped ? ((it.kind === 'avatar' || it.kind === 'scene') ? 'در حال استفاده' : 'برداشتن') : 'استفاده';
       btn.classList.add('is-own');
       btn.addEventListener('click', () => {
         const q = loadProfile();
         if(it.kind === 'avatar') q.avatar = it.value;
         else if(it.kind === 'frame') q.frame = equipped ? '' : it.id;
+        else if(it.kind === 'scene') q.scene = it.id;
         else q.confetti = equipped ? '' : it.id;
         saveProfile(q); sfxTap(); render();
       });
@@ -2398,13 +2418,14 @@ function renderBoard(){
   }
 
   // ---- compact timer ----
-  wrap.appendChild(renderPlayTimer());
+  const timerView = renderPlayTimer();
 
   // ---- main word card (visual focus) ----
   const cardViewEl = renderCardView(isDescriber, isTurnTeam);
   if(state.flashFeedback === 'correct') cardViewEl.classList.add('flash-correct');
   if(state.flashFeedback === 'wrong') cardViewEl.classList.add('flash-wrong');
-  wrap.appendChild(cardViewEl);
+  applyScene(wrap);
+  wrap.appendChild(sceneStage(timerView, cardViewEl));
 
   // ---- one row of action buttons ----
   const blocked = currentTeam().mods && currentTeam().mods.blockSkip;
@@ -2446,13 +2467,31 @@ function buildPlayScore(){
   return sb;
 }
 
+// The word scene the player picked in the shop. It is a class on the play screen
+// (the look lives in CSS) plus a decoration layer and a stage that holds clock and card.
+function applyScene(wrap){
+  const sc = sceneName();
+  wrap.classList.add('sc-' + sc);
+  const deco = el(`<div class="sc-deco" aria-hidden="true"><i></i><i></i></div>`);
+  if(sc === 'neon'){
+    const pool = (state.wordSource && state.wordSource.length ? state.wordSource : WORD_LIST);
+    for(let k = 0; k < 6; k++){ const b = el(`<b></b>`); b.textContent = pool[Math.floor(Math.random() * pool.length)]; deco.appendChild(b); }
+  }
+  wrap.insertBefore(deco, wrap.firstChild);
+}
+function sceneStage(timer, card){
+  const st = el(`<div class="sc-stage"></div>`);
+  st.appendChild(timer); st.appendChild(card);
+  return st;
+}
+
 function renderPlayTimer(){
   const total = currentTeam().timerOverride || state.roundDuration;
   const pct = Math.max(0, Math.min(1, state.timeLeft / total));
   const deg = Math.round(pct * 360);
   const left = state.timeLeft;
   // the ring warms up as the round runs out
-  let tier = 'calm', colour = '#E9B94C';
+  let tier = 'calm', colour = 'var(--sc-calm, #E9B94C)';
   if(state.timerRunning && left <= 10){ tier = 'hot';  colour = '#FF5A46'; }
   else if(state.timerRunning && left <= 25){ tier = 'warm'; colour = '#FF9B3D'; }
   // The board is rebuilt on every tap, so keying the beat to "is the timer
@@ -2460,7 +2499,7 @@ function renderPlayTimer(){
   const beat = state.timerRunning && left !== lastTimerSecond;
   lastTimerSecond = left;
   const ring = el(`<div class="play-timer is-${tier} ${beat ? 'is-tick' : ''}">
-    <div class="play-timer__ring" style="background: conic-gradient(${colour} ${deg}deg, rgba(255,255,255,.10) ${deg}deg);">
+    <div class="play-timer__ring" style="background: conic-gradient(${colour} ${deg}deg, var(--sc-track, rgba(255,255,255,.10)) ${deg}deg);">
       <div class="play-timer__face">${faNum(left)}</div>
     </div>
   </div>`);
@@ -2476,7 +2515,7 @@ function tickTimerOnly(){
   const total = currentTeam().timerOverride || state.roundDuration;
   const left = state.timeLeft;
   const deg = Math.round(Math.max(0, Math.min(1, left / total)) * 360);
-  let tier = 'calm', colour = '#E9B94C';
+  let tier = 'calm', colour = 'var(--sc-calm, #E9B94C)';
   if(state.timerRunning && left <= 10){ tier = 'hot';  colour = '#FF5A46'; }
   else if(state.timerRunning && left <= 25){ tier = 'warm'; colour = '#FF9B3D'; }
 
@@ -2485,7 +2524,7 @@ function tickTimerOnly(){
   if(!face || !ring) return false;
   timerEl.classList.remove('is-calm','is-warm','is-hot','is-tick');
   timerEl.classList.add('is-' + tier);
-  ring.style.background = `conic-gradient(${colour} ${deg}deg, rgba(255,255,255,.10) ${deg}deg)`;
+  ring.style.background = `conic-gradient(${colour} ${deg}deg, var(--sc-track, rgba(255,255,255,.10)) ${deg}deg)`;
   face.textContent = faNum(left);
   if(state.timerRunning && left !== lastTimerSecond){
     void timerEl.offsetWidth;
