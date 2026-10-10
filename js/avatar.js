@@ -47,7 +47,7 @@ function avatarSvg(s){
    '<radialGradient id="'+n+'f" cx=".38" cy=".3" r=".85"><stop offset="0" stop-color="'+skL+'"/><stop offset=".55" stop-color="'+sk+'"/><stop offset="1" stop-color="'+skD+'"/></radialGradient>'+
    '<linearGradient id="'+n+'n" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+skDD+'"/><stop offset="1" stop-color="'+skD+'"/></linearGradient>'+
    '<linearGradient id="'+n+'c" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+clL+'"/><stop offset="1" stop-color="'+clD+'"/></linearGradient>'+
-   '<linearGradient id="'+n+'h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+hL+'"/><stop offset=".5" stop-color="'+hc+'"/><stop offset="1" stop-color="'+hD+'"/></linearGradient>'+
+   '<linearGradient id="'+n+'h" gradientUnits="userSpaceOnUse" x1="28" y1="14" x2="72" y2="92"><stop offset="0" stop-color="'+mix(hc,hL,.6)+'"/><stop offset=".4" stop-color="'+hc+'"/><stop offset="1" stop-color="'+mix(hc,hD,.7)+'"/></linearGradient>'+
    '<radialGradient id="'+n+'k"><stop offset="0" stop-color="#ff7a85" stop-opacity=".5"/><stop offset="1" stop-color="#ff7a85" stop-opacity="0"/></radialGradient>'+
    '<radialGradient id="'+n+'i" cx=".5" cy=".35" r=".7"><stop offset="0" stop-color="'+lite(EYE_C[s.skin>=3?0:(s.hairC===3?1:0)],.25)+'"/><stop offset="1" stop-color="'+dark(EYE_C[s.skin>=3?0:(s.hairC===3?1:0)],.35)+'"/></radialGradient>'+
    '<linearGradient id="'+n+'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e08a"/><stop offset=".5" stop-color="#e2a63a"/><stop offset="1" stop-color="#a8741c"/></linearGradient>'+
