@@ -1130,9 +1130,14 @@
     color:#F3D37A; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
   }
   .play-brand{
-    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:30px; line-height:1;
-    background:linear-gradient(180deg,#FFF0B7,#E0B34E); -webkit-background-clip:text; background-clip:text;
-    color:#E0B34E; -webkit-text-fill-color:transparent; display:flex; align-items:center; gap:5px;
+    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:30px; line-height:1.1; letter-spacing:.5px;
+    /* same knitted-yarn look as .setup-brand so the play screen matches the logo */
+    background:
+      repeating-linear-gradient(118deg, rgba(120,45,0,0) 0 3px, rgba(120,45,0,.28) 3px 4px),
+      linear-gradient(180deg,#FFE066 0%,#FFB81F 55%,#F58A0A 100%);
+    -webkit-background-clip:text; background-clip:text;
+    color:#FFB81F; -webkit-text-fill-color:transparent; display:flex; align-items:center; gap:5px;
+    filter:drop-shadow(1.5px 0 0 #5A1E0A) drop-shadow(-1.5px 0 0 #5A1E0A) drop-shadow(0 1.5px 0 #5A1E0A) drop-shadow(0 -1.5px 0 #5A1E0A) drop-shadow(0 3px 2px rgba(0,0,0,.35));
   }
   .play-brand-dot{ width:9px; height:9px; border-radius:50%; background:#EF5C48; -webkit-text-fill-color:initial; }
   .play-turn{
@@ -2257,7 +2262,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .sc-ring .play-card{ background:none; border:0; box-shadow:none; overflow:visible; max-height:none; }
 .sc-ring .play-card__word{ color:#2b1a10; font-size:clamp(52px,19vw,96px); padding:0 6%; }
 .sc-ring .play-card--hidden .play-card__hidden{ color:#2b1a10; }
-.sc-ring .play-brand{ background:none; -webkit-text-fill-color:#2b1a10; color:#2b1a10; }
+.sc-ring .play-brand{ filter:none; background:none; -webkit-text-fill-color:#2b1a10; color:#2b1a10; }
 .sc-ring .play-back, .sc-ring .play-turn, .sc-ring .play-status, .sc-ring .play-score{ background:rgba(43,26,16,.07); border-color:rgba(43,26,16,.22); color:#2b1a10; }
 .sc-ring .play-status__item, .sc-ring .play-status__role, .sc-ring .play-score__name, .sc-ring .play-score__team.is-active .play-score__name{ color:#2b1a10; }
 .sc-ring .play-score__vals{ color:#6b5a48; }
