@@ -1,6 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// The Firebase SDK (app, realtime database and anonymous auth only) is bundled in js/firebase-sdk.js,
+// so nothing is loaded from Google's servers except the live connection to the database itself.
+import { initializeApp, getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect, getAuth, signInAnonymously, onAuthStateChanged } from "./firebase-sdk.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDSrLKHeMsY6qD2FZggiBqZY4GNmhdj3q8",
