@@ -32,6 +32,7 @@
 ├── manifest.webmanifest      تنظیمات نصب روی گوشی
 ├── sw.js                     سرویس‌ورکر (کار آفلاین)
 ├── database.rules.json       قوانین امنیتی Firebase
+├── privacy.html              سیاست حریم خصوصی (فارسی و انگلیسی)؛ ایمیل تماس باید داخلش نوشته شود
 └── .gitignore
 ```
 

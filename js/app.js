@@ -1602,6 +1602,12 @@ function renderSettings(){
   });
   wrap.appendChild(fbCard);
 
+  // ---- about ----
+  const aboutCard = el(`<div class="team-card set-card"><h2 class="set-card__title">درباره</h2></div>`);
+  const privacyLink = el(`<a class="set-link" href="privacy.html" target="_blank" rel="noopener"><span>سیاست حریم خصوصی</span><span aria-hidden="true">←</span></a>`);
+  aboutCard.appendChild(privacyLink);
+  wrap.appendChild(aboutCard);
+
   // ---- board quality ----
   const mapCard = el(`<div class="team-card set-card"></div>`);
   mapCard.appendChild(el(`<h2 class="set-card__title">نقشه‌ی بازی</h2>`));
