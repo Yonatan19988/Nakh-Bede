@@ -418,7 +418,7 @@ window.addEventListener('appinstalled', () => { deferredInstall = null; LS.set('
 // ---------------- FRIENDS ----------------
 function loadFriends(){
   const f = LS.get('friends', []);
-  return Array.isArray(f) ? f.filter(x => x && typeof x.name === 'string' && x.name.trim()).map(x => ({ name: x.name.slice(0, 14), avatar: typeof x.avatar === 'string' ? x.avatar : '🙂' })).slice(0, 30) : [];
+  return Array.isArray(f) ? f.filter(x => x && typeof x.name === 'string' && x.name.trim()).map(x => ({ name: x.name.slice(0, 14) })).slice(0, 30) : [];
 }
 function saveFriends(f){ LS.set('friends', f); }
 const CARD_ICONS = ['⏱️','🕵️','🛡️','✨','⚡','🪬','🧿','🚫','🔒','👣','↩️'];
@@ -433,11 +433,11 @@ function renderFriends(){
   list.querySelector('.frn-count').textContent = `${faNum(friends.length)} از ۳۰`;
   const rows = list.querySelector('.frn-rows');
   if(!friends.length){
-    rows.appendChild(el(`<div class="frn-empty"><span aria-hidden="true">👥</span><b>هنوز دوستی اضافه نکرده‌ای</b><small>نام و یک آواتار بنویس تا موقع ساخت تیم با یک لمس اضافه‌شان کنی.</small></div>`));
+    rows.appendChild(el(`<div class="frn-empty"><span aria-hidden="true">👥</span><b>هنوز دوستی اضافه نکرده‌ای</b><small>نام دوستانت را بنویس تا موقع ساخت تیم با یک لمس اضافه‌شان کنی.</small></div>`));
   }
   friends.forEach((fr, i) => {
     const row = el(`<div class="frn-row"><span class="frn-row__av"></span><b class="frn-row__name"></b><button class="frn-row__x" aria-label="حذف"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div>`);
-    row.querySelector('.frn-row__av').textContent = fr.avatar;
+    row.querySelector('.frn-row__av').textContent = Array.from(fr.name)[0] || '؟';
     row.querySelector('.frn-row__name').textContent = fr.name;
     row.querySelector('.frn-row__x').addEventListener('click', () => { const f = loadFriends(); f.splice(i, 1); saveFriends(f); render(); });
     rows.appendChild(row);
@@ -448,30 +448,18 @@ function renderFriends(){
   const add = el(`<div class="team-card frn-add">
     <h2 class="set-card__title">افزودن دوست</h2>
     <div class="frn-add__row">
-      <button type="button" class="frn-avbtn" aria-label="انتخاب آواتار" aria-expanded="false"></button>
       <input class="prof-name frn-name" id="frnName" type="text" maxlength="14" placeholder="نام دوست" autocomplete="off" />
       <button type="button" class="frn-add__btn">افزودن</button>
     </div>
-    <div class="prof-avs frn-avs" hidden></div>
     <p class="frn-hint">دوستان فقط روی همین گوشی ذخیره می‌شوند.</p>
   </div>`);
-  let pick = AVATARS[0];
-  const avBtn = add.querySelector('.frn-avbtn'), avs = add.querySelector('.frn-avs');
-  avBtn.textContent = pick;
-  avBtn.addEventListener('click', () => { avs.hidden = !avs.hidden; avBtn.setAttribute('aria-expanded', String(!avs.hidden)); });
-  AVATARS.forEach(av => {
-    const b = el(`<button type="button" class="prof-avs__btn ${av === pick ? 'is-on' : ''}"></button>`);
-    b.textContent = av;
-    b.addEventListener('click', () => { pick = av; avBtn.textContent = av; avs.hidden = true; avBtn.setAttribute('aria-expanded', 'false'); avs.querySelectorAll('.prof-avs__btn').forEach(x => x.classList.toggle('is-on', x === b)); });
-    avs.appendChild(b);
-  });
   const doAdd = () => {
     const inp = add.querySelector('#frnName'); const name = inp.value.trim();
     if(!name){ inp.focus(); return; }
     const f = loadFriends();
     if(f.some(x => x.name === name)){ toastHome('این دوست قبلاً هست'); return; }
     if(f.length >= 30){ toastHome('حداکثر ۳۰ دوست'); return; }
-    f.push({ name, avatar: pick }); saveFriends(f); render();
+    f.push({ name }); saveFriends(f); render();
   };
   add.querySelector('.frn-add__btn').addEventListener('click', doAdd);
   add.querySelector('#frnName').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); doAdd(); } });
@@ -1996,7 +1984,7 @@ function renderSetup(){
       const row = el(`<div class="frn-pick"><span>از دوستان:</span></div>`);
       frs.slice(0, 8).forEach(f => {
         const chip = el(`<button class="frn-pick__chip"></button>`);
-        chip.textContent = f.avatar + ' ' + f.name;
+        chip.textContent = f.name;
         chip.addEventListener('click', () => {
           const slot = team.members.findIndex(m => /^بازیکن\s*[0-9۰-۹]+$/.test(String(m).trim()) || !String(m).trim());
           if(slot >= 0) team.members[slot] = f.name;
