@@ -61,7 +61,22 @@ const HOME_CARD_BACK = "assets/card-back.webp";
 const HOME_CARD_WORD = "assets/card-word.webp";
 const HOME_CARD_ACT = "assets/card-action.webp";
 const HOME_LOGO = "assets/logo.webp";
-const MAP_IMAGE = "assets/map-60j.webp";
+// Two sizes of the same board. The full one (2160 px wide) decodes to about 100 MB of
+// memory, which weak phones cannot hold, so they get the 1296 px one (about 37 MB).
+// The player can override the automatic choice in settings.
+const MAP_FULL = "assets/map-60j.webp", MAP_LITE = "assets/map-60j-lite.webp";
+function weakDevice(){
+  try{
+    const mem = navigator.deviceMemory;                          // Chrome/Android only, in GB
+    if(typeof mem === 'number' && mem <= 3) return true;
+    if(typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4 && /android/i.test(navigator.userAgent)) return true;
+  }catch(e){}
+  return false;
+}
+const LITE_MAP = (() => { const v = LS.get('liteMap', null); return v === null || v === undefined ? weakDevice() : v === true; })();
+const MAP_IMAGE = LITE_MAP ? MAP_LITE : MAP_FULL;
+// keep a copy for offline play; the service worker stores whatever the page fetches
+try{ (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { fetch(MAP_IMAGE).catch(() => {}); }); }catch(e){}
 
 // Index-aligned with ACTION_CARDS. needsTarget = must pick a rival team.
 
@@ -1536,6 +1551,20 @@ function renderSettings(){
     fbCard.appendChild(row);
   });
   wrap.appendChild(fbCard);
+
+  // ---- board quality ----
+  const mapCard = el(`<div class="team-card set-card"></div>`);
+  mapCard.appendChild(el(`<h2 class="set-card__title">نقشه‌ی بازی</h2>`));
+  const liteRow = el(`<button class="set-switch" role="switch" aria-checked="${LITE_MAP}"><span class="set-switch__lbl">نقشه‌ی سبک (برای گوشی‌های ضعیف)</span><span class="set-switch__knob" aria-hidden="true"></span></button>`);
+  liteRow.addEventListener('click', () => {
+    LS.set('liteMap', !LITE_MAP);
+    sfxTap();
+    toastHome('با بستن و باز کردن دوباره‌ی بازی اعمال می‌شود');
+    liteRow.setAttribute('aria-checked', String(!LITE_MAP));
+  });
+  mapCard.appendChild(liteRow);
+  mapCard.appendChild(el(`<small class="set-hint">نقشه‌ی سبک حافظه‌ی کمتری می‌گیرد و روی گوشی‌های قدیمی روان‌تر است. جزئیات نقشه کمی کم‌تر دیده می‌شود. اگر بازی کند است یا بسته می‌شود، آن را روشن کن.</small>`));
+  wrap.appendChild(mapCard);
 
   // ---- board facts ----
   const infoCard = el(`<div class="team-card set-card"></div>`);

@@ -1,8 +1,10 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v51';
+const CACHE = 'nakh-bede-v52';
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
-const LAZY = ['./assets/map-60j.webp'];
+// The board image is fetched by the page itself (it picks the full or the lite size)
+// and stored the first time it is used; nothing to prefetch here.
+const LAZY = [];
 const FONT_CACHE = 'nakh-bede-fonts-v1';
 const CORE = [
   './', './index.html',
