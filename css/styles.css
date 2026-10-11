@@ -2420,3 +2420,42 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 
 .set-link{ display:flex; align-items:center; justify-content:space-between; height:48px; padding:0 14px; border-radius:14px; background:rgba(255,255,255,.07); border:1.5px solid rgba(255,255,255,.14); color:#F3E3B8; font-weight:700; font-size:14.5px; text-decoration:none; }
 .set-link:focus-visible{ outline:2px solid #F3D37A; outline-offset:2px; }
+
+/* ---------- live board (js/mapfx.js): pure overlay, sizes in cqw of the board width ---------- */
+.mapfx{ position:absolute; inset:0; pointer-events:none; container-type:inline-size; overflow:hidden; }
+.fx-z{ position:absolute; left:0; width:100%; }
+.fx-z:not(.is-live) *{ animation-play-state:paused !important; }
+.mapfx i{ position:absolute; display:block; font-style:normal; }
+.fx-sp{ width:var(--s); height:calc(var(--s) * .45); margin:-.1cqw; border-radius:50%; background:radial-gradient(ellipse, rgba(255,255,255,.95), rgba(255,255,255,0) 70%); opacity:0; animation:fxTwinkle var(--t) ease-in-out var(--d) infinite; }
+@keyframes fxTwinkle{ 0%,100%{ opacity:0; transform:scale(.4); } 50%{ opacity:.95; transform:scale(1.15); } }
+.fx-fl{ width:3.2cqw; height:.22cqw; border-radius:.2cqw; background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.7), rgba(255,255,255,0)); opacity:0; animation:fxFlow var(--t) linear var(--d) infinite; }
+@keyframes fxFlow{ 0%{ opacity:0; transform:translateX(-1.5cqw); } 25%{ opacity:.8; } 75%{ opacity:.7; } 100%{ opacity:0; transform:translateX(4cqw); } }
+.fx-rip{ width:var(--w); height:calc(var(--w) * .34); margin:calc(var(--w) * -.17) 0 0 calc(var(--w) * -.5); border:.16cqw solid rgba(255,255,255,.75); border-radius:50%; opacity:0; animation:fxRip 2.8s ease-out infinite; }
+@keyframes fxRip{ 0%{ opacity:.85; transform:scale(.25); } 100%{ opacity:0; transform:scale(1); } }
+.fx-fount{ position:absolute; width:0; height:0; }
+.fx-fount .j{ left:-.2cqw; bottom:0; width:.4cqw; height:var(--h); border-radius:.4cqw .4cqw 0 0; transform-origin:50% 100%; background:linear-gradient(to top, rgba(255,255,255,.95), rgba(210,242,255,.2)); animation:fxJet 1.15s ease-in-out infinite alternate; }
+@keyframes fxJet{ 0%{ transform:scaleY(.72); opacity:.7; } 100%{ transform:scaleY(1.08); opacity:1; } }
+.fx-fount .d{ left:-.22cqw; bottom:0; width:.44cqw; height:.44cqw; border-radius:50%; background:rgba(235,250,255,.95); opacity:0; animation:fxDrop 1.25s linear infinite; animation-delay:var(--dl); }
+@keyframes fxDrop{ 0%{ opacity:0; transform:translate(0, calc(var(--h) * -1)); } 12%{ opacity:1; } 40%{ transform:translate(calc(var(--dx) * .45), calc(var(--h) * -.9)); } 70%{ transform:translate(calc(var(--dx) * .75), calc(var(--h) * -.4)); } 100%{ opacity:0; transform:translate(var(--dx), 0); } }
+.fx-fount .r{ left:-1.8cqw; top:-.55cqw; width:3.6cqw; height:1.2cqw; border:.14cqw solid rgba(255,255,255,.7); border-radius:50%; opacity:0; animation:fxRip 2s ease-out infinite; }
+.fx-smoke{ position:absolute; width:0; height:0; }
+.fx-smoke i{ left:-1cqw; bottom:0; width:2cqw; height:2cqw; border-radius:50%; background:radial-gradient(circle, rgba(250,250,250,.9), rgba(250,250,250,0) 70%); opacity:0; animation:fxSmoke 4s linear infinite; animation-delay:var(--dl); }
+@keyframes fxSmoke{ 0%{ opacity:0; transform:translate(0,0) scale(.4); } 15%{ opacity:.85; } 100%{ opacity:0; transform:translate(3cqw,-7cqw) scale(2.6); } }
+.fx-flag{ transform-origin:0 50%; background:linear-gradient(#239f40 0 33.4%, #fff 33.4% 66.6%, #da0000 66.6%); box-shadow:0 0 .12cqw rgba(0,0,0,.35); animation:fxFlag .8s ease-in-out infinite alternate; }
+@keyframes fxFlag{ 0%{ transform:skewY(-7deg) scaleX(.9); } 100%{ transform:skewY(6deg) scaleX(1); } }
+.fx-beam{ width:17cqw; height:17cqw; margin:-8.5cqw 0 0 -8.5cqw; border-radius:50%; background:conic-gradient(from 0deg, rgba(255,246,170,.6) 0 16deg, transparent 16deg 180deg, rgba(255,246,170,.6) 180deg 196deg, transparent 196deg 360deg); -webkit-mask-image:radial-gradient(circle, #000 12%, transparent 70%); mask-image:radial-gradient(circle, #000 12%, transparent 70%); animation:fxSpin 5s linear infinite; }
+@keyframes fxSpin{ to{ transform:rotate(360deg); } }
+.fx-glow{ width:3cqw; height:3cqw; margin:-1.5cqw 0 0 -1.5cqw; border-radius:50%; background:radial-gradient(circle, rgba(255,240,150,.9), rgba(255,240,150,0) 70%); animation:fxGlow 1.6s ease-in-out infinite alternate; }
+@keyframes fxGlow{ 0%{ opacity:.35; transform:scale(.8); } 100%{ opacity:1; transform:scale(1.2); } }
+.fx-pool{ position:absolute; width:6%; overflow:hidden; }
+.fx-pool i{ left:0; top:-20%; width:100%; height:140%; background:repeating-linear-gradient(180deg, rgba(255,255,255,0) 0 .5cqw, rgba(255,255,255,.4) .5cqw .7cqw); animation:fxPool 3s linear infinite; }
+@keyframes fxPool{ to{ transform:translateY(1.2cqw); } }
+.fx-fin{ width:11.6cqw; height:9.8cqw; margin:-4.9cqw 0 0 -5.8cqw; border:.45cqw solid rgba(255,226,110,.95); border-radius:50%; opacity:0; animation:fxFin 2.2s ease-out infinite; }
+@keyframes fxFin{ 0%{ opacity:.9; transform:scale(1); } 100%{ opacity:0; transform:scale(1.45); } }
+.fx-blink{ width:.9cqw; height:.9cqw; margin:-.45cqw 0 0 -.45cqw; border-radius:50%; background:#ff3b30; box-shadow:0 0 1.2cqw .4cqw rgba(255,60,48,.8); animation:fxBlink 1.8s steps(1) infinite; }
+@keyframes fxBlink{ 0%{ opacity:1; } 50%{ opacity:.12; } }
+.fx-cloud{ left:0; width:55cqw; height:26cqw; margin-top:-13cqw; border-radius:50%; background:radial-gradient(ellipse at center, rgba(0,25,35,.17), rgba(0,25,35,0) 68%); animation:fxCloud var(--t) linear var(--dl) infinite; }
+@keyframes fxCloud{ 0%{ transform:translateX(-60cqw); } 100%{ transform:translateX(112cqw); } }
+.fx-bird{ position:absolute; left:0; height:auto; animation:fxFly var(--t) linear var(--dl) infinite; }
+@keyframes fxFly{ 0%{ transform:translate(-6cqw,0) scaleY(1); } 25%{ transform:translate(22cqw,-1.5cqw) scaleY(.55); } 50%{ transform:translate(50cqw,0) scaleY(1); } 75%{ transform:translate(78cqw,-1.5cqw) scaleY(.55); } 100%{ transform:translate(108cqw,0) scaleY(1); } }
+@media (prefers-reduced-motion:reduce){ .mapfx{ display:none; } }

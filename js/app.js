@@ -75,6 +75,8 @@ function weakDevice(){
 }
 const LITE_MAP = (() => { const v = LS.get('liteMap', null); return v === null || v === undefined ? weakDevice() : v === true; })();
 const MAP_IMAGE = LITE_MAP ? MAP_LITE : MAP_FULL;
+// live touches on the board (fountains, water, smoke...): on by default except on weak phones
+const MAP_FX = (() => { const v = LS.get('mapFx', null); return (v === null || v === undefined ? !LITE_MAP : v === true) && !!window.NBMapFx && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); })();
 // keep a copy for offline play; the service worker stores whatever the page fetches
 try{ (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { fetch(MAP_IMAGE).catch(() => {}); }); }catch(e){}
 
@@ -1619,6 +1621,16 @@ function renderSettings(){
     liteRow.setAttribute('aria-checked', String(!LITE_MAP));
   });
   mapCard.appendChild(liteRow);
+  const fxOn = LS.get('mapFx', null) === null ? !LITE_MAP : LS.get('mapFx', null) === true;
+  const fxRow = el(`<button class="set-switch" role="switch" aria-checked="${fxOn}"><span class="set-switch__lbl">انیمیشن‌های نقشه (فواره، آب، دود...)</span><span class="set-switch__knob" aria-hidden="true"></span></button>`);
+  fxRow.addEventListener('click', () => {
+    const next = fxRow.getAttribute('aria-checked') !== 'true';
+    LS.set('mapFx', next);
+    sfxTap();
+    toastHome('با بستن و باز کردن دوباره‌ی بازی اعمال می‌شود');
+    fxRow.setAttribute('aria-checked', String(next));
+  });
+  mapCard.appendChild(fxRow);
   mapCard.appendChild(el(`<small class="set-hint">نقشه‌ی سبک حافظه‌ی کمتری می‌گیرد و روی گوشی‌های قدیمی روان‌تر است. جزئیات نقشه کمی کم‌تر دیده می‌شود. اگر بازی کند است یا بسته می‌شود، آن را روشن کن.</small>`));
   wrap.appendChild(mapCard);
 
@@ -3139,6 +3151,7 @@ function renderMapFullScreen(){
   const cam = el(`<div class="mapcam"></div>`);
   const world = el(`<div class="mapcam__world ${state.mapFit ? 'is-fitting' : ''}"></div>`);
   world.appendChild(el(`<img class="mapcam__img" src="${MAP_IMAGE}" alt="" />`));
+  if(MAP_FX){ const fx = el(NBMapFx.html()); world.appendChild(fx); NBMapFx.mount(fx); }
 
   const byCell = {};
   state.teams.forEach((t, ti) => {
