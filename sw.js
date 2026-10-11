@@ -1,5 +1,5 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v50';
+const CACHE = 'nakh-bede-v51';
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
 const LAZY = ['./assets/map-60j.webp'];
@@ -9,6 +9,8 @@ const CORE = [
   './css/styles.css',
   './js/data.js', './js/avatar.js', './js/app.js', './js/firebase.js',
   './assets/logo.webp',
+  './assets/fonts/vazirmatn-arabic.woff2', './assets/fonts/vazirmatn-latin.woff2',
+  './assets/fonts/lalezar-arabic.woff2', './assets/fonts/lalezar-latin.woff2',
   './assets/card-back.webp', './assets/card-word.webp', './assets/card-action.webp',
   './manifest.webmanifest',
   './icons/icon-96.png', './icons/icon-192.png', './icons/icon-512.png',
