@@ -2405,3 +2405,10 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .shop-item{ min-width:0; overflow:hidden; }
 .shop-prev--pk{ min-width:0; }
 .shop-tab{ min-width:0; font-size:13px; padding:0 6px; }
+
+.pk-new{ position:absolute; top:-7px; inset-inline-end:8px; font-style:normal; font-size:11px; font-weight:800; color:#3A2205; background:linear-gradient(180deg,#FFE27A,#F2B134); border-radius:99px; padding:2px 9px; box-shadow:0 2px 6px rgba(0,0,0,.35); animation:pkNew 2.4s ease-in-out infinite; }
+@keyframes pkNew{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+@media (prefers-reduced-motion:reduce){ .pk-new{ animation:none; } }
+.pk-chip{ position:relative; }
+.shop-prev--pk{ position:relative; }
+.shop-prev--pk .pk-new{ top:-6px; inset-inline-end:6px; }
