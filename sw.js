@@ -1,5 +1,5 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v56';
+const CACHE = 'nakh-bede-v57';
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
 // The board image is fetched by the page itself (it picks the full or the lite size)
@@ -14,7 +14,7 @@ const CORE = [
   './assets/fonts/vazirmatn-arabic.woff2', './assets/fonts/vazirmatn-latin.woff2',
   './assets/fonts/lalezar-arabic.woff2', './assets/fonts/lalezar-latin.woff2',
   './assets/card-back.webp', './assets/card-word.webp', './assets/card-action.webp',
-  './manifest.webmanifest',
+  './manifest.webmanifest', './privacy.html',
   './icons/icon-96.png', './icons/icon-192.png', './icons/icon-512.png',
   './icons/icon-maskable-192.png', './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png'
