@@ -577,7 +577,7 @@ const SHOP_ITEMS = [
   { id:'sc_yarn',   kind:'scene', name:'کلاف نخ',      value:'yarn',    price:140 },
 ];
 WORD_PACKS.forEach(p => SHOP_ITEMS.push({ id:'pk_' + p.id, kind:'pack', name:p.name, value:p.id, price:p.price, free:!!p.free }));
-const SHOP_TABS = [['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی'],['scene','صحنه‌ی کلمه'],['pack','پک کلمه']];
+const SHOP_TABS = [['pack','پک کلمه'],['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی'],['scene','صحنه‌ی کلمه']];
 
 // ---- word packs the player can use (free ones plus the bought ones) ----
 function packOwned(id){
@@ -1641,7 +1641,7 @@ function renderSettings(){
 }
 
 // ---------------- SHOP SCREEN ----------------
-let shopTab = 'avatar';
+let shopTab = 'pack';
 function renderShop(){
   const p = loadProfile();
   const wrap = el(`<div class="setup-page shop"></div>`);
