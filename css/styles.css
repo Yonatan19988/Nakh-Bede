@@ -2366,3 +2366,11 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .frn-invite__txt p{ margin:2px 0 0; }
 .frn-share{ height:50px; font-size:18px; }
 .frn-row__av{ color:#3A2A12; font-size:22px; font-weight:800; }
+
+/* online: other players' avatars */
+.pav{ flex:none; width:26px; height:26px; border-radius:50%; border:2px solid #FFF6E3; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; background:#F2B134; line-height:1; }
+.pav > svg{ width:100%; height:100%; display:block; }
+.pav .av-emoji{ font-size:15px; }
+.pav--letter{ background:#F2B134; color:#3A2A12; font-size:14px; font-weight:800; }
+.lobby-chip{ display:inline-flex; align-items:center; gap:7px; padding-inline-start:5px; }
+.play-status__role .pav{ width:30px; height:30px; margin-inline-end:7px; }

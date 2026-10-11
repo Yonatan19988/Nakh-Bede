@@ -98,6 +98,30 @@ function fbErrorText(err){
 // Presence: when the connection drops, onDisconnect removes this player from
 // the room, and the rules then refuse their writes. So on every reconnect we
 // put the player back (same team) and re-arm the disconnect cleanup.
+// ---- avatars shown to the other players in an online room ----
+// A player record carries av = { l:[look indexes...], r:ring, e:emoji }. It comes from other
+// phones, so it is clamped to the real part lists before it is drawn.
+function myAvatarPayload(){
+  try{
+    const p = loadProfile(), keys = Object.keys(NBAvatar.DEFAULT_LOOK);
+    return { l: keys.map(k => p.look[k] | 0), r: p.ring | 0, e: p.avatar || '' };
+  }catch(e){ return null; }
+}
+function avatarHtmlFor(av, name){
+  try{
+    if(av && typeof av.e === 'string' && av.e) return `<span class="pav"><span class="av-emoji"></span></span>`.replace('<span class="av-emoji"></span>', `<span class="av-emoji">${escHtml(av.e.slice(0, 4))}</span>`);
+    if(av && Array.isArray(av.l)){
+      const keys = Object.keys(NBAvatar.DEFAULT_LOOK), look = {};
+      keys.forEach((k, i) => { const n = av.l[i] | 0, max = NBAvatar.LISTS[k].length; look[k] = n >= 0 && n < max ? n : 0; });
+      const ring = NBAvatar.RING[(av.r | 0) >= 0 && (av.r | 0) < NBAvatar.RING.length ? av.r | 0 : 0][0];
+      return `<span class="pav" style="border-color:${ring}">${NBAvatar.svg(look)}</span>`;
+    }
+  }catch(e){}
+  const ch = Array.from(String(name || '؟'))[0] || '؟';
+  return `<span class="pav pav--letter">${escHtml(ch)}</span>`;
+}
+function escHtml(t){ return String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+
 let presenceUnsub = null;
 function armPresence(){
   if(presenceUnsub){ presenceUnsub(); presenceUnsub = null; }
@@ -107,7 +131,7 @@ function armPresence(){
     if(!online.roomCode || !online.playerId) return;
     const meRef = window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`);
     window.FB.onDisconnect(meRef).remove();
-    window.FB.update(meRef, { name: online.playerName, teamId: online.lastTeamId || null })
+    window.FB.update(meRef, { name: online.playerName, teamId: online.lastTeamId || null, av: myAvatarPayload() })
       .catch(err => console.warn('presence restore failed', err));
   });
 }
@@ -129,7 +153,7 @@ function onlineCreateRoom(playerName){
     createdAt: Date.now(),
     hostId: playerId,
     phase: 'lobby',
-    players: { [playerId]: { name: playerName, teamId: null } },
+    players: { [playerId]: { name: playerName, teamId: null, av: myAvatarPayload() } },
     teams: {},
   };
   return window.FB.set(window.FB.ref(window.FB.db, 'rooms/'+code), roomData).then(() => {
@@ -154,7 +178,7 @@ function onlineJoinRoom(code, playerName, restoreTeamId){
     online.playerId = playerId;
     online.playerName = playerName;
     online.isHost = false;
-    return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: restoreTeamId || null}).then(() => {
+    return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: restoreTeamId || null, av: myAvatarPayload()}).then(() => {
       rememberRoom();
       armPresence();
       subscribeRoom();
@@ -848,6 +872,7 @@ function onlineTeamsArray(){
       describerIdx: t.describerIdx||0,
       memberIds: memberIds,
       memberNames: memberIds.map(pid => (room.players[pid]||{}).name || '؟'),
+      memberAv: memberIds.map(pid => (room.players[pid]||{}).av || null),
     };
   });
 }
@@ -1060,7 +1085,7 @@ function renderOnlineLobby(){
     if(t.memberIds.length){
       t.memberIds.forEach((pid, k) => {
         const me = pid === online.playerId;
-        chips.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${t.memberNames[k]}${me ? ' (تو)' : ''}</span>`));
+        chips.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${avatarHtmlFor(t.memberAv[k], t.memberNames[k])}<span class="lobby-chip__n">${escHtml(t.memberNames[k])}${me ? ' (تو)' : ''}</span></span>`));
       });
     } else {
       chips.appendChild(el(`<span class="lobby-empty">هنوز کسی نیست</span>`));
@@ -1082,7 +1107,7 @@ function renderOnlineLobby(){
     const un = el(`<div class="lobby-unassigned"><span class="lobby-unassigned__lbl">بدون تیم</span></div>`);
     unassigned.forEach(pid => {
       const me = pid === online.playerId;
-      un.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${room.players[pid].name}${me ? ' (تو)' : ''}</span>`));
+      un.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${avatarHtmlFor(room.players[pid].av, room.players[pid].name)}<span class="lobby-chip__n">${escHtml(room.players[pid].name)}${me ? ' (تو)' : ''}</span></span>`));
     });
     wrap.appendChild(un);
   }
@@ -1150,7 +1175,7 @@ function syncStateFromOnlineRoom(){
   state.teams = teams.map(t => ({
     id: t.id, name: t.name, color: t.color, position: t.position, score: t.score,
     describerIdx: t.describerIdx, members: t.memberNames.length ? t.memberNames : ['—'],
-    memberIds: t.memberIds, timerOverride: room.teams[t.id].timerOverride || null,
+    memberIds: t.memberIds, memberAv: t.memberAv, timerOverride: room.teams[t.id].timerOverride || null,
     mods: room.teams[t.id].mods || {},
   }));
   const curIdx = state.teams.findIndex(t => t.id === room.currentTeamId);
@@ -1370,13 +1395,15 @@ function renderOnlineBoard(){
 
   const header = el(`<div class="play-head"></div>`);
   header.appendChild(el(`<div class="play-turn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Zm7.5.5c-.7 0-1.4.1-2 .3 1.2 1 2 2.3 2 3.7V19H22v-1.8c0-2-2.4-3.7-5.5-3.7Z"/></svg><span>نوبت ${t.name}</span></div>`));
-  header.appendChild(el(`<div class="play-brand">نخ بده<span class="play-brand-dot"></span></div>`));
+  header.appendChild(el(`<div class="play-brand">نخ بده</div>`));
   wrap.appendChild(header);
 
   const status = el(`<div class="play-status"></div>`);
   status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(t.position + 1)} از ${faNum(state.trackLength)}</span></div>`));
   status.appendChild(el(`<span class="play-status__sep"></span>`));
-  status.appendChild(el(`<div class="play-status__item play-status__role">${roleLabel}</div>`));
+  const dIdx = t.memberIds && t.memberIds.length ? (t.describerIdx||0) % t.memberIds.length : -1;
+  const dName = dIdx >= 0 ? (t.members[dIdx] || '') : '';
+  status.appendChild(el(`<div class="play-status__item play-status__role">${dIdx >= 0 ? avatarHtmlFor(t.memberAv && t.memberAv[dIdx], dName) : ''}<span>${roleLabel}</span></div>`));
   wrap.appendChild(status);
 
   if(state.roundEnded){
@@ -2201,7 +2228,7 @@ function renderBoard(){
   // ---- compact header: back + brand + turn pill ----
   const header = el(`<div class="play-head"></div>`);
   header.appendChild(el(`<div class="play-turn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Zm7.5.5c-.7 0-1.4.1-2 .3 1.2 1 2 2.3 2 3.7V19H22v-1.8c0-2-2.4-3.7-5.5-3.7Z"/></svg><span>نوبت ${currentTeam().name}</span></div>`));
-  header.appendChild(el(`<div class="play-brand">نخ بده<span class="play-brand-dot"></span></div>`));
+  header.appendChild(el(`<div class="play-brand">نخ بده</div>`));
   wrap.appendChild(header);
 
   // ---- compact status row: cell | role | viewer select ----
