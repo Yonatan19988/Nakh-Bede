@@ -2365,3 +2365,4 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .frn-invite{ display:flex; flex-direction:column; gap:10px; }
 .frn-invite__txt p{ margin:2px 0 0; }
 .frn-share{ height:50px; font-size:18px; }
+.frn-row__av{ color:#3A2A12; font-size:22px; font-weight:800; }
