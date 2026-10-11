@@ -598,7 +598,7 @@ function buildPackPicker(selected, onToggle, opts){
   const grid = el(`<div class="pk-grid"></div>`);
   WORD_PACKS.forEach(p => {
     const owned = packOwned(p.id), on = selected.includes(p.id);
-    const b = el(`<button type="button" class="pk-chip ${on ? 'is-on' : ''} ${owned ? '' : 'is-locked'}" aria-pressed="${on}"><span class="pk-chip__ico" aria-hidden="true"></span><span class="pk-chip__name"></span><small></small></button>`);
+    const b = el(`<button type="button" class="pk-chip ${on ? 'is-on' : ''} ${owned ? '' : 'is-locked'}" aria-pressed="${on}"><span class="pk-chip__ico" aria-hidden="true"></span><span class="pk-chip__name"></span><small></small>${packIsFresh(p) ? '<i class="pk-new">تازه</i>' : ''}</button>`);
     b.querySelector('.pk-chip__ico').textContent = owned ? p.icon : '🔒';
     b.querySelector('.pk-chip__name').textContent = p.name;
     b.querySelector('small').textContent = owned ? `${faNum(packWordCount(p))} کلمه` : `${faNum(p.price)} سکه`;
@@ -1659,7 +1659,7 @@ function renderShop(){
     let preview = '';
     if(it.kind === 'avatar') preview = `<div class="shop-prev shop-prev--av">${it.value}</div>`;
     else if(it.kind === 'frame') preview = `<div class="shop-prev shop-prev--av" style="border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55;">${avatarMarkup(p)}</div>`;
-    else if(it.kind === 'pack'){ const pk = WORD_PACKS.find(x => x.id === it.value); const ws = pk.words || WORD_LIST; preview = `<div class="shop-prev shop-prev--pk"><b>${pk.icon}</b><small>${faNum(ws.length)} کلمه</small><em>${escHtml(ws[0])} · ${escHtml(ws[3] || '')}</em></div>`; }
+    else if(it.kind === 'pack'){ const pk = WORD_PACKS.find(x => x.id === it.value); const ws = pk.words || WORD_LIST; preview = `<div class="shop-prev shop-prev--pk">${packIsFresh(pk) ? '<i class="pk-new">تازه</i>' : ''}<b>${pk.icon}</b><small>${faNum(ws.length)} کلمه</small><em>${escHtml(ws[0])} · ${escHtml(ws[3] || '')}</em></div>`; }
     else if(it.kind === 'scene') preview = `<div class="shop-prev shop-prev--sc" data-sc="${it.value}"><span>نخ بده</span></div>`;
     else preview = `<div class="shop-prev shop-prev--cf">${it.value.map((c, i) => `<i style="background:${c}; left:${8 + i * 17}%; top:${14 + (i % 2) * 26}%; transform:rotate(${i * 37}deg);"></i>`).join('')}</div>`;
     const cell = el(`<div class="shop-item ${owned ? 'is-owned' : ''} ${equipped ? 'is-eq' : ''}">${preview}<b class="shop-item__name"></b><button class="shop-buy"></button></div>`);
