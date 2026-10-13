@@ -2493,3 +2493,5 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .reel:after{ bottom:0; background:linear-gradient(rgba(6,34,45,.2), #06222d); }
 @media (prefers-reduced-motion:reduce){ .reel__strip{ transition:none; } }
 .wh-classic{ width:88px; height:88px; border-radius:50%; border:4px solid #E0B34E; background:conic-gradient(#b7332c 0 9%,#d6a343 0 18%,#0f9d94 0 27%,#1f5aa8 0 36%,#2e9347 0 45%,#b7501f 0 54%,#b7332c 0 63%,#d6a343 0 72%,#0f9d94 0 81%,#1f5aa8 0 90%,#2e9347 0); }
+.wheel-hint--go{ color:#F3D37A; font-size:15px; font-weight:800; }
+.wheel-wrap--slot.is-grabbable{ touch-action:none; cursor:grab; }
