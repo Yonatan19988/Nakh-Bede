@@ -580,7 +580,8 @@ const SHOP_ITEMS = [
   { id:'sc_yarn',   kind:'scene', name:'کلاف نخ',      value:'yarn',    price:140 },
 ];
 WORD_PACKS.forEach(p => SHOP_ITEMS.push({ id:'pk_' + p.id, kind:'pack', name:p.name, value:p.id, price:p.price, free:!!p.free }));
-const SHOP_TABS = [['pack','پک کلمه'],['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی'],['scene','صحنه‌ی کلمه']];
+NBWheel.SKINS.forEach(s => SHOP_ITEMS.push({ id:s.id, kind:'wheel', name:s.name, value:s.id, price:s.price, free:!!s.free }));
+const SHOP_TABS = [['pack','پک کلمه'],['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی'],['scene','صحنه‌ی کلمه'],['wheel','گردونه']];
 
 // ---- word packs the player can use (free ones plus the bought ones) ----
 function packOwned(id){
@@ -647,6 +648,7 @@ function loadProfile(){
     frame: typeof p.frame === 'string' ? p.frame : '',
     confetti: typeof p.confetti === 'string' ? p.confetti : '',
     scene: sceneIdOf(p),
+    wheel: wheelIdOf(p),
     stats: { games: s.games|0, rounds: s.rounds|0, correct: s.correct|0, skip: s.skip|0, best: s.best|0, cells: s.cells|0 },
     ...sanitizeLook(p)
   };
@@ -676,6 +678,11 @@ function sceneIdOf(p){
   const it = SHOP_ITEMS.find(i => i.kind === 'scene' && i.id === p.scene);
   const owned = Array.isArray(p.owned) && it && p.owned.includes(it.id);
   return it && (it.free || owned) ? it.id : 'sc_fill';
+}
+function wheelIdOf(p){
+  const it = SHOP_ITEMS.find(i => i.kind === 'wheel' && i.id === p.wheel);
+  const owned = Array.isArray(p.owned) && it && p.owned.includes(it.id);
+  return it && (it.free || owned) ? it.id : 'wh_lamp_red';
 }
 function sceneName(){ const it = SHOP_ITEMS.find(i => i.id === loadProfile().scene); return it ? it.value : 'fill'; }
 function frameStyle(p){
@@ -1674,13 +1681,14 @@ function renderShop(){
   wrap.appendChild(tabs);
 
   const grid = el(`<div class="shop-grid"></div>`);
-  SHOP_ITEMS.filter(i => i.kind === shopTab && (!i.free || i.kind === 'scene' || i.kind === 'pack')).forEach(it => {
+  SHOP_ITEMS.filter(i => i.kind === shopTab && (!i.free || i.kind === 'scene' || i.kind === 'pack' || i.kind === 'wheel')).forEach(it => {
     const owned = it.free || p.owned.includes(it.id);
-    const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id) || (it.kind === 'scene' && p.scene === it.id);
+    const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id) || (it.kind === 'scene' && p.scene === it.id) || (it.kind === 'wheel' && p.wheel === it.id);
     let preview = '';
     if(it.kind === 'avatar') preview = `<div class="shop-prev shop-prev--av">${it.value}</div>`;
     else if(it.kind === 'frame') preview = `<div class="shop-prev shop-prev--av" style="border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55;">${avatarMarkup(p)}</div>`;
     else if(it.kind === 'pack'){ const pk = WORD_PACKS.find(x => x.id === it.value); const ws = pk.words || WORD_LIST; preview = `<div class="shop-prev shop-prev--pk">${packIsFresh(pk) ? '<i class="pk-new">تازه</i>' : ''}<b>${pk.icon}</b><small>${faNum(ws.length)} کلمه</small><em>${escHtml(ws[0])} · ${escHtml(ws[3] || '')}</em></div>`; }
+    else if(it.kind === 'wheel') preview = it.id === 'wh_slot' ? `<div class="shop-prev shop-prev--slot"><i>⭐</i><b>وقت اضافه</b></div>` : it.id === 'wh_classic' ? `<div class="shop-prev shop-prev--wh"><span class="wh-classic"></span></div>` : `<div class="shop-prev shop-prev--wh">${NBWheel.svg(it.id, true)}</div>`;
     else if(it.kind === 'scene') preview = `<div class="shop-prev shop-prev--sc" data-sc="${it.value}"><span>نخ بده</span></div>`;
     else preview = `<div class="shop-prev shop-prev--cf">${it.value.map((c, i) => `<i style="background:${c}; left:${8 + i * 17}%; top:${14 + (i % 2) * 26}%; transform:rotate(${i * 37}deg);"></i>`).join('')}</div>`;
     const cell = el(`<div class="shop-item ${owned ? 'is-owned' : ''} ${equipped ? 'is-eq' : ''}">${preview}<b class="shop-item__name"></b><button class="shop-buy"></button></div>`);
@@ -1694,20 +1702,21 @@ function renderShop(){
         if(q.coins < it.price){ toastHome(`برای «${it.name}» ${faNum(it.price - q.coins)} سکه‌ی دیگر لازم داری`); return; }
         if(!confirm(`«${it.name}» را با ${it.price} سکه می‌خری؟`)) return;
         q.coins -= it.price; q.owned.push(it.id);
-        if(it.kind === 'avatar') q.avatar = it.value; else if(it.kind === 'frame') q.frame = it.id; else if(it.kind === 'scene') q.scene = it.id; else if(it.kind === 'pack'){ const sel = selectedPacks(); if(!sel.includes(it.value)) LS.set('packs', sel.concat(it.value)); } else q.confetti = it.id;
+        if(it.kind === 'avatar') q.avatar = it.value; else if(it.kind === 'frame') q.frame = it.id; else if(it.kind === 'scene') q.scene = it.id; else if(it.kind === 'wheel') q.wheel = it.id; else if(it.kind === 'pack'){ const sel = selectedPacks(); if(!sel.includes(it.value)) LS.set('packs', sel.concat(it.value)); } else q.confetti = it.id;
         saveProfile(q); sfxWin(); render();
       });
     } else if(it.kind === 'pack'){
       btn.textContent = it.free ? 'رایگان' : 'در اختیار توست ✓';
       btn.classList.add('is-own'); btn.disabled = true;
     } else {
-      btn.textContent = equipped ? ((it.kind === 'avatar' || it.kind === 'scene') ? 'در حال استفاده' : 'برداشتن') : 'استفاده';
+      btn.textContent = equipped ? ((it.kind === 'avatar' || it.kind === 'scene' || it.kind === 'wheel') ? 'در حال استفاده' : 'برداشتن') : 'استفاده';
       btn.classList.add('is-own');
       btn.addEventListener('click', () => {
         const q = loadProfile();
         if(it.kind === 'avatar') q.avatar = it.value;
         else if(it.kind === 'frame') q.frame = equipped ? '' : it.id;
         else if(it.kind === 'scene') q.scene = it.id;
+        else if(it.kind === 'wheel') q.wheel = it.id;
         else q.confetti = equipped ? '' : it.id;
         saveProfile(q); sfxTap(); render();
       });
@@ -2778,13 +2787,15 @@ function attachWheelDrag(disc, wrap, onFlick){
 }
 
 function renderWheelStage(targetIdx, spun, canSpin, onSpin){
+  const skin = NBWheel.get(loadProfile().wheel);
+  if(skin.key === 'slot') return renderSlotStage(targetIdx, spun, canSpin, onSpin);
   const N = ACTION_CARDS.length, seg = 360 / N;
   const stage = el(`<div class="wheel-stage"></div>`);
   stage.appendChild(el(`<div class="wheel-lead">${canSpin && !spun ? 'گردونه رو بچرخون یا با انگشت بچرخونش' : 'گردونه در حال چرخشه'}</div>`));
-  stage.appendChild(el(`<div class="wheel-ptr"></div>`));
+  stage.appendChild(el(`<div class="wheel-ptr" style="border-top-color:${skin.ptr}"></div>`));
   const wrap = el(`<div class="wheel-wrap ${canSpin && !spun ? 'is-grabbable' : ''}"></div>`);
   const disc = el(`<div class="wheel-disc"></div>`);
-  disc.innerHTML = wheelSVG();
+  disc.innerHTML = skin.key === 'classic' ? wheelSVG() : NBWheel.svg(skin.id);
   wrap.appendChild(disc);
   stage.appendChild(wrap);
 
@@ -2821,6 +2832,52 @@ function renderWheelStage(targetIdx, spun, canSpin, onSpin){
     if(canSpin) attachWheelDrag(disc, wrap, onSpin);
   }
 
+  if(!spun){
+    if(canSpin){
+      const btn = el(`<button class="wheel-btn">بچرخون!</button>`);
+      btn.addEventListener('click', () => { state.wheelVel = 900; onSpin(); });
+      stage.appendChild(btn);
+    } else {
+      stage.appendChild(el(`<div class="wheel-hint">منتظر چرخوندن گردونه…</div>`));
+    }
+  } else {
+    stage.appendChild(el(`<div class="wheel-hint">در حال چرخیدن…</div>`));
+  }
+  return stage;
+}
+
+// the slot skin: a column of actions that scrolls and stops on the chosen card
+function renderSlotStage(targetIdx, spun, canSpin, onSpin){
+  const N = ACTION_CARDS.length, H = 80;
+  const stage = el(`<div class="wheel-stage"></div>`);
+  stage.appendChild(el(`<div class="wheel-lead">${canSpin && !spun ? 'دکمه رو بزن تا بچرخه' : 'در حال چرخیدن'}</div>`));
+  const items = [];
+  for(let c = 0; c < 4; c++) for(let i = 0; i < N; i++) items.push(`<div class="reel__it"><i>${NBWheel.ICON[i]}</i>${NBWheel.SHORT[i]}</div>`);
+  const wrap = el(`<div class="wheel-wrap wheel-wrap--slot"><div class="reel"><div class="reel__win"></div><div class="reel__strip">${items.join('')}</div></div></div>`);
+  const strip = wrap.querySelector('.reel__strip');
+  const at = idx => `translateY(${H - idx * H}px)`;
+  const final = N * 2 + (targetIdx || 0);
+  stage.appendChild(wrap);
+  if(spun && !state.wheelAnimStarted){
+    state.wheelAnimStarted = true;
+    strip.style.transition = 'none';
+    strip.style.transform = at(0);
+    requestAnimationFrame(() => {
+      strip.style.transition = '';
+      requestAnimationFrame(() => { strip.style.transform = at(final); });
+    });
+    [120, 300, 500, 740, 1020, 1350, 1730, 2160, 2620, 3080, 3500, 3850, 4100, 4260].forEach(t => setTimeout(() => { haptic(8); sfxTick(); }, t));
+    setTimeout(() => stage.classList.add('is-landed'), 4180);
+    state.wheelTimer = setTimeout(() => {
+      state.wheelTimer = null;
+      state.wheelDone = true;
+      sfxCardReveal();
+      render();
+    }, 4300);
+  } else {
+    strip.style.transition = 'none';
+    strip.style.transform = at(spun ? final : 0);
+  }
   if(!spun){
     if(canSpin){
       const btn = el(`<button class="wheel-btn">بچرخون!</button>`);

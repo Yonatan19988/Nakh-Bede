@@ -2472,3 +2472,24 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .sc-fill .play-card{ background:none; border:0; box-shadow:none; overflow:visible; max-height:none; }
 .sc-fill .play-card__word{ color:#fff; font-size:clamp(52px,19vw,96px); padding:0 6%; text-shadow:0 3px 0 rgba(0,0,0,.25); }
 .sc-fill .play-card--hidden .play-card__hidden{ color:#fff; }
+
+/* ---------- wheel skins (js/wheel.js) ---------- */
+.wh-bulb{ animation:whBlink 1.2s steps(1) infinite; }
+.wh-bulb.b2{ animation-delay:.6s; }
+@keyframes whBlink{ 50%{ opacity:.25; } }
+@media (prefers-reduced-motion:reduce){ .wh-bulb{ animation:none; } }
+.shop-prev--wh{ width:100%; height:92px; display:flex; align-items:center; justify-content:center; }
+.shop-prev--wh svg{ height:88px; width:88px; }
+.shop-prev--slot{ width:100%; height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border-radius:14px; background:#06222d; border:2px solid #e9b94c; color:#fff; }
+.shop-prev--slot i{ font-style:normal; font-size:26px; } .shop-prev--slot b{ font-size:13px; }
+.wheel-wrap--slot{ height:240px; width:min(300px,86vw); max-height:none; max-width:none; touch-action:auto; }
+.reel{ position:relative; width:100%; height:240px; border-radius:20px; background:#06222d; border:3px solid #e9b94c; overflow:hidden; box-shadow:0 10px 24px rgba(0,0,0,.45); }
+.reel__strip{ position:absolute; left:0; right:0; top:0; transition:transform 4.3s cubic-bezier(.13,.72,.12,1); will-change:transform; }
+.reel__it{ height:80px; display:flex; align-items:center; justify-content:center; gap:14px; font-size:20px; font-weight:800; color:#fff; }
+.reel__it i{ font-style:normal; font-size:34px; }
+.reel__win{ position:absolute; left:0; right:0; top:80px; height:80px; z-index:1; border-block:3px solid #e9b94c; background:rgba(233,185,76,.15); }
+.reel:before, .reel:after{ content:""; position:absolute; left:0; right:0; height:80px; z-index:2; pointer-events:none; }
+.reel:before{ top:0; background:linear-gradient(#06222d, rgba(6,34,45,.2)); }
+.reel:after{ bottom:0; background:linear-gradient(rgba(6,34,45,.2), #06222d); }
+@media (prefers-reduced-motion:reduce){ .reel__strip{ transition:none; } }
+.wh-classic{ width:88px; height:88px; border-radius:50%; border:4px solid #E0B34E; background:conic-gradient(#b7332c 0 9%,#d6a343 0 18%,#0f9d94 0 27%,#1f5aa8 0 36%,#2e9347 0 45%,#b7501f 0 54%,#b7332c 0 63%,#d6a343 0 72%,#0f9d94 0 81%,#1f5aa8 0 90%,#2e9347 0); }
