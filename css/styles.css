@@ -2346,7 +2346,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 
 /* shop previews */
 .shop-prev--sc{ width:100%; height:78px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-family:'Lalezar','Vazirmatn',sans-serif; font-size:26px; overflow:hidden; border:2px solid rgba(255,255,255,.2); }
-.shop-prev--sc[data-sc="fill"]{ background:linear-gradient(0deg,#2aa597 0 34%,#0d3a4b 34%); color:#fff; text-shadow:0 2px 0 rgba(0,0,0,.25); }
+.shop-prev--sc[data-sc="fill"]{ background:#0d3a4b; color:#ffe3a1; font-size:34px; }
 .shop-prev--sc[data-sc="ring"]{ background:#f4ecda; color:#2b1a10; box-shadow:inset 0 0 0 7px #f4ecda,inset 0 0 0 10px #0E8B7D; }
 .shop-prev--sc[data-sc="classic"]{ background:linear-gradient(180deg,#F8EFD6,#F1E4C4); color:#123043; border-color:#E9C062; }
 .shop-prev--sc[data-sc="carpet"]{ background:#F6E9CC; color:#5b1626; box-shadow:inset 0 0 0 4px #9B2D3E,inset 0 0 0 6px #E6B34A; }
@@ -2461,14 +2461,11 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 @keyframes fxFly{ 0%{ transform:translate(-6cqw,0) scaleY(1); } 25%{ transform:translate(22cqw,-1.5cqw) scaleY(.55); } 50%{ transform:translate(50cqw,0) scaleY(1); } 75%{ transform:translate(78cqw,-1.5cqw) scaleY(.55); } 100%{ transform:translate(108cqw,0) scaleY(1); } }
 @media (prefers-reduced-motion:reduce){ .mapfx{ display:none; } }
 
-/* ---------- scene: fill (the whole screen is the timer) ---------- */
+/* ---------- scene: fill («تایمر بزرگ»: a big countdown at the top, the word bare on the background) ---------- */
 .sc-fill{ background:#0d3a4b; --sc-calm:#ffe3a1; --sc-track:transparent; color:#fff; }
-.sc-fill .sc-deco{ display:block; }
-.sc-fill .sc-deco i:first-child{ display:block; left:0; right:0; bottom:0; height:calc(var(--fill, 0) * 100%); background:linear-gradient(180deg, var(--fillc, #2aa597), var(--fillc2, #0f6b70)); opacity:.9; transition:height 1s linear; }
-.sc-fill .sc-deco i:first-child:before{ content:""; position:absolute; left:0; right:0; top:-1px; height:3px; background:rgba(255,255,255,.35); }
 .sc-fill .play-timer__ring{ background:none !important; box-shadow:none; width:auto; height:auto; padding:0; }
-.sc-fill .play-timer__face{ background:none; box-shadow:none; width:auto; height:auto; color:#ffe3a1; font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400; font-size:46px; line-height:1.1; flex-direction:column; align-items:center; }
-.sc-fill .play-timer__face:after{ content:"ثانیه مانده"; display:block; font:700 11px/1.4 'Vazirmatn',sans-serif; color:#a9c7d0; }
+.sc-fill .play-timer__face{ background:none; box-shadow:none; width:auto; height:auto; color:#ffe3a1; font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400; font-size:clamp(78px,26vw,112px); line-height:1; flex-direction:column; align-items:center; }
+.sc-fill .play-timer__face:after{ content:"ثانیه مانده"; display:block; margin-top:2px; font:700 12px/1.4 'Vazirmatn',sans-serif; color:#a9c7d0; }
 .sc-fill .play-timer.is-warm .play-timer__face{ color:#ffb35c; }
 .sc-fill .play-timer.is-hot .play-timer__face{ color:#ff8a76; }
 .sc-fill .play-card{ background:none; border:0; box-shadow:none; overflow:visible; max-height:none; }

@@ -566,7 +566,7 @@ const SHOP_ITEMS = [
   { id:'cf_persian',kind:'confetti', name:'جشن ایرانی',   value:['#2ED3C6','#1D6FB8','#FFD15C','#FFF6E3','#0FA3B1'], price:100 },
   { id:'cf_rose',   kind:'confetti', name:'جشن گل سرخ',   value:['#FF4D5E','#FF8FA3','#FFD15C','#FFF6E3','#C23B33'], price:100 },
   { id:'cf_night',  kind:'confetti', name:'جشن شبانه',    value:['#FFFFFF','#B8C7FF','#8FB8FF','#FFD15C','#B58CFF'], price:130 },
-  { id:'sc_fill',   kind:'scene', name:'زمینه‌ی پرشونده', value:'fill',  price:0,   free:true },
+  { id:'sc_fill',   kind:'scene', name:'تایمر بزرگ', value:'fill',  price:0,   free:true },
   { id:'sc_ring',   kind:'scene', name:'حلقه‌ی زمان',  value:'ring',    price:0,   free:true },
   { id:'sc_classic',kind:'scene', name:'کارت کلاسیک',  value:'classic', price:0,   free:true },
   { id:'sc_carpet', kind:'scene', name:'فرش ایرانی',   value:'carpet',  price:80 },
@@ -1531,7 +1531,6 @@ function renderOnlineBoard(){
   if(state.flashFeedback === 'wrong') cardViewEl.classList.add('flash-wrong');
   applyScene(wrap);
   wrap.appendChild(sceneStage(renderPlayTimer(), cardViewEl));
-  paintFill(wrap);
   wrap.appendChild(buildFoulRow(onlineFoul, onlineResolveFoul));
 
   if(isDescriber){
@@ -2442,7 +2441,6 @@ function renderBoard(){
   if(state.flashFeedback === 'wrong') cardViewEl.classList.add('flash-wrong');
   applyScene(wrap);
   wrap.appendChild(sceneStage(timerView, cardViewEl));
-  paintFill(wrap);
 
   // ---- one row of action buttons ----
   const blocked = currentTeam().mods && currentTeam().mods.blockSkip;
@@ -2496,19 +2494,6 @@ function applyScene(wrap){
   }
   wrap.insertBefore(deco, wrap.firstChild);
 }
-// the «fill» scene shows the round as a colour rising from the bottom of the screen
-function paintFill(screen){
-  if(!screen || !screen.classList.contains('sc-fill')) return;
-  const total = currentTeam().timerOverride || state.roundDuration;
-  const left = state.timeLeft;
-  const done = 1 - Math.max(0, Math.min(1, left / total));
-  let c1 = '#2aa597', c2 = '#0f6b70';
-  if(state.timerRunning && left <= 10){ c1 = '#ff6a55'; c2 = '#c8283a'; }
-  else if(state.timerRunning && left <= 25){ c1 = '#ffa84d'; c2 = '#d9701c'; }
-  screen.style.setProperty('--fill', done.toFixed(3));
-  screen.style.setProperty('--fillc', c1);
-  screen.style.setProperty('--fillc2', c2);
-}
 function sceneStage(timer, card){
   const st = el(`<div class="sc-stage"></div>`);
   st.appendChild(timer); st.appendChild(card);
@@ -2556,7 +2541,6 @@ function tickTimerOnly(){
   timerEl.classList.add('is-' + tier);
   ring.style.background = `conic-gradient(${colour} ${deg}deg, var(--sc-track, rgba(255,255,255,.10)) ${deg}deg)`;
   face.textContent = faNum(left);
-  paintFill(timerEl.closest('.play-screen'));
   if(state.timerRunning && left !== lastTimerSecond){
     void timerEl.offsetWidth;
     timerEl.classList.add('is-tick');
