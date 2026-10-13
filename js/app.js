@@ -636,6 +636,8 @@ const PROFILE_BADGES = [
 ];
 function loadProfile(){
   const p = LS.get('profile', null) || {};
+  // the old default scene was saved into every profile; move those players to the new default once
+  if(p.scene === 'sc_ring' && !LS.get('sceneFill', false)){ p.scene = 'sc_fill'; LS.set('sceneFill', true); LS.set('profile', p); }
   const s = p.stats || {};
   return {
     name: typeof p.name === 'string' ? p.name.slice(0, 14) : '',
