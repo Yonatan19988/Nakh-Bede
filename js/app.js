@@ -2778,7 +2778,7 @@ function attachWheelDrag(disc, wrap, onFlick){
   const up = () => {
     if(!dragging) return;
     dragging = false;
-    if(Math.abs(vel) > 110){ state.wheelVel = vel; onFlick(); }
+    if(Math.abs(vel) > 90){ state.wheelVel = vel; onFlick(); }
   };
   wrap.addEventListener('pointerdown', down);
   wrap.addEventListener('pointermove', move);
@@ -2791,7 +2791,7 @@ function renderWheelStage(targetIdx, spun, canSpin, onSpin){
   if(skin.key === 'slot') return renderSlotStage(targetIdx, spun, canSpin, onSpin);
   const N = ACTION_CARDS.length, seg = 360 / N;
   const stage = el(`<div class="wheel-stage"></div>`);
-  stage.appendChild(el(`<div class="wheel-lead">${canSpin && !spun ? 'گردونه رو بچرخون یا با انگشت بچرخونش' : 'گردونه در حال چرخشه'}</div>`));
+  stage.appendChild(el(`<div class="wheel-lead">${canSpin && !spun ? 'گردونه رو با انگشتت بچرخون' : 'گردونه در حال چرخشه'}</div>`));
   stage.appendChild(el(`<div class="wheel-ptr" style="border-top-color:${skin.ptr}"></div>`));
   const wrap = el(`<div class="wheel-wrap ${canSpin && !spun ? 'is-grabbable' : ''}"></div>`);
   const disc = el(`<div class="wheel-disc"></div>`);
@@ -2834,9 +2834,7 @@ function renderWheelStage(targetIdx, spun, canSpin, onSpin){
 
   if(!spun){
     if(canSpin){
-      const btn = el(`<button class="wheel-btn">بچرخون!</button>`);
-      btn.addEventListener('click', () => { state.wheelVel = 900; onSpin(); });
-      stage.appendChild(btn);
+      stage.appendChild(el(`<div class="wheel-hint wheel-hint--go">با یک حرکت انگشت بچرخونش 👆</div>`));
     } else {
       stage.appendChild(el(`<div class="wheel-hint">منتظر چرخوندن گردونه…</div>`));
     }
@@ -2846,11 +2844,39 @@ function renderWheelStage(targetIdx, spun, canSpin, onSpin){
   return stage;
 }
 
+// swipe the reel up or down; a quick enough swipe sets it spinning, otherwise it springs back
+function attachSlotDrag(strip, wrap, home, onFlick){
+  let down = false, y0 = 0, lastY = 0, lastT = 0, vel = 0, dy = 0;
+  wrap.classList.add('is-grabbable');
+  wrap.addEventListener('pointerdown', e => {
+    down = true; y0 = lastY = e.clientY; lastT = performance.now(); vel = 0; dy = 0;
+    strip.style.transition = 'none';
+    try { wrap.setPointerCapture(e.pointerId); } catch(_){}
+  });
+  wrap.addEventListener('pointermove', e => {
+    if(!down) return;
+    const now = performance.now(), dt = Math.max(8, now - lastT);
+    vel = 0.7 * vel + 0.3 * ((e.clientY - lastY) / dt * 1000);
+    lastY = e.clientY; lastT = now;
+    dy = e.clientY - y0;
+    strip.style.transform = `translateY(calc(${home.slice(11, -1)} + ${Math.max(-60, Math.min(60, dy))}px))`;
+    e.preventDefault();
+  });
+  const up = () => {
+    if(!down) return;
+    down = false;
+    if(Math.abs(vel) > 250 || Math.abs(dy) > 70){ state.wheelVel = Math.abs(vel); onFlick(); }
+    else { strip.style.transition = ''; strip.style.transform = home; }
+  };
+  wrap.addEventListener('pointerup', up);
+  wrap.addEventListener('pointercancel', up);
+}
+
 // the slot skin: a column of actions that scrolls and stops on the chosen card
 function renderSlotStage(targetIdx, spun, canSpin, onSpin){
   const N = ACTION_CARDS.length, H = 80;
   const stage = el(`<div class="wheel-stage"></div>`);
-  stage.appendChild(el(`<div class="wheel-lead">${canSpin && !spun ? 'دکمه رو بزن تا بچرخه' : 'در حال چرخیدن'}</div>`));
+  stage.appendChild(el(`<div class="wheel-lead">${canSpin && !spun ? 'ستون رو با انگشتت بکش بالا یا پایین' : 'در حال چرخیدن'}</div>`));
   const items = [];
   for(let c = 0; c < 4; c++) for(let i = 0; i < N; i++) items.push(`<div class="reel__it"><i>${NBWheel.ICON[i]}</i>${NBWheel.SHORT[i]}</div>`);
   const wrap = el(`<div class="wheel-wrap wheel-wrap--slot"><div class="reel"><div class="reel__win"></div><div class="reel__strip">${items.join('')}</div></div></div>`);
@@ -2877,12 +2903,11 @@ function renderSlotStage(targetIdx, spun, canSpin, onSpin){
   } else {
     strip.style.transition = 'none';
     strip.style.transform = at(spun ? final : 0);
+    if(canSpin && !spun) attachSlotDrag(strip, wrap, at(0), onSpin);
   }
   if(!spun){
     if(canSpin){
-      const btn = el(`<button class="wheel-btn">بچرخون!</button>`);
-      btn.addEventListener('click', () => { state.wheelVel = 900; onSpin(); });
-      stage.appendChild(btn);
+      stage.appendChild(el(`<div class="wheel-hint wheel-hint--go">با یک حرکت انگشت بچرخونش 👆</div>`));
     } else {
       stage.appendChild(el(`<div class="wheel-hint">منتظر چرخوندن گردونه…</div>`));
     }
