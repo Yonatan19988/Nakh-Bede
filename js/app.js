@@ -64,7 +64,6 @@ const HOME_LOGO = "assets/logo.webp";
 // Two sizes of the same board. The full one (2160 px wide) decodes to about 100 MB of
 // memory, which weak phones cannot hold, so they get the 1296 px one (about 37 MB).
 // The player can override the automatic choice in settings.
-const MAP_FULL = "assets/map-60j.webp", MAP_LITE = "assets/map-60j-lite.webp";
 function weakDevice(){
   try{
     const mem = navigator.deviceMemory;                          // Chrome/Android only, in GB
@@ -74,11 +73,15 @@ function weakDevice(){
   return false;
 }
 const LITE_MAP = (() => { const v = LS.get('liteMap', null); return v === null || v === undefined ? weakDevice() : v === true; })();
-const MAP_IMAGE = LITE_MAP ? MAP_LITE : MAP_FULL;
+// the board in use; chosen on the setup screen (or by the host online) and saved with the game
+let activeMapId = LS.get('mapId', 'iran');
+function curMap(){ return MAPS.find(m => m.id === activeMapId) || MAPS[0]; }
+function setActiveMap(id){ if(MAPS.some(m => m.id === id)) activeMapId = id; }
+function mapImageOf(m){ return LITE_MAP ? m.lite : m.image; }
 // live touches on the board (fountains, water, smoke...): on by default except on weak phones
 const MAP_FX = (() => { const v = LS.get('mapFx', null); return (v === null || v === undefined ? !LITE_MAP : v === true) && !!window.NBMapFx && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); })();
 // keep a copy for offline play; the service worker stores whatever the page fetches
-try{ (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { fetch(MAP_IMAGE).catch(() => {}); }); }catch(e){}
+try{ (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { fetch(mapImageOf(curMap())).catch(() => {}); }); }catch(e){}
 
 // Index-aligned with ACTION_CARDS. needsTarget = must pick a rival team.
 
@@ -581,7 +584,8 @@ const SHOP_ITEMS = [
 ];
 WORD_PACKS.forEach(p => SHOP_ITEMS.push({ id:'pk_' + p.id, kind:'pack', name:p.name, value:p.id, price:p.price, free:!!p.free }));
 NBWheel.SKINS.forEach(s => SHOP_ITEMS.push({ id:s.id, kind:'wheel', name:s.name, value:s.id, price:s.price, free:!!s.free }));
-const SHOP_TABS = [['pack','پک کلمه'],['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی'],['scene','صحنه‌ی کلمه'],['wheel','گردونه']];
+MAPS.forEach(m => SHOP_ITEMS.push({ id:'mp_' + m.id, kind:'map', name:m.name, value:m.id, price:m.price, free:!!m.free }));
+const SHOP_TABS = [['pack','پک کلمه'],['map','نقشه'],['avatar','آواتار'],['frame','قاب'],['confetti','کاغذ رنگی'],['scene','صحنه‌ی کلمه'],['wheel','گردونه']].filter(t => t[0] !== 'map' || MAPS.length > 1);
 
 // ---- word packs the player can use (free ones plus the bought ones) ----
 function packOwned(id){
@@ -592,6 +596,35 @@ function selectedPacks(){
   const saved = LS.get('packs', null);
   const ids = (Array.isArray(saved) ? saved : DEFAULT_PACKS).filter(id => WORD_PACKS.some(p => p.id === id) && packOwned(id));
   return ids.length ? ids : DEFAULT_PACKS.slice();
+}
+// ---- boards (maps) the player can use ----
+function mapOwned(id){
+  const m = MAPS.find(x => x.id === id);
+  return !!m && (m.free || loadProfile().owned.includes('mp_' + id));
+}
+function selectedMapId(){
+  const id = LS.get('mapId', 'iran');
+  return MAPS.some(m => m.id === id) && mapOwned(id) ? id : 'iran';
+}
+// chips for choosing a board; locked ones send the player to the shop
+function buildMapPicker(selectedId, onPick, opts){
+  opts = opts || {};
+  const grid = el(`<div class="pk-grid mp-grid"></div>`);
+  MAPS.forEach(m => {
+    const owned = mapOwned(m.id), on = selectedId === m.id;
+    const b = el(`<button type="button" class="pk-chip mp-chip ${on ? 'is-on' : ''} ${owned ? '' : 'is-locked'}" aria-pressed="${on}"><span class="pk-chip__ico" aria-hidden="true"></span><span class="pk-chip__name"></span><small></small></button>`);
+    b.querySelector('.pk-chip__ico').textContent = owned ? '🗺️' : '🔒';
+    b.querySelector('.pk-chip__name').textContent = m.name;
+    b.querySelector('small').textContent = owned ? m.blurb : `${faNum(m.price)} سکه`;
+    b.addEventListener('click', () => {
+      if(opts.readOnly) return;
+      if(!owned){ shopTab = 'map'; state.screen = 'shop'; render(); return; }
+      LS.set('mapId', m.id); setActiveMap(m.id);
+      onPick(m.id);
+    });
+    grid.appendChild(b);
+  });
+  return grid;
 }
 function packWordCount(p){ return (p.words || WORD_LIST).length; }
 // A row of pack chips. selected = ids; onToggle(newIds). Locked packs send the player to the shop.
@@ -1194,6 +1227,11 @@ function renderOnlineLobby(){
     const packCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">پک کلمه‌ها</h2></div>`);
     packCard.appendChild(buildPackPicker(roomPacks, ids => { window.FB.update(fbRoomRef(), { packs: ids }); }));
     wrap.appendChild(packCard);
+    if(MAPS.length > 1){
+      const mapCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2></div>`);
+      mapCard.appendChild(buildMapPicker(room.mapId || selectedMapId(), id => { window.FB.update(fbRoomRef(), { mapId: id }); }));
+      wrap.appendChild(mapCard);
+    }
     const readyTeams = teams.filter(t => t.memberIds.length > 0);
     const startBtn = el(`<button class="setup-start"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی برای همه</span></button>`);
     startBtn.disabled = readyTeams.length < 2;
@@ -1209,6 +1247,7 @@ function renderOnlineLobby(){
       info.querySelector('.lobby-packs__list').textContent = names;
       wrap.appendChild(info);
     }
+    if(MAPS.length > 1 && room.mapId){ const mm = MAPS.find(x => x.id === room.mapId); if(mm){ const mi = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2><p class="lobby-packs__list"></p></div>`); mi.querySelector('.lobby-packs__list').textContent = '🗺️ ' + mm.name; wrap.appendChild(mi); } }
     wrap.appendChild(el(`<div class="lobby-wait">منتظر شروع بازی از طرف میزبان…</div>`));
   }
 
@@ -1227,6 +1266,7 @@ function startOnlineGame(){
     currentCardIdx: 0,
     wordSeed: Math.floor(Math.random() * 2147483646) + 1,
     packs: (online.room && Array.isArray(online.room.packs) && online.room.packs.length) ? online.room.packs : selectedPacks(),
+    mapId: (online.room && online.room.mapId) || selectedMapId(),
     roundEndAt: null,
     correctCount: 0,
     skipCount: 0,
@@ -1248,6 +1288,7 @@ function startOnlineGame(){
 function syncStateFromOnlineRoom(){
   const room = online.room;
   if(!room) return;
+  setActiveMap(room.mapId || 'iran');
   const teams = onlineTeamsArray();
   state.teams = teams.map(t => ({
     id: t.id, name: t.name, color: t.color, position: t.position, score: t.score,
@@ -1681,13 +1722,14 @@ function renderShop(){
   wrap.appendChild(tabs);
 
   const grid = el(`<div class="shop-grid"></div>`);
-  SHOP_ITEMS.filter(i => i.kind === shopTab && (!i.free || i.kind === 'scene' || i.kind === 'pack' || i.kind === 'wheel')).forEach(it => {
+  SHOP_ITEMS.filter(i => i.kind === shopTab && (!i.free || i.kind === 'scene' || i.kind === 'pack' || i.kind === 'wheel' || i.kind === 'map')).forEach(it => {
     const owned = it.free || p.owned.includes(it.id);
-    const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id) || (it.kind === 'scene' && p.scene === it.id) || (it.kind === 'wheel' && p.wheel === it.id);
+    const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id) || (it.kind === 'scene' && p.scene === it.id) || (it.kind === 'wheel' && p.wheel === it.id) || (it.kind === 'map' && selectedMapId() === it.value);
     let preview = '';
     if(it.kind === 'avatar') preview = `<div class="shop-prev shop-prev--av">${it.value}</div>`;
     else if(it.kind === 'frame') preview = `<div class="shop-prev shop-prev--av" style="border-color:${it.value}; box-shadow:0 0 0 3px ${it.value}55;">${avatarMarkup(p)}</div>`;
     else if(it.kind === 'pack'){ const pk = WORD_PACKS.find(x => x.id === it.value); const ws = pk.words || WORD_LIST; preview = `<div class="shop-prev shop-prev--pk">${packIsFresh(pk) ? '<i class="pk-new">تازه</i>' : ''}<b>${pk.icon}</b><small>${faNum(ws.length)} کلمه</small><em>${escHtml(ws[0])} · ${escHtml(ws[3] || '')}</em></div>`; }
+    else if(it.kind === 'map'){ const mm = MAPS.find(x => x.id === it.value); preview = `<div class="shop-prev shop-prev--map" style="background-image:url('${mm.preview || mm.lite}')"><small>${escHtml(mm.blurb)}</small></div>`; }
     else if(it.kind === 'wheel') preview = it.id === 'wh_slot' ? `<div class="shop-prev shop-prev--slot"><i>⭐</i><b>وقت اضافه</b></div>` : it.id === 'wh_classic' ? `<div class="shop-prev shop-prev--wh"><span class="wh-classic"></span></div>` : `<div class="shop-prev shop-prev--wh">${NBWheel.svg(it.id, true)}</div>`;
     else if(it.kind === 'scene') preview = `<div class="shop-prev shop-prev--sc" data-sc="${it.value}"><span>نخ بده</span></div>`;
     else preview = `<div class="shop-prev shop-prev--cf">${it.value.map((c, i) => `<i style="background:${c}; left:${8 + i * 17}%; top:${14 + (i % 2) * 26}%; transform:rotate(${i * 37}deg);"></i>`).join('')}</div>`;
@@ -1702,14 +1744,14 @@ function renderShop(){
         if(q.coins < it.price){ toastHome(`برای «${it.name}» ${faNum(it.price - q.coins)} سکه‌ی دیگر لازم داری`); return; }
         if(!confirm(`«${it.name}» را با ${it.price} سکه می‌خری؟`)) return;
         q.coins -= it.price; q.owned.push(it.id);
-        if(it.kind === 'avatar') q.avatar = it.value; else if(it.kind === 'frame') q.frame = it.id; else if(it.kind === 'scene') q.scene = it.id; else if(it.kind === 'wheel') q.wheel = it.id; else if(it.kind === 'pack'){ const sel = selectedPacks(); if(!sel.includes(it.value)) LS.set('packs', sel.concat(it.value)); } else q.confetti = it.id;
+        if(it.kind === 'avatar') q.avatar = it.value; else if(it.kind === 'frame') q.frame = it.id; else if(it.kind === 'scene') q.scene = it.id; else if(it.kind === 'wheel') q.wheel = it.id; else if(it.kind === 'map'){ LS.set('mapId', it.value); setActiveMap(it.value); } else if(it.kind === 'pack'){ const sel = selectedPacks(); if(!sel.includes(it.value)) LS.set('packs', sel.concat(it.value)); } else q.confetti = it.id;
         saveProfile(q); sfxWin(); render();
       });
     } else if(it.kind === 'pack'){
       btn.textContent = it.free ? 'رایگان' : 'در اختیار توست ✓';
       btn.classList.add('is-own'); btn.disabled = true;
     } else {
-      btn.textContent = equipped ? ((it.kind === 'avatar' || it.kind === 'scene' || it.kind === 'wheel') ? 'در حال استفاده' : 'برداشتن') : 'استفاده';
+      btn.textContent = equipped ? ((it.kind === 'avatar' || it.kind === 'scene' || it.kind === 'wheel' || it.kind === 'map') ? 'در حال استفاده' : 'برداشتن') : 'استفاده';
       btn.classList.add('is-own');
       btn.addEventListener('click', () => {
         const q = loadProfile();
@@ -1717,6 +1759,7 @@ function renderShop(){
         else if(it.kind === 'frame') q.frame = equipped ? '' : it.id;
         else if(it.kind === 'scene') q.scene = it.id;
         else if(it.kind === 'wheel') q.wheel = it.id;
+        else if(it.kind === 'map'){ LS.set('mapId', it.value); setActiveMap(it.value); }
         else q.confetti = equipped ? '' : it.id;
         saveProfile(q); sfxTap(); render();
       });
@@ -2163,6 +2206,13 @@ function renderSetup(){
     wrap.appendChild(addTeam);
   }
 
+  // ---- board ----
+  if(MAPS.length > 1){
+    const mapCard = el(`<div class="deck-card"><h2 class="deck-card__title">نقشه‌ی بازی</h2><p class="deck-card__sub">روی کدام نقشه بازی کنید؟ نقشه‌های قفل‌دار را از فروشگاه می‌خری.</p></div>`);
+    mapCard.appendChild(buildMapPicker(selectedMapId(), () => render()));
+    wrap.appendChild(mapCard);
+  }
+
   // ---- word packs ----
   const packCard = el(`<div class="deck-card"><h2 class="deck-card__title">پک کلمه‌ها</h2><p class="deck-card__sub">یک یا چند پک را انتخاب کن. پک‌های قفل‌دار را از فروشگاه می‌خری.</p></div>`);
   packCard.appendChild(buildPackPicker(selectedPacks(), () => render()));
@@ -2203,6 +2253,7 @@ function syncScoreLabelsOnly(){ /* names update live via re-render on other acti
 
 // ---------------- GAME START ----------------
 function startGame(){
+  setActiveMap(selectedMapId());
   state.deck = [];
   if(!state.customDeck) state.wordSource = wordsForPacks(selectedPacks());
   state.teams.forEach(t => { t.position = 0; t.score = 0; t.describerIdx = 0; });
@@ -2226,7 +2277,7 @@ function currentTeam(){ return state.teams[state.currentTeamIdx]; }
 // between rounds loses nothing.
 function saveLocalGame(){
   if(!state.hasActiveGame || state.winner){ LS.del('game'); return; }
-  LS.set('game', { v:1, teams: JSON.parse(JSON.stringify(state.teams)), currentTeamIdx: state.currentTeamIdx, roundDuration: state.roundDuration, at: Date.now() });
+  LS.set('game', { v:1, mapId: activeMapId, teams: JSON.parse(JSON.stringify(state.teams)), currentTeamIdx: state.currentTeamIdx, roundDuration: state.roundDuration, at: Date.now() });
 }
 function storedLocalGame(){
   const g = LS.get('game', null);
@@ -2242,6 +2293,7 @@ function resumeLocalGame(){
     const g = storedLocalGame();
     if(!g){ LS.del('game'); toastHome('بازی ذخیره‌شده پیدا نشد'); return; }
     state.teams = g.teams;
+    setActiveMap(g.mapId || 'iran');
     state.currentTeamIdx = Math.min(Math.max(g.currentTeamIdx || 0, 0), g.teams.length - 1);
     if(g.roundDuration >= 10 && g.roundDuration <= 180) state.roundDuration = g.roundDuration;
     state.hasActiveGame = true;
@@ -2987,7 +3039,7 @@ function buildRoundResult(onNext, label){
   const left = Math.max(0, state.trackLength - landed);
   const nextSpecial = state.obstacles.filter(o => o > cell0).sort((x, y) => x - y)[0];
   const onSpecial = state.obstacles.includes(cell0);
-  const city = CITIES[cityOf(cell0)];
+  const city = mapCities()[cityOf(cell0)];
   const dirCls = moved > 0 ? 'is-fwd' : (moved < 0 ? 'is-back' : 'is-stay');
   const dirTxt = moved > 0 ? 'به جلو' : (moved < 0 ? 'به عقب' : 'بدون حرکت');
   const praise = (s.correct ?? 0) >= 8 ? 'راند فوق‌العاده!' : (correct >= 5 ? 'راند عالی!' : (correct >= 2 ? 'راند خوبی بود' : (correct === 0 ? 'راند سختی بود' : 'ادامه بده!')));
@@ -3006,7 +3058,8 @@ function buildRoundResult(onNext, label){
       <b class="st-row__score">${faNum(t.score)}</b>
     </div>`).join('');
   const dots = state.teams.map(t => `<i class="st-prog__dot" style="--f:${routeFrac(t)}; background:${t.color};"></i>`).join('');
-  const marks = CITIES.map((n, i) => `<span class="st-prog__city" style="--f:${(CITY_START[i] / (state.trackLength - 1)).toFixed(4)}"><i></i><em>${n}</em></span>`).join('');
+  const starts = cityStart();
+  const marks = mapCities().map((n, i) => `<span class="st-prog__city" style="--f:${(starts[i] / (state.trackLength - 1)).toFixed(4)}"><i></i><em>${n}</em></span>`).join('');
 
   const overlay = el(`<div class="stats-overlay">
     <div class="stats-card">
@@ -3030,7 +3083,7 @@ function buildRoundResult(onNext, label){
       ${acc === null ? '' : `<div class="st-acc"><span>دقت راند</span><div class="st-acc__bar"><i style="width:${acc}%"></i></div><b>${faNum(acc)}٪</b></div>`}
       <div class="st-prog">
         <div class="st-prog__track">${marks}${dots}</div>
-        <div class="st-prog__txt">${left ? `<b>${faNum(left)}</b> خانه تا برج آزادی` : 'به برج آزادی رسیدی!'}${nextSpecial !== undefined && left ? ` · خانه‌ی ویژه‌ی بعدی: <b>${faNum(nextSpecial + 1)}</b>` : ''}</div>
+        <div class="st-prog__txt">${left ? `<b>${faNum(left)}</b> خانه تا ${curMap().finish}` : `به ${curMap().finish} رسیدی!`}${nextSpecial !== undefined && left ? ` · خانه‌ی ویژه‌ی بعدی: <b>${faNum(nextSpecial + 1)}</b>` : ''}</div>
       </div>
       ${onSpecial ? '<div class="st-special">روی خانه‌ی ویژه افتادی! یک کارت اکشن در انتظار توست.</div>' : ''}
       <div class="st-board"><small>جدول</small>${rows}</div>
@@ -3066,7 +3119,6 @@ function buildRoundResult(onNext, label){
 
 // The board is a tall portrait strip (2160 x 11880): Bandar Abbas at the bottom,
 // the Azadi Tower at the top. It is followed vertically by the camera.
-const MAP_RATIO = 2160 / 11880;
 const MAP_FOLLOW_W = 640;       // board width in px while following a pawn
 const MAP_FIT_VIEW_RATIO = 1.4142;   // sets where the round summary panel starts
 const MAP_SETTLE_SCALE = 0.78;       // how far the camera eases back once the pawn has landed
@@ -3105,14 +3157,14 @@ function positionMapCamera(cam, world){
   // The board is always laid out at the close-up size; zooming out is done
   // with a transform scale so it can animate smoothly instead of relaying out.
   const baseW = MAP_FOLLOW_W;
-  const baseH = baseW / MAP_RATIO;
+  const baseH = baseW / curMap().ratio;
   world.style.width = baseW + 'px';
   world.style.height = baseH + 'px';
 
   const t = currentTeam();
-  const cell = Math.max(0, Math.min(t ? t.position : 0, CELL_COORDS.length - 1));
-  const tokenX = baseW * CELL_COORDS[cell][0] / 100;
-  const tokenY = baseH * CELL_COORDS[cell][1] / 100;
+  const cell = Math.max(0, Math.min(t ? t.position : 0, curMap().coords.length - 1));
+  const tokenX = baseW * curMap().coords[cell][0] / 100;
+  const tokenY = baseH * curMap().coords[cell][1] / 100;
 
   let s, x, y;
   const clip = mapClipEl, frame = mapFrameEl;
@@ -3191,16 +3243,17 @@ function startMapZoomOut(){
 
 
 // ---------- journey: cities, route bar, arrival banner ----------
-const CITIES = ['بندرعباس','شیراز','اصفهان','رشت','تهران'];
-const CITY_START = CITIES.map((_, i) => Math.max(0, CELL_CITY.indexOf(i)));
-function cityOf(cell){ return CELL_CITY[Math.max(0, Math.min(CELL_CITY.length - 1, cell | 0))] ?? 0; }
+const mapCities = () => curMap().cities;
+const cityStart = () => curMap().cities.map((_, i) => Math.max(0, curMap().cellCity.indexOf(i)));
+function cityOf(cell){ const cc = curMap().cellCity; return cc[Math.max(0, Math.min(cc.length - 1, cell | 0))] ?? 0; }
 
 function buildRouteBar(){
   const bar = el(`<div class="routebar" aria-hidden="true"></div>`);
   bar.appendChild(el(`<div class="routebar__line"></div>`));
-  CITIES.forEach((n, i) => {
-    const frac = CITY_START[i] / (state.trackLength - 1);
-    const last = i === CITIES.length - 1;
+  const starts = cityStart();
+  mapCities().forEach((n, i) => {
+    const frac = starts[i] / (state.trackLength - 1);
+    const last = i === mapCities().length - 1;
     bar.appendChild(el(`<div class="routebar__city ${last ? 'is-goal' : ''}" style="--f:${Math.min(frac, 1).toFixed(4)};"><i></i><span>${n}</span></div>`));
   });
   state.teams.forEach(t => {
@@ -3222,9 +3275,9 @@ function showCityBanner(fromPos, toPos){
   const a = cityOf(fromPos), b = cityOf(toPos);
   if(a === b) return;
   const forward = b > a;
-  const goal = b === CITIES.length - 1 && forward;
-  const text = goal ? 'به تهران رسیدی! برج آزادی منتظرته'
-             : forward ? `وارد ${CITIES[b]} شدی` : `برگشتی به ${CITIES[b]}`;
+  const goal = b === mapCities().length - 1 && forward;
+  const text = goal ? curMap().goalText
+             : forward ? `وارد ${mapCities()[b]} شدی` : `برگشتی به ${mapCities()[b]}`;
   document.querySelectorAll('.city-banner').forEach(n => n.remove());
   const b2 = el(`<div class="city-banner ${goal ? 'is-goal' : ''}"><small>${forward ? 'منزل بعدی' : 'عقب‌نشینی'}</small><b>${text}</b></div>`);
   document.body.appendChild(b2);
@@ -3235,22 +3288,22 @@ function showCityBanner(fromPos, toPos){
 function renderMapFullScreen(){
   const cam = el(`<div class="mapcam"></div>`);
   const world = el(`<div class="mapcam__world ${state.mapFit ? 'is-fitting' : ''}"></div>`);
-  world.appendChild(el(`<img class="mapcam__img" src="${MAP_IMAGE}" alt="" />`));
-  if(MAP_FX){ const fx = el(NBMapFx.html()); world.appendChild(fx); NBMapFx.mount(fx); }
+  world.appendChild(el(`<img class="mapcam__img" src="${mapImageOf(curMap())}" alt="" />`));
+  if(MAP_FX && curMap().fx){ const fx = el(NBMapFx.html()); world.appendChild(fx); NBMapFx.mount(fx); }
 
   const byCell = {};
   state.teams.forEach((t, ti) => {
-    const c = Math.max(0, Math.min(t.position, CELL_COORDS.length - 1));
+    const c = Math.max(0, Math.min(t.position, curMap().coords.length - 1));
     if(!byCell[c]) byCell[c] = [];
     byCell[c].push({ t, ti });
   });
   Object.keys(byCell).forEach(c => {
     const group = byCell[c];
-    const [px, py] = CELL_COORDS[parseInt(c)];
+    const [px, py] = curMap().coords[parseInt(c)];
     group.forEach((g, gi) => {
       const ang = (gi / group.length) * 2 * Math.PI;
       const r = group.length > 1 ? 1.5 : 0;               // % of the board width
-      const ox = r * Math.cos(ang), oy = r * Math.sin(ang) * MAP_RATIO;
+      const ox = r * Math.cos(ang), oy = r * Math.sin(ang) * curMap().ratio;
       const isTurn = g.t === currentTeam();
       const nx = px + ox, ny = py + oy;
       const prev = tokLastPos[g.t.id];
@@ -3290,8 +3343,8 @@ function stepMapToken(team){
   if(!mapWorldEl || !mapWorldEl.isConnected) return false;
   const tok = mapWorldEl.querySelector(`.mapcam__tok[data-team="${team.id}"]`);
   if(!tok) return false;
-  const cell = Math.max(0, Math.min(team.position, CELL_COORDS.length - 1));
-  const [nx, ny] = CELL_COORDS[cell];
+  const cell = Math.max(0, Math.min(team.position, curMap().coords.length - 1));
+  const [nx, ny] = curMap().coords[cell];
 
   const body = tok.querySelector('.mapcam__tok-body');
   if(body){
@@ -3313,23 +3366,23 @@ function stepMapToken(team){
 
 function buildMapWrap(large){
   const mapWrap = el(`<div style="position:relative; margin-bottom:${large?'8px':'12px'};"></div>`);
-  const mapImg = el(`<img src="${MAP_IMAGE}" style="width:100%; border-radius:${large?'16px':'14px'}; border:2px solid var(--gold); display:block;" />`);
+  const mapImg = el(`<img src="${mapImageOf(curMap())}" style="width:100%; border-radius:${large?'16px':'14px'}; border:2px solid var(--gold); display:block;" />`);
   mapWrap.appendChild(mapImg);
   const tokSize = large ? 20 : 15;
   const byCell = {};
   state.teams.forEach((t,ti) => {
-    const c = Math.min(t.position, CELL_COORDS.length-1);
+    const c = Math.min(t.position, curMap().coords.length-1);
     if(!byCell[c]) byCell[c] = [];
     byCell[c].push({t,ti});
   });
   Object.keys(byCell).forEach(c => {
     const group = byCell[c];
-    const [px,py] = CELL_COORDS[parseInt(c)];
+    const [px,py] = curMap().coords[parseInt(c)];
     group.forEach((g, gi) => {
       const offsetAngle = (gi/group.length) * 2*Math.PI;
       const offsetR = group.length>1 ? 1.4 : 0;
       const ox = offsetR*Math.cos(offsetAngle);
-      const oy = offsetR*Math.sin(offsetAngle)*MAP_RATIO;
+      const oy = offsetR*Math.sin(offsetAngle)*curMap().ratio;
       const tok = el(`<div style="position:absolute; left:${(px+ox).toFixed(2)}%; top:${(py+oy).toFixed(2)}%; width:${tokSize}px; height:${tokSize*1.35}px; margin-left:-${tokSize/2}px; margin-top:-${tokSize*1.15}px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.55)); transition:left .4s ease, top .4s ease;">${PAWN_SVG(g.t.color)}</div>`);
       mapWrap.appendChild(tok);
     });
