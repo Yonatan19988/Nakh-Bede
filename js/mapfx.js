@@ -4,7 +4,8 @@
 // scales with the camera. Zones only animate while they are on screen.
 (function(){
   // [name, top %, height %] — a zone's children are placed relative to it
-  const ZONES = {
+  const ZONE_SETS = {
+   iran: {
     sea:   [93.5, 6.5],
     shiraz:[66, 11],
     isf:   [50, 10],
@@ -13,13 +14,25 @@
     gilan: [21, 9],
     tehran:[0, 15],
     sky:   [0, 100]
+   },
+   shiraz: {
+    persep:[0, 16],
+    karim: [22, 15],
+    nasir: [35, 7],
+    eram:  [47.5, 10.5],
+    hafez: [64, 6],
+    pool3: [76, 3],
+    gate:  [84, 3],
+    sky:   [0, 100]
+   }
   };
+  let ZONES = ZONE_SETS.iran;
 
   function rng(seed){
     let a = seed >>> 0;
     return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
-  const R = rng(20241);
+  let R = rng(20241);
   const f2 = n => n.toFixed(2);
   const pos = (z, x, y) => `left:${f2(x)}%;top:${f2((y - ZONES[z][0]) / ZONES[z][1] * 100)}%;`;
   const inside = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
@@ -59,9 +72,54 @@
   const zone = (name, inner) => `<div class="fx-z${name === 'sky' ? ' is-live' : ''}" data-z="${name}" style="top:${ZONES[name][0]}%;height:${ZONES[name][1]}%">${inner}</div>`;
   const bird = (y, t, dl, s) => `<svg class="fx-bird" style="top:${y}%;--t:${t}s;--dl:${dl}s;width:${s}cqw" viewBox="0 0 20 10"><path d="M1 6 Q5 0 10 5 Q15 0 19 6 Q15 4 10 8 Q5 4 1 6Z" fill="#fff" stroke="rgba(40,40,40,.45)" stroke-width=".6"/></svg>`;
 
-  let cached = '';
-  function html(){
-    if(cached) return cached;
+  const cache = {};
+  function html(id){
+    id = ZONE_SETS[id] ? id : 'iran';
+    if(cache[id]) return cache[id];
+    ZONES = ZONE_SETS[id]; R = rng(20241 + id.length);
+    cache[id] = id === 'shiraz' ? buildShiraz() : buildIran();
+    return cache[id];
+  }
+
+  function skyLayer(birds){
+    let sky = '';
+    [[6, 90], [20, 74], [33, 100], [48, 82], [62, 110], [76, 78], [90, 96]].forEach((c, i) => {
+      sky += `<i class="fx-cloud" style="top:${c[0]}%;--t:${c[1]}s;--dl:-${f2(R() * c[1])}s"></i>`;
+    });
+    return sky + birds;
+  }
+  // glint on a glazed dome / lantern glow (shiraz)
+  const glint = (z, x, y, dl, sz) => `<i class="fx-gl" style="${pos(z, x, y)}--d:${dl}s;--sz:${sz || 2.4}cqw"></i>`;
+  const lamp = (z, x, y, dl) => `<i class="fx-lamp" style="${pos(z, x, y)}animation-delay:${dl}s"></i>`;
+
+  function buildShiraz(){
+    const X = v => v / 3.6, Y = v => v / 19.8;       // base picture px (360 x 1980) -> %
+    const wt = (z, x0, y0, x1, y1, n, st) => water(z, [X(x0), Y(y0), X(x1), Y(y1)], n, null, st);
+    let h = '';
+    // Persepolis: pulsing finish ring, glow on the gate's winged disc, drifting dust
+    h += zone('persep', `<i class="fx-fin" style="${pos('persep', X(180), Y(199))}width:7cqw;height:4.6cqw;margin:-2.3cqw 0 0 -3.5cqw;border-width:.3cqw"></i>` +
+      `<i class="fx-fin" style="${pos('persep', X(180), Y(199))}width:7cqw;height:4.6cqw;margin:-2.3cqw 0 0 -3.5cqw;border-width:.3cqw;animation-delay:1s"></i>` +
+      `<i class="fx-glow" style="${pos('persep', X(180), Y(172))}width:4cqw;height:4cqw;margin:-2cqw 0 0 -2cqw"></i>` +
+      [[90,150],[270,170],[150,120],[220,110],[60,230]].map((p, i) => `<i class="fx-dust" style="${pos('persep', X(p[0]), Y(p[1]))}--dl:${i * 1.3}s"></i>`).join(''));
+    // Karim Khan citadel: glints on the three turquoise domes
+    h += zone('karim', glint('karim', X(237), Y(555), 0) + glint('karim', X(272), Y(555), 1.1) + glint('karim', X(309), Y(555), 2.1));
+    // Nasir al-Mulk: glints on the twin domes and a shimmer on the pool
+    h += zone('nasir', glint('nasir', X(246), Y(716), .6, 2) + glint('nasir', X(315), Y(720), 1.7, 2) + wt('nasir', 262, 776, 298, 789, 5, 0) + rip('nasir', X(280), Y(783), 6, 0));
+    // Eram garden: the long pool with its row of jets, the pool below it
+    h += zone('eram', [985, 1002, 1019, 1035].map(y => fount('eram', X(257), Y(y), 2.6)).join('') + wt('eram', 247, 968, 268, 1038, 6, 3) +
+      fount('eram', X(160), Y(1112), 3.2) + fount('eram', X(200), Y(1110), 3.2) + wt('eram', 135, 1104, 226, 1134, 10, 4) +
+      lamp('eram', X(110), Y(903), 0) + lamp('eram', X(110), Y(1012), .8) + lamp('eram', X(238), Y(1092), 1.6));
+    // Saadieh and Hafezieh domes, lanterns
+    h += zone('hafez', glint('hafez', X(72), Y(1325), .4, 3) + glint('hafez', X(290), Y(1297), 1.5, 3) + lamp('hafez', X(120), Y(1275), 0) + lamp('hafez', X(240), Y(1272), 1.1) + lamp('hafez', X(300), Y(1437), 2.2));
+    // lower pool
+    h += zone('pool3', fount('pool3', X(147), Y(1526), 3.2) + fount('pool3', X(180), Y(1523), 3.4) + fount('pool3', X(212), Y(1526), 3.2) + wt('pool3', 125, 1519, 237, 1542, 10, 4));
+    // Quran Gate dome
+    h += zone('gate', glint('gate', X(180), Y(1687), .8, 3));
+    h += zone('sky', skyLayer(bird(88, 30, -6, 2) + bird(61, 44, -22, 1.9) + bird(10, 40, -14, 1.9) + bird(36, 52, -33, 1.7)));
+    return `<div class="mapfx" aria-hidden="true">${h}</div>`;
+  }
+
+  function buildIran(){
     let h = '';
 
     // ---- sea (Bandar Abbas) ----
@@ -103,8 +161,7 @@
     sky += bird(95.3, 26, -4, 2.2) + bird(90.5, 34, -17, 1.9) + bird(70, 42, -9, 1.9) + bird(41, 48, -30, 1.8);
     h += zone('sky', sky);
 
-    cached = `<div class="mapfx" aria-hidden="true">${h}</div>`;
-    return cached;
+    return `<div class="mapfx" aria-hidden="true">${h}</div>`;
   }
 
   let io = null;

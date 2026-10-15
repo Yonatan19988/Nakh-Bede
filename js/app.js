@@ -3289,7 +3289,7 @@ function renderMapFullScreen(){
   const cam = el(`<div class="mapcam"></div>`);
   const world = el(`<div class="mapcam__world ${state.mapFit ? 'is-fitting' : ''}"></div>`);
   world.appendChild(el(`<img class="mapcam__img" src="${mapImageOf(curMap())}" alt="" />`));
-  if(MAP_FX && curMap().fx){ const fx = el(NBMapFx.html()); world.appendChild(fx); NBMapFx.mount(fx); }
+  if(MAP_FX && curMap().fx){ const fx = el(NBMapFx.html(curMap().id)); world.appendChild(fx); NBMapFx.mount(fx); }
 
   const byCell = {};
   state.teams.forEach((t, ti) => {
