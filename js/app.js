@@ -281,13 +281,28 @@ function publicAutoStart(){
 }
 // If the host's phone drops out of the room, the player with the lowest id takes over
 // (so a public room never ends up with nobody who can start it).
+let hostGraceTimer = null, hostGraceFor = null;
 function onlineHostDuties(){
   const r = online.room;
   if(!r || !r.players) return;
-  if(r.hostId && !r.players[r.hostId] && Object.keys(r.players).sort()[0] === online.playerId){
-    window.FB.update(fbRoomRef(), { hostId: online.playerId });
-  }
   online.isHost = r.hostId === online.playerId;
+  if(r.hostId && !r.players[r.hostId]){
+    // The host's phone dropped out (or is reloading): give it a few seconds to come back
+    // before the player with the lowest id takes over.
+    if(hostGraceFor !== r.hostId && Object.keys(r.players).sort()[0] === online.playerId){
+      hostGraceFor = r.hostId;
+      clearTimeout(hostGraceTimer);
+      hostGraceTimer = setTimeout(() => {
+        const cur = online.room;
+        if(cur && cur.players && cur.hostId === hostGraceFor && !cur.players[cur.hostId] && Object.keys(cur.players).sort()[0] === online.playerId){
+          window.FB.update(fbRoomRef(), { hostId: online.playerId });
+        }
+        hostGraceFor = null;
+      }, 10000);
+    }
+  } else if(hostGraceFor){
+    clearTimeout(hostGraceTimer); hostGraceFor = null;
+  }
   if(online.isHost && r.public){ syncPublicEntry(); publicAutoStart(); }
 }
 
@@ -1206,9 +1221,9 @@ function renderOnlineCreate(){
     e.preventDefault();
     const name = nameInput.value.trim();
     if(!roomFieldCheck(nameField, !!name, 'لطفاً اسمت رو وارد کن')){ nameInput.focus(); return; }
+    if(NBSafety.bad(name)){ roomFieldCheck(nameField, false, 'این اسم مناسب نیست. یه اسم دیگه بنویس.'); nameInput.focus(); return; }
     btn.disabled = true;
     btn.firstChild.textContent = 'در حال ساخت…';
-    if(NBSafety.bad(name)){ roomFieldCheck(nameField, false, 'این اسم مناسب نیست. یه اسم دیگه بنویس.'); nameInput.focus(); return; }
     onlineCreateRoom(name).finally(() => {
       btn.disabled = false;
       btn.firstChild.textContent = 'ساخت اتاق';
