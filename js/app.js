@@ -226,6 +226,7 @@ function subscribeRoom(){
     const prev = online.room;
     online.room = snap.val();
     if(!online.room){ return; }
+    ensureOnlineLocalCountdown();
     // a new chat message alone must not rebuild the screen (it would drop the keyboard)
     if(prev && state.screen === 'online-board' && online.room.mode === 'text' && roomWithoutFeed(prev) === roomWithoutFeed(online.room) && patchTextFeed()){
       onlineTextJudge();
@@ -1391,16 +1392,22 @@ function onlineStartTimer(){
 }
 
 let onlineFinishTimeout = null;
+// Every phone watches the round's deadline, so the round still ends when the describer's phone
+// drops or reloads. The describer's phone acts first; the others only step in a moment later.
 function ensureOnlineLocalCountdown(){
-  if(onlineFinishTimeout) clearTimeout(onlineFinishTimeout);
+  if(onlineFinishTimeout){ clearTimeout(onlineFinishTimeout); onlineFinishTimeout = null; }
   const room = online.room;
-  if(!room || !room.roundEndAt) return;
-  if(room.foulPending) return;   // round is frozen for a foul decision
-  const msLeft = room.roundEndAt - srvNow();
-  if(msLeft <= 0){ finishRoundOnline(); return; }
+  if(!room || !room.roundEndAt || room.foulPending) return;   // a foul freezes the round
+  const t = onlineTeamsArray().find(x => x.id === room.currentTeamId);
+  const mine = !!(t && t.memberIds.length && t.memberIds[(t.describerIdx || 0) % t.memberIds.length] === online.playerId);
+  const wait = Math.max(0, room.roundEndAt - srvNow()) + (mine ? 150 : 2500);
   onlineFinishTimeout = setTimeout(() => {
-    if(online.room && online.room.roundEndAt) finishRoundOnline();
-  }, msLeft + 150);
+    onlineFinishTimeout = null;
+    const r = online.room;
+    if(!r || !r.roundEndAt || r.foulPending) return;
+    if(r.roundEndAt <= srvNow() + 200) finishRoundOnline();
+    else ensureOnlineLocalCountdown();
+  }, wait);
 }
 
 function onlineCorrect(){
