@@ -15,7 +15,9 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 const auth = getAuth(fbApp);
-window.FB = { ref, set, get, update, onValue, off, remove, onDisconnect, db, uid: null };
+window.FB = { ref, set, get, update, onValue, off, remove, onDisconnect, db, uid: null, offset: 0 };
+// how far this phone's clock is from the database's; shared timers are measured on the database clock
+onValue(ref(db, '.info/serverTimeOffset'), (snap) => { window.FB.offset = Number(snap.val()) || 0; });
 // the security rules identify players by their auth uid, so nothing goes
 // online until an anonymous identity exists
 onAuthStateChanged(auth, (user) => {
