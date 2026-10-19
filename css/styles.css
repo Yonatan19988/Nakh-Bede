@@ -2563,3 +2563,27 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 }
 .tp-send:disabled{ opacity:.5; cursor:default; }
 .tp-err{ font-size:12.5px; color:#FF9B8F; text-align:center; }
+
+/* ---------------- quick match, public rooms, report sheet ---------------- */
+.lobby-public{ margin:0 0 10px; padding:9px 12px; border-radius:14px; text-align:center; font-size:13px; font-weight:700;
+  color:#BFF3F0; background:rgba(10,166,162,.18); border:1.4px solid rgba(10,166,162,.5); }
+.quick-modes{ margin:10px 0 4px; }
+.quick-list{ margin-top:12px; }
+.quick-row{ display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid rgba(255,255,255,.08); }
+.quick-row__t{ flex:1 1 auto; font-size:14px; font-weight:700; color:#EAF6FF; }
+.quick-row__go{ flex:0 0 auto !important; width:64px; height:34px !important; }
+.tp-msg{ position:relative; }
+.tp-flag{ position:absolute; top:3px; inset-inline-end:6px; background:none; border:none; padding:2px 5px; cursor:pointer;
+  font-size:12px; color:inherit; opacity:.45; }
+.tp-flag:hover,.tp-flag:focus-visible{ opacity:.95; }
+.rp-back{ position:fixed; inset:0; z-index:1000; display:flex; align-items:flex-end; justify-content:center;
+  background:rgba(2,20,30,.62); }
+.rp-sheet{ width:100%; max-width:480px; padding:18px 16px 22px; border-radius:22px 22px 0 0; background:#06364B;
+  border:1.5px solid rgba(217,173,76,.45); display:flex; flex-direction:column; gap:10px; }
+.rp-sheet__t{ margin:0; font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400; font-size:20px; text-align:center; color:#FFF1CD; }
+.rp-sheet__who{ margin:0; text-align:center; font-weight:800; color:#F3D37A; }
+.rp-sheet__msg{ margin:0; padding:8px 12px; border-radius:12px; background:rgba(255,255,255,.07); text-align:center; font-size:14px; overflow-wrap:anywhere; }
+.rp-btn{ height:46px; border-radius:14px; border:1.4px solid rgba(217,173,76,.5); background:rgba(255,255,255,.07); color:#EAF6FF;
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer; }
+.rp-btn--danger{ background:rgba(199,74,53,.3); border-color:#C74A35; color:#FFD9D2; }
+.rp-btn--ghost{ background:none; border-color:transparent; color:var(--text-dim); }

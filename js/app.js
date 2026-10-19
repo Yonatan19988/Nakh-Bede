@@ -156,6 +156,7 @@ function armPresence(){
     if(!online.roomCode || !online.playerId) return;
     const meRef = window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`);
     window.FB.onDisconnect(meRef).remove();
+    pubJson = null;   // the public listing is removed on disconnect; list it again
     window.FB.update(meRef, { name: online.playerName, teamId: online.lastTeamId || null, av: myAvatarPayload() })
       .catch(err => console.warn('presence restore failed', err));
   });
@@ -165,54 +166,144 @@ function genPlayerId(){
   return 'p_' + Math.random().toString(36).slice(2,10);
 }
 
-function onlineCreateRoom(playerName){
-  if(!fbReadyOrWarn()) return Promise.resolve();
+// A public room is listed in publicRooms so strangers can be matched into it: it starts with two
+// teams, newcomers are put on the smaller one, and the game starts by itself once four have joined.
+function onlineCreateRoom(playerName, opts){
+  opts = opts || {};
+  if(!fbReadyOrWarn()) return Promise.resolve(false);
   const code = genRoomCode();
   const playerId = window.FB.uid;
-  online.lastTeamId = null;
+  const pub = !!opts.public, mode = opts.mode === 'text' ? 'text' : 'voice';
+  online.lastTeamId = pub ? 't1' : null;
   online.roomCode = code;
   online.playerId = playerId;
   online.playerName = playerName;
   online.isHost = true;
+  pubJson = null;
   const roomData = {
-    createdAt: Date.now(),
+    createdAt: srvNow(),
     hostId: playerId,
     phase: 'lobby',
-    mode: 'voice',
-    roundSec: state.roundDuration,
-    players: { [playerId]: { name: playerName, teamId: null, av: myAvatarPayload() } },
+    mode,
+    roundSec: pub ? (mode === 'text' ? 120 : 90) : state.roundDuration,
+    players: { [playerId]: { name: playerName, teamId: pub ? 't1' : null, av: myAvatarPayload() } },
     teams: {},
   };
+  if(pub){
+    roomData.public = true;
+    roomData.packs = selectedPacks();
+    roomData.mapId = selectedMapId();
+    [1, 2].forEach(n => { roomData.teams['t' + n] = { name: 'تیم ' + n, color: TEAM_COLORS[n - 1], position: 0, score: 0, describerIdx: 0 }; });
+  }
   return window.FB.set(window.FB.ref(window.FB.db, 'rooms/'+code), roomData).then(() => {
     rememberRoom();
     armPresence();
     subscribeRoom();
     state.screen = 'online-lobby';
     render();
-  }).catch(err => { alert(fbErrorText(err)); });
+    return true;
+  }).catch(err => { online.roomCode = null; alert(fbErrorText(err)); return false; });
 }
 
-function onlineJoinRoom(code, playerName, restoreTeamId){
-  if(!fbReadyOrWarn()) return Promise.resolve();
+// the team with the fewest players (for strangers who join a public room)
+function smallestTeamId(rv){
+  const ids = Object.keys(rv.teams || {}).sort((x, y) => parseInt(x.slice(1), 10) - parseInt(y.slice(1), 10));
+  if(!ids.length) return null;
+  const cnt = {}; ids.forEach(id => { cnt[id] = 0; });
+  Object.values(rv.players || {}).forEach(pl => { if(pl && cnt[pl.teamId] !== undefined) cnt[pl.teamId]++; });
+  return ids.reduce((best, id) => cnt[id] < cnt[best] ? id : best, ids[0]);
+}
+
+// resolves true when we are in the room. opts.silent: no alerts (used while searching),
+// opts.requireLobby / opts.maxPlayers: skip rooms that already started or are full.
+function onlineJoinRoom(code, playerName, restoreTeamId, opts){
+  opts = opts || {};
+  if(!fbReadyOrWarn()) return Promise.resolve(false);
   code = code.trim().toUpperCase();
-  if(!code){ alert('کد اتاق رو وارد کن'); return Promise.resolve(); }
+  if(!code){ if(!opts.silent) alert('کد اتاق رو وارد کن'); return Promise.resolve(false); }
   const roomRef = window.FB.ref(window.FB.db, 'rooms/'+code);
   return window.FB.get(roomRef).then(snap => {
-    if(!snap.exists()){ alert('اتاقی با این کد پیدا نشد'); return; }
+    if(!snap.exists()){ if(!opts.silent) alert('اتاقی با این کد پیدا نشد'); return false; }
+    const rv = snap.val() || {};
+    if(opts.requireLobby && rv.phase !== 'lobby') return false;
+    if(opts.maxPlayers && Object.keys(rv.players || {}).length >= opts.maxPlayers) return false;
     const playerId = window.FB.uid;
-    online.lastTeamId = restoreTeamId || null;
+    const teamId = restoreTeamId || (rv.public ? smallestTeamId(rv) : null);
+    online.lastTeamId = teamId || null;
     online.roomCode = code;
     online.playerId = playerId;
     online.playerName = playerName;
-    online.isHost = (snap.val() || {}).hostId === playerId;
-    return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: restoreTeamId || null, av: myAvatarPayload()}).then(() => {
+    online.isHost = rv.hostId === playerId;
+    pubJson = null;
+    return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: teamId || null, av: myAvatarPayload()}).then(() => {
       rememberRoom();
       armPresence();
       subscribeRoom();
       state.screen = 'online-lobby';
       render();
+      return true;
     });
-  }).catch(err => { alert(fbErrorText(err)); });
+  }).catch(err => { online.roomCode = null; if(!opts.silent) alert(fbErrorText(err)); return false; });
+}
+
+// ---- public rooms: the list strangers are matched from ----
+let pubJson = null;
+function pubRef(){ return window.FB.ref(window.FB.db, 'publicRooms/' + online.roomCode); }
+function syncPublicEntry(){
+  const r = online.room;
+  if(!r || !r.public || !online.isHost || !online.roomCode) return;
+  if(r.phase !== 'lobby'){
+    if(pubJson !== 'gone'){ pubJson = 'gone'; window.FB.remove(pubRef()).catch(() => {}); }
+    return;
+  }
+  const me = (r.players && r.players[online.playerId]) || {};
+  const e = { h: online.playerId, n: String(me.name || '').slice(0, 20), c: Object.keys(r.players || {}).length, m: r.mode === 'text' ? 'text' : 'voice', t: r.createdAt || srvNow() };
+  const j = JSON.stringify(e);
+  if(j === pubJson) return;
+  pubJson = j;
+  window.FB.set(pubRef(), e).catch(() => { pubJson = null; });
+  window.FB.onDisconnect(pubRef()).remove();
+}
+let autoStartTimer = null;
+function publicAutoStart(){
+  const r = online.room;
+  clearTimeout(autoStartTimer); autoStartTimer = null;
+  if(!r || r.phase !== 'lobby') return;
+  const teams = onlineTeamsArray().filter(t => t.memberIds.length > 0);
+  const ready = Object.keys(r.players || {}).length >= 4 && teams.length >= 2;
+  if(ready && !r.autoStartAt){ window.FB.update(fbRoomRef(), { autoStartAt: srvNow() + 20000 }); return; }
+  if(!ready && r.autoStartAt){ window.FB.update(fbRoomRef(), { autoStartAt: null }); return; }
+  if(ready && r.autoStartAt){
+    autoStartTimer = setTimeout(() => {
+      if(online.room && online.room.phase === 'lobby' && online.isHost) startOnlineGame();
+    }, Math.max(0, r.autoStartAt - srvNow()) + 100);
+  }
+}
+// If the host's phone drops out of the room, the player with the lowest id takes over
+// (so a public room never ends up with nobody who can start it).
+let hostGraceTimer = null, hostGraceFor = null;
+function onlineHostDuties(){
+  const r = online.room;
+  if(!r || !r.players) return;
+  online.isHost = r.hostId === online.playerId;
+  if(r.hostId && !r.players[r.hostId]){
+    // The host's phone dropped out (or is reloading): give it a few seconds to come back
+    // before the player with the lowest id takes over.
+    if(hostGraceFor !== r.hostId && Object.keys(r.players).sort()[0] === online.playerId){
+      hostGraceFor = r.hostId;
+      clearTimeout(hostGraceTimer);
+      hostGraceTimer = setTimeout(() => {
+        const cur = online.room;
+        if(cur && cur.players && cur.hostId === hostGraceFor && !cur.players[cur.hostId] && Object.keys(cur.players).sort()[0] === online.playerId){
+          window.FB.update(fbRoomRef(), { hostId: online.playerId });
+        }
+        hostGraceFor = null;
+      }, 10000);
+    }
+  } else if(hostGraceFor){
+    clearTimeout(hostGraceTimer); hostGraceFor = null;
+  }
+  if(online.isHost && r.public){ syncPublicEntry(); publicAutoStart(); }
 }
 
 function roomWithoutFeed(r){
@@ -220,12 +311,15 @@ function roomWithoutFeed(r){
   const c = Object.assign({}, r); delete c.feed;
   return JSON.stringify(c);
 }
+let roomUnsub = null;
 function subscribeRoom(){
+  if(roomUnsub){ roomUnsub(); roomUnsub = null; }
   const roomRef = window.FB.ref(window.FB.db, 'rooms/'+online.roomCode);
-  window.FB.onValue(roomRef, (snap) => {
+  roomUnsub = window.FB.onValue(roomRef, (snap) => {
     const prev = online.room;
     online.room = snap.val();
     if(!online.room){ return; }
+    onlineHostDuties();
     ensureOnlineLocalCountdown();
     // a new chat message alone must not rebuild the screen (it would drop the keyboard)
     if(prev && state.screen === 'online-board' && online.room.mode === 'text' && roomWithoutFeed(prev) === roomWithoutFeed(online.room) && patchTextFeed()){
@@ -265,6 +359,9 @@ function rejoinSavedRoom(){
 
 function onlineLeaveRoom(){
   LS.del('room');
+  if(roomUnsub){ roomUnsub(); roomUnsub = null; }
+  clearTimeout(autoStartTimer); autoStartTimer = null;
+  if(online.isHost && online.room && online.room.public && online.roomCode){ window.FB.remove(pubRef()).catch(() => {}); }
   if(online.roomCode && online.playerId){
     window.FB.remove(window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`));
   }
@@ -411,7 +508,7 @@ function render(){
   const keepSel = keepKey ? [ae.selectionStart, ae.selectionEnd] : null;
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -444,6 +541,8 @@ function render(){
     app.appendChild(renderOnlineCreate());
   } else if(state.screen === 'online-join'){
     app.appendChild(renderOnlineJoin());
+  } else if(state.screen === 'online-quick'){
+    app.appendChild(renderOnlineQuick());
   } else if(state.screen === 'online-lobby'){
     app.appendChild(renderOnlineLobby());
   } else if(state.screen === 'online-board'){
@@ -959,6 +1058,7 @@ function renderHome(){
           (!name ? nameIn : codeIn).focus();
           return;
         }
+        if(NBSafety.bad(name)){ err.textContent = 'این اسم مناسب نیست. یه اسم دیگه بنویس.'; err.hidden = false; nameIn.focus(); return; }
         const btn = form.querySelector('button[type=submit]');
         btn.disabled = true;
         onlineJoinRoom(code, name).then(() => {
@@ -974,7 +1074,10 @@ function renderHome(){
       const local = el(`<button class="hm-btn hm-btn--gold hm-sheet__opt"><span class="hm-btn__gloss"></span>
         <span class="hm-sheet__t">روی همین گوشی</span></button>`);
       local.addEventListener('click', () => { state.homeSheet = false; state.screen = 'setup'; render(); });
-      sheet.appendChild(online); sheet.appendChild(local);
+      const quick = el(`<button class="hm-btn hm-btn--teal hm-sheet__opt"><span class="hm-btn__gloss"></span>
+        <span class="hm-sheet__t">بازی سریع با فارسی‌زبان‌ها</span></button>`);
+      quick.addEventListener('click', () => { state.homeSheet = false; openQuick(); });
+      sheet.appendChild(quick); sheet.appendChild(online); sheet.appendChild(local);
     }
     back.appendChild(sheet);
     wrap.appendChild(back);
@@ -1010,7 +1113,7 @@ function onlineTeamsArray(){
       score: t.score||0,
       describerIdx: t.describerIdx||0,
       memberIds: memberIds,
-      memberNames: memberIds.map(pid => (room.players[pid]||{}).name || '؟'),
+      memberNames: memberIds.map(pid => NBSafety.clean((room.players[pid]||{}).name || '؟')),
       memberAv: memberIds.map(pid => (room.players[pid]||{}).av || null),
     };
   });
@@ -1020,6 +1123,7 @@ let onlineTicker = null;
 function ensureOnlineTicker(){
   if(onlineTicker) return;
   onlineTicker = setInterval(() => {
+    if(state.screen === 'online-lobby' && online.room && online.room.autoStartAt){ render(); return; }
     if(state.screen !== 'online-board') return;
     // nothing is counting down during the wheel / action-card overlay or the
     // round summary — re-rendering there only restarts their animations
@@ -1080,6 +1184,14 @@ function renderOnlineHome(){
   joinChoice.addEventListener('click', () => { state.screen = 'online-join'; render(); });
   wrap.appendChild(joinChoice);
 
+  const quickChoice = el(`<button class="room-choice room-choice--join">
+    <span class="room-choice__icon">🌐</span>
+    <span class="room-choice__text"><span class="room-choice__label">بازی سریع</span><span class="room-choice__hint">با فارسی‌زبان‌های دیگه بازی کن</span></span>
+    <span class="room-choice__chev"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></span>
+  </button>`);
+  quickChoice.addEventListener('click', openQuick);
+  wrap.appendChild(quickChoice);
+
   const sr = savedRoom();
   if(sr){
     const back = el(`<button class="team-card__add room-rejoin"></button>`);
@@ -1109,6 +1221,7 @@ function renderOnlineCreate(){
     e.preventDefault();
     const name = nameInput.value.trim();
     if(!roomFieldCheck(nameField, !!name, 'لطفاً اسمت رو وارد کن')){ nameInput.focus(); return; }
+    if(NBSafety.bad(name)){ roomFieldCheck(nameField, false, 'این اسم مناسب نیست. یه اسم دیگه بنویس.'); nameInput.focus(); return; }
     btn.disabled = true;
     btn.firstChild.textContent = 'در حال ساخت…';
     onlineCreateRoom(name).finally(() => {
@@ -1151,6 +1264,7 @@ function renderOnlineJoin(){
     const nameOk = roomFieldCheck(nameField, !!name, 'لطفاً اسمت رو وارد کن');
     if(!codeOk){ codeInput.focus(); return; }
     if(!nameOk){ nameInput.focus(); return; }
+    if(NBSafety.bad(name)){ roomFieldCheck(nameField, false, 'این اسم مناسب نیست. یه اسم دیگه بنویس.'); nameInput.focus(); return; }
     btn.disabled = true;
     btn.firstChild.textContent = 'در حال ورود…';
     onlineJoinRoom(code, name).then(() => { if(state.screen !== 'online-join') state.joinCode = ''; }).finally(() => {
@@ -1163,6 +1277,105 @@ function renderOnlineJoin(){
   return wrap;
 }
 
+// ---- quick match: play with other Persian speakers ----
+state.quick = { mode: 'text', rooms: null, busy: false, err: '' };
+function pubRoomsFrom(v){
+  return Object.entries(v || {}).map(([code, e]) => Object.assign({ code }, e)).filter(e =>
+    e && typeof e.n === 'string' && typeof e.c === 'number' && e.c >= 1 && e.c < 8 && (e.m === 'text' || e.m === 'voice') && typeof e.t === 'number' && srvNow() - e.t < 30 * 60 * 1000);
+}
+function openQuick(){
+  state.screen = 'online-quick';
+  state.quick.err = '';
+  render();
+  loadQuickRooms();
+}
+function loadQuickRooms(){
+  if(!window.FB || !window.FB.uid){ return; }
+  window.FB.get(window.FB.ref(window.FB.db, 'publicRooms')).then(snap => {
+    state.quick.rooms = pubRoomsFrom(snap.val()).sort((a, b) => b.c - a.c);
+    if(state.screen === 'online-quick') render();
+  }).catch(() => { state.quick.rooms = []; if(state.screen === 'online-quick') render(); });
+}
+// join the fullest open room that plays the way we want, otherwise open a new public room
+async function quickMatch(name, mode){
+  if(!fbReadyOrWarn()) return false;
+  let rooms = [];
+  try{ rooms = pubRoomsFrom((await window.FB.get(window.FB.ref(window.FB.db, 'publicRooms'))).val()); }catch(e){}
+  rooms = rooms.filter(r => r.m === mode && r.h !== window.FB.uid).sort((a, b) => b.c - a.c);
+  for(const r of rooms){
+    if(await onlineJoinRoom(r.code, name, null, { silent: true, requireLobby: true, maxPlayers: 8 })) return true;
+  }
+  return onlineCreateRoom(name, { public: true, mode });
+}
+function renderOnlineQuick(){
+  const wrap = el(`<div class="setup-page room-page"></div>`);
+  wrap.appendChild(roomHead());
+  const q = state.quick;
+  const form = el(`<form class="team-card room-form-card" novalidate></form>`);
+  form.appendChild(el(`<h2 class="set-card__title">بازی سریع</h2>`));
+  form.appendChild(el(`<p class="room-form__lead">اسمت رو بنویس و روش بازی رو انتخاب کن؛ ما یه اتاق باز پیدا می‌کنیم یا یکی می‌سازیم. وقتی ۴ نفر جمع بشن، بازی خودکار شروع می‌شه.</p>`));
+  const nameField = roomField('quickNameInput', 'نام تو');
+  form.appendChild(nameField);
+  const nameInput = nameField.querySelector('input');
+  if(drafts.quickName === undefined) drafts.quickName = LS.get('name', '') || '';
+  keepInput(nameInput, 'quickName');
+  const modes = el(`<div class="set-presets quick-modes"></div>`);
+  [['text', '⌨️ متنی (پیشنهادی)'], ['voice', '🎙️ صحبتی']].forEach(([id, label]) => {
+    const b = el(`<button type="button" class="set-chip ${q.mode === id ? 'is-on' : ''}"></button>`);
+    b.textContent = label;
+    b.addEventListener('click', () => { q.mode = id; render(); loadQuickRooms(); });
+    modes.appendChild(b);
+  });
+  form.appendChild(modes);
+  form.appendChild(el(`<small class="set-hint">${q.mode === 'text' ? 'با غریبه‌ها تایپ کنید؛ بدون نیاز به میکروفون.' : 'همه باید تو یه تماس صوتی باشید؛ میزبان لینکش رو می‌ذاره.'}</small>`));
+  const btn = el(`<button type="submit" class="setup-start"><span>${q.busy ? 'در حال پیدا کردن…' : 'پیدا کردن بازی'}</span></button>`);
+  btn.disabled = q.busy;
+  form.appendChild(btn);
+  const err = el(`<div class="room-form__error" role="alert" style="display:${q.err ? 'block' : 'none'};"></div>`);
+  err.textContent = q.err;
+  form.appendChild(err);
+  form.appendChild(el(`<small class="set-hint">با ورود به بازی عمومی، رعایت ادب با بقیه رو می‌پذیری. هر پیام نامناسبی رو می‌شه گزارش یا بلاک کرد.</small>`));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim().slice(0, 20);
+    if(!name){ q.err = 'لطفاً اسمت رو وارد کن'; render(); return; }
+    if(NBSafety.bad(name)){ q.err = 'این اسم مناسب نیست. یه اسم دیگه بنویس.'; render(); return; }
+    q.err = ''; q.busy = true; render();
+    quickMatch(name, q.mode).finally(() => { q.busy = false; if(state.screen === 'online-quick') render(); });
+  });
+  wrap.appendChild(form);
+
+  // open rooms you can pick yourself
+  const list = el(`<div class="team-card quick-list"><h2 class="set-card__title">اتاق‌های باز</h2></div>`);
+  if(q.rooms === null){
+    list.appendChild(el(`<p class="room-form__lead">در حال بارگذاری…</p>`));
+  } else if(!q.rooms.length){
+    list.appendChild(el(`<p class="room-form__lead">الان اتاق بازی نیست. «پیدا کردن بازی» یکی می‌سازه و بقیه بهت می‌پیوندن.</p>`));
+  } else {
+    q.rooms.forEach(r => {
+      const row = el(`<div class="quick-row"><span class="quick-row__t"></span><span class="quick-row__m"></span></div>`);
+      row.querySelector('.quick-row__t').textContent = `اتاق ${NBSafety.clean(r.n)} · ${faNum(r.c)} نفر`;
+      row.querySelector('.quick-row__m').textContent = r.m === 'text' ? '⌨️' : '🎙️';
+      const go = el(`<button type="button" class="set-chip quick-row__go">ورود</button>`);
+      go.addEventListener('click', () => {
+        const name = (drafts.quickName || '').trim().slice(0, 20);
+        if(!name){ q.err = 'اول اسمت رو بنویس'; render(); return; }
+        if(NBSafety.bad(name)){ q.err = 'این اسم مناسب نیست. یه اسم دیگه بنویس.'; render(); return; }
+        onlineJoinRoom(r.code, name, null, { silent: true, requireLobby: true, maxPlayers: 8 }).then(ok => {
+          if(!ok && state.screen === 'online-quick'){ q.err = 'این اتاق پر یا شروع شده؛ دوباره امتحان کن.'; loadQuickRooms(); render(); }
+        });
+      });
+      row.appendChild(go);
+      list.appendChild(row);
+    });
+  }
+  const refresh = el(`<button type="button" class="lobby-call__rm">تازه‌سازی فهرست</button>`);
+  refresh.addEventListener('click', () => { q.rooms = null; render(); loadQuickRooms(); });
+  list.appendChild(refresh);
+  wrap.appendChild(list);
+  return wrap;
+}
+
 function renderOnlineLobby(){
   const wrap = el(`<div class="setup-page lobby"></div>`);
   wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده</div></div>`));
@@ -1172,6 +1385,13 @@ function renderOnlineLobby(){
     return wrap;
   }
 
+  ensureOnlineTicker();
+  if(room.public){
+    const left = room.autoStartAt ? Math.max(0, Math.ceil((room.autoStartAt - srvNow()) / 1000)) : 0;
+    wrap.appendChild(el(`<div class="lobby-public">🌐 اتاق عمومی — ${room.autoStartAt
+      ? `بازی تا ${faNum(left)} ثانیه‌ی دیگه شروع می‌شه`
+      : 'وقتی ۴ نفر جمع بشن، بازی خودکار شروع می‌شه'}</div>`));
+  }
   // ---- room code ----
   const playerCount = Object.keys(room.players || {}).length;
   const codeCard = el(`<div class="lobby-code">
@@ -1247,7 +1467,7 @@ function renderOnlineLobby(){
     const un = el(`<div class="lobby-unassigned"><span class="lobby-unassigned__lbl">بدون تیم</span></div>`);
     unassigned.forEach(pid => {
       const me = pid === online.playerId;
-      un.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${avatarHtmlFor(room.players[pid].av, room.players[pid].name)}<span class="lobby-chip__n">${escHtml(room.players[pid].name)}${me ? ' (تو)' : ''}</span></span>`));
+      un.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${avatarHtmlFor(room.players[pid].av, room.players[pid].name)}<span class="lobby-chip__n">${escHtml(NBSafety.clean(room.players[pid].name))}${me ? ' (تو)' : ''}</span></span>`));
     });
     wrap.appendChild(un);
   }
@@ -1321,6 +1541,7 @@ function startOnlineGame(){
     lastRoundSummary: null,
     feed: null,
     lastCorrect: null,
+    autoStartAt: null,
   };
   teams.forEach(t => {
     updates[`teams/${t.id}/position`] = 0;
@@ -1639,20 +1860,41 @@ function buildPlayModeCard(){
   return card;
 }
 
+// ---- report and block ----
+// Blocking is local (that player's messages are hidden on this phone). A report sends the
+// message to the developers' inbox in the database; clients can write it but never read it.
+function blockedMap(){ const b = LS.get('blocked', {}); return b && typeof b === 'object' ? b : {}; }
+function isBlocked(uid){ return !!uid && !!blockedMap()[uid]; }
+function blockPlayer(uid, name){
+  const b = blockedMap(); b[uid] = { n: String(name || '').slice(0, 20), at: Date.now() };
+  const keys = Object.keys(b); if(keys.length > 200) delete b[keys[0]];
+  LS.set('blocked', b);
+}
+function reportMessage(m){
+  if(!window.FB || !window.FB.uid) return;
+  const id = 'r' + srvNow().toString(36) + Math.random().toString(36).slice(2, 6);
+  window.FB.set(window.FB.ref(window.FB.db, 'reports/' + id), {
+    r: String(online.roomCode || '').slice(0, 5), u: String(m.p || '').slice(0, 40), n: String(m.n || '').slice(0, 20),
+    t: String(m.t || '').slice(0, 80), b: window.FB.uid, at: srvNow(),
+  }).catch(() => {});
+}
+function openReportSheet(m){
+  const back = el(`<div class="rp-back" role="dialog" aria-modal="true"></div>`);
+  const sheet = el(`<div class="rp-sheet"><h3 class="rp-sheet__t">گزارش یا بلاک</h3><p class="rp-sheet__who"></p><p class="rp-sheet__msg"></p></div>`);
+  sheet.querySelector('.rp-sheet__who').textContent = NBSafety.clean(String(m.n || '').slice(0, 20));
+  sheet.querySelector('.rp-sheet__msg').textContent = NBSafety.clean(String(m.t || '').slice(0, 80));
+  const close = () => { back.remove(); patchTextFeed(); };
+  const mk = (label, cls, fn) => { const b = el(`<button type="button" class="rp-btn ${cls}"></button>`); b.textContent = label; b.addEventListener('click', fn); sheet.appendChild(b); };
+  mk('گزارش پیام و بلاک این بازیکن', 'rp-btn--danger', () => { reportMessage(m); blockPlayer(m.p, m.n); close(); });
+  mk('فقط بلاک (پیام‌هاش دیده نشه)', '', () => { blockPlayer(m.p, m.n); close(); });
+  mk('انصراف', 'rp-btn--ghost', () => back.remove());
+  back.addEventListener('click', (e) => { if(e.target === back) back.remove(); });
+  back.appendChild(sheet);
+  document.body.appendChild(back);
+}
+
 // ---- text mode: typed clues and guesses ----
-// Persian is typed in many spellings, so both sides are folded to one form before comparing:
-// Arabic ي/ك, hamza/alef forms, diacritics, half-spaces, spaces, digits and punctuation.
-function nbNorm(s){
-  return String(s == null ? '' : s).toLowerCase()
-    .replace(/[ً-ٰٟـ]/g, '')
-    .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[ةۀ]/g, 'ه')
-    .replace(/[آأإٱ]/g, 'ا').replace(/ؤ/g, 'و').replace(/ئ/g, 'ی')
-    .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x660)).replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x6F0))
-    .replace(/[^\p{L}\p{N}]+/gu, '');
-}
-function nbParts(s){
-  return String(s == null ? '' : s).split(/[\s‌.,،؛;:!?؟()«»"'\-–—_/\\]+/).map(nbNorm).filter(Boolean);
-}
+// (nbNorm / nbParts live in safety.js)
 // true when a clue gives the word away: it contains the whole word, or (for a
 // several-word card) one of its words on its own
 function clueHasWord(clue, word){
@@ -1671,6 +1913,7 @@ function onlineTextSend(kind, text){
   const room = online.room;
   text = String(text || '').trim().slice(0, 80);
   if(!room || !text) return 'empty';
+  if(NBSafety.bad(text)) return 'bad';
   if(kind === 'c' && clueHasWord(text, onlineWordAt(room.currentCardIdx || 0, room.wordSeed))) return 'word';
   if(Date.now() - tpLastSend < 350) return 'fast';
   tpLastSend = Date.now();
@@ -1718,17 +1961,22 @@ function buildTextFeed(room){
   const lc = room.lastCorrect;
   if(lc && lc.c === cur - 1){
     const ok = el(`<div class="tp-ok"></div>`);
-    ok.textContent = `✓ «${lc.w}» درست بود${lc.n ? ' — ' + lc.n : ''}`;
+    ok.textContent = `✓ «${lc.w}» درست بود${lc.n ? ' — ' + NBSafety.clean(String(lc.n).slice(0, 20)) : ''}`;
     box.appendChild(ok);
   }
-  const msgs = Object.keys(room.feed || {}).sort().map(k => room.feed[k]).filter(m => m && m.c === cur && (m.k === 'c' || m.k === 'g')).slice(-8);
+  const msgs = Object.keys(room.feed || {}).sort().map(k => room.feed[k]).filter(m => m && m.c === cur && (m.k === 'c' || m.k === 'g') && !isBlocked(m.p)).slice(-8);
   if(!msgs.length && !(lc && lc.c === cur - 1)){
     box.appendChild(el(`<div class="tp-empty">${state.timerRunning ? 'هنوز سرنخی نیومده…' : 'بعد از شروع تایمر، سرنخ‌ها و حدس‌ها اینجا نشون داده می‌شن.'}</div>`));
   }
   msgs.forEach(m => {
     const b = el(`<div class="tp-msg ${m.k === 'c' ? 'tp-msg--clue' : 'tp-msg--guess'} ${m.ok ? 'is-ok' : ''}"><b class="tp-msg__n"></b><span class="tp-msg__t"></span></div>`);
-    b.querySelector('.tp-msg__n').textContent = (m.k === 'c' ? '💡 ' : '') + String(m.n || '');
-    b.querySelector('.tp-msg__t').textContent = String(m.t || '').slice(0, 80);
+    b.querySelector('.tp-msg__n').textContent = (m.k === 'c' ? '💡 ' : '') + NBSafety.clean(String(m.n || '').slice(0, 20));
+    b.querySelector('.tp-msg__t').textContent = NBSafety.clean(String(m.t || '').slice(0, 80));
+    if(m.p && m.p !== online.playerId){
+      const flag = el(`<button type="button" class="tp-flag" aria-label="گزارش یا بلاک">⚑</button>`);
+      flag.addEventListener('click', () => openReportSheet(m));
+      b.appendChild(flag);
+    }
     box.appendChild(b);
   });
   return box;
@@ -1758,6 +2006,7 @@ function buildTextPlay(isDescriber, isTurnTeam){
     e.preventDefault();
     const r = onlineTextSend(kind, inp.value);
     if(r === 'word'){ err.textContent = 'سرنخ نباید خود کلمه (یا بخشی از اون) رو داشته باشه.'; err.hidden = false; return; }
+    if(r === 'bad'){ err.textContent = 'لطفاً مؤدبانه بنویس.'; err.hidden = false; return; }
     err.hidden = true;
     if(r === null){ drafts[isDescriber ? 'tpClue' : 'tpGuess'] = ''; inp.value = ''; }
   });
