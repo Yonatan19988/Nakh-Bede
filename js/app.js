@@ -93,6 +93,11 @@ let online = {
   room: null,
 };
 
+// Phones' clocks differ, so everything shared through the room (round end, foul pause)
+// is measured on the database's clock: local time plus the offset Firebase reports.
+function srvNow(){ return Date.now() + ((window.FB && window.FB.offset) || 0); }
+function onlineBaseSec(){ return (online.room && online.room.roundSec) || state.roundDuration; }
+
 function genRoomCode(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let s = '';
@@ -173,6 +178,8 @@ function onlineCreateRoom(playerName){
     createdAt: Date.now(),
     hostId: playerId,
     phase: 'lobby',
+    mode: 'voice',
+    roundSec: state.roundDuration,
     players: { [playerId]: { name: playerName, teamId: null, av: myAvatarPayload() } },
     teams: {},
   };
@@ -197,7 +204,7 @@ function onlineJoinRoom(code, playerName, restoreTeamId){
     online.roomCode = code;
     online.playerId = playerId;
     online.playerName = playerName;
-    online.isHost = false;
+    online.isHost = (snap.val() || {}).hostId === playerId;
     return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: restoreTeamId || null, av: myAvatarPayload()}).then(() => {
       rememberRoom();
       armPresence();
@@ -208,11 +215,22 @@ function onlineJoinRoom(code, playerName, restoreTeamId){
   }).catch(err => { alert(fbErrorText(err)); });
 }
 
+function roomWithoutFeed(r){
+  if(!r) return '';
+  const c = Object.assign({}, r); delete c.feed;
+  return JSON.stringify(c);
+}
 function subscribeRoom(){
   const roomRef = window.FB.ref(window.FB.db, 'rooms/'+online.roomCode);
   window.FB.onValue(roomRef, (snap) => {
+    const prev = online.room;
     online.room = snap.val();
     if(!online.room){ return; }
+    // a new chat message alone must not rebuild the screen (it would drop the keyboard)
+    if(prev && state.screen === 'online-board' && online.room.mode === 'text' && roomWithoutFeed(prev) === roomWithoutFeed(online.room) && patchTextFeed()){
+      onlineTextJudge();
+      return;
+    }
     const me = online.room.players && online.room.players[online.playerId];
     if(me && me.teamId && me.teamId !== online.lastTeamId){ online.lastTeamId = me.teamId; rememberRoom(); }
     else if(me && me.teamId) online.lastTeamId = me.teamId;
@@ -220,6 +238,7 @@ function subscribeRoom(){
       state.screen = 'online-board';
     }
     render();
+    onlineTextJudge();
   });
 }
 
@@ -385,6 +404,10 @@ function render(){
   // a navigation away from the board, or the UI would freeze for 4s
   if(state.wheelTimer && (state.screen === 'board' || state.screen === 'online-board')) return;
   const app = document.getElementById('app');
+  // a text field that is being typed in survives the rebuild (online chat, call link)
+  const ae = document.activeElement;
+  const keepKey = ae && ae.dataset && ae.dataset.keep ? ae.dataset.keep : null;
+  const keepSel = keepKey ? [ae.selectionStart, ae.selectionEnd] : null;
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
   document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join');
@@ -429,6 +452,22 @@ function render(){
   }
   attachBackButton(app);
   playScreenEntrance(app);
+  if(keepKey){
+    const n = app.querySelector(`[data-keep="${keepKey}"]`);
+    if(n && !n.disabled){
+      n.focus({ preventScroll: true });
+      try{ n.setSelectionRange(keepSel[0], keepSel[1]); }catch(e){}
+    }
+  }
+}
+
+// text fields whose content must outlive a rebuild of the screen
+const drafts = {};
+function keepInput(inp, key){
+  inp.dataset.keep = key;
+  inp.value = drafts[key] || '';
+  inp.addEventListener('input', () => { drafts[key] = inp.value; });
+  return inp;
 }
 
 function playScreenEntrance(app){
@@ -1163,6 +1202,7 @@ function renderOnlineLobby(){
   codeActions.appendChild(shareBtn);
   codeCard.insertBefore(codeActions, codeCard.querySelector('.lobby-code__hint'));
   wrap.appendChild(codeCard);
+  wrap.appendChild(buildCallCard());
 
   // ---- teams ----
   const teams = onlineTeamsArray();
@@ -1232,6 +1272,7 @@ function renderOnlineLobby(){
       mapCard.appendChild(buildMapPicker(room.mapId || selectedMapId(), id => { window.FB.update(fbRoomRef(), { mapId: id }); }));
       wrap.appendChild(mapCard);
     }
+    wrap.appendChild(buildPlayModeCard());
     const readyTeams = teams.filter(t => t.memberIds.length > 0);
     const startBtn = el(`<button class="setup-start"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی برای همه</span></button>`);
     startBtn.disabled = readyTeams.length < 2;
@@ -1248,6 +1289,7 @@ function renderOnlineLobby(){
       wrap.appendChild(info);
     }
     if(MAPS.length > 1 && room.mapId){ const mm = MAPS.find(x => x.id === room.mapId); if(mm){ const mi = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2><p class="lobby-packs__list"></p></div>`); mi.querySelector('.lobby-packs__list').textContent = '🗺️ ' + mm.name; wrap.appendChild(mi); } }
+    wrap.appendChild(buildPlayModeCard());
     wrap.appendChild(el(`<div class="lobby-wait">منتظر شروع بازی از طرف میزبان…</div>`));
   }
 
@@ -1276,6 +1318,8 @@ function startOnlineGame(){
     actionChosenCardIdx: null,
     winnerTeamId: null,
     lastRoundSummary: null,
+    feed: null,
+    lastCorrect: null,
   };
   teams.forEach(t => {
     updates[`teams/${t.id}/position`] = 0;
@@ -1298,6 +1342,10 @@ function syncStateFromOnlineRoom(){
   }));
   const curIdx = state.teams.findIndex(t => t.id === room.currentTeamId);
   state.currentTeamIdx = curIdx >= 0 ? curIdx : 0;
+  // the clock ring is scaled by the current team's timerOverride: online that is this round's length
+  const curTeam = state.teams[state.currentTeamIdx];
+  const roundTotal = (room.roundEndAt && room.roundTotal) ? room.roundTotal : ((curTeam && curTeam.timerOverride) || onlineBaseSec());
+  if(curTeam) curTeam.timerOverride = roundTotal;
   state.correctCount = room.correctCount || 0;
   state.skipCount = room.skipCount || 0;
   state.roundEnded = !!room.roundEnded;
@@ -1319,10 +1367,10 @@ function syncStateFromOnlineRoom(){
     state.winner = null;
   }
   if(room.roundEndAt){
-    state.timeLeft = Math.max(0, Math.ceil((room.roundEndAt - (room.foulPending ? (room.foulPausedAt || Date.now()) : Date.now()))/1000));
+    state.timeLeft = Math.max(0, Math.ceil((room.roundEndAt - (room.foulPending ? (room.foulPausedAt || srvNow()) : srvNow()))/1000));
     state.timerRunning = state.timeLeft > 0;
   } else {
-    state.timeLeft = state.roundDuration;
+    state.timeLeft = roundTotal;
     state.timerRunning = false;
   }
 }
@@ -1335,8 +1383,10 @@ function onlineMyTeamId(){
 function onlineStartTimer(){
   const t = currentTeam();
   const nextCardIdx = onlineNextWordIdx();
-  const endAt = Date.now() + state.roundDuration*1000;
-  window.FB.update(fbRoomRef(), { roundEndAt: endAt, correctCount: 0, skipCount: 0, foulCount: 0, foulPending: false, foulPausedAt: null, currentCardIdx: nextCardIdx });
+  const myTeamRoom = online.room && online.room.teams && online.room.teams[t.id];
+  const dur = (myTeamRoom && myTeamRoom.timerOverride) || onlineBaseSec();
+  const endAt = srvNow() + dur*1000;
+  window.FB.update(fbRoomRef(), { roundEndAt: endAt, roundTotal: dur, [`teams/${t.id}/timerOverride`]: null, correctCount: 0, skipCount: 0, foulCount: 0, foulPending: false, foulPausedAt: null, currentCardIdx: nextCardIdx, feed: null, lastCorrect: null });
   ensureOnlineLocalCountdown();
 }
 
@@ -1346,7 +1396,7 @@ function ensureOnlineLocalCountdown(){
   const room = online.room;
   if(!room || !room.roundEndAt) return;
   if(room.foulPending) return;   // round is frozen for a foul decision
-  const msLeft = room.roundEndAt - Date.now();
+  const msLeft = room.roundEndAt - srvNow();
   if(msLeft <= 0){ finishRoundOnline(); return; }
   onlineFinishTimeout = setTimeout(() => {
     if(online.room && online.room.roundEndAt) finishRoundOnline();
@@ -1364,17 +1414,17 @@ function onlineFoul(){
   sfxWrong();
   // everyone's clock has to stop, so we record when the pause began and
   // push the deadline back by the same amount when play resumes
-  window.FB.update(fbRoomRef(), { foulPending: true, foulPausedAt: Date.now() });
+  window.FB.update(fbRoomRef(), { foulPending: true, foulPausedAt: srvNow() });
 }
 
 function onlineResolveFoul(counted){
   const room = online.room;
   if(!room || !room.foulPending) return;
-  const pausedFor = Math.max(0, Date.now() - (room.foulPausedAt || Date.now()));
+  const pausedFor = Math.max(0, srvNow() - (room.foulPausedAt || srvNow()));
   const updates = {
     foulPending: false,
     foulPausedAt: null,
-    roundEndAt: (room.roundEndAt || Date.now()) + pausedFor
+    roundEndAt: (room.roundEndAt || srvNow()) + pausedFor
   };
   if(counted) updates.foulCount = (room.foulCount || 0) + 1;
   window.FB.update(fbRoomRef(), updates);
@@ -1429,11 +1479,11 @@ function computeActionEffectUpdates(effect, selfTeam, targetTeam){
       updates[`teams/${selfTeam.id}/position`] = Math.max(0, Math.min(selfTeam.position + effect.delta, state.trackLength-1));
       break;
     case 'timeBonusSelf':
-      updates[`teams/${selfTeam.id}/timerOverride`] = state.roundDuration + effect.seconds;
+      updates[`teams/${selfTeam.id}/timerOverride`] = onlineBaseSec() + effect.seconds;
       break;
     case 'timeStealChoose':
-      if(targetTeam) updates[`teams/${targetTeam.id}/timerOverride`] = Math.max(10, state.roundDuration - effect.seconds);
-      updates[`teams/${selfTeam.id}/timerOverride`] = state.roundDuration + effect.seconds;
+      if(targetTeam) updates[`teams/${targetTeam.id}/timerOverride`] = Math.max(10, onlineBaseSec() - effect.seconds);
+      updates[`teams/${selfTeam.id}/timerOverride`] = onlineBaseSec() + effect.seconds;
       break;
     case 'shieldFirstNegative':
       updates[`teams/${selfTeam.id}/mods/shieldNegative`] = true;
@@ -1479,8 +1529,234 @@ function onlineContinueNextTurn(effectUpdates){
     actionPickActive: false,
     actionRevealedIdx: null,
     actionChosenCardIdx: null,
+    feed: null,
+    lastCorrect: null,
   }, effectUpdates || {});
   window.FB.update(fbRoomRef(), updates);
+}
+
+// ---------------- ONLINE: group call link + text mode ----------------
+// The game is spoken, so players need a call. We don't run one: the host drops the link of
+// any call (WhatsApp, Telegram, Google Meet...) into the room and everyone gets a join button.
+function safeCallUrl(u){
+  try{
+    if(typeof u !== 'string' || u.length > 300) return null;
+    const x = new URL(u.trim());
+    return x.protocol === 'https:' ? x.href : null;
+  }catch(e){ return null; }
+}
+function buildCallCard(){
+  const room = online.room || {};
+  const url = safeCallUrl(room.callUrl);
+  const card = el(`<div class="team-card lobby-call"><h2 class="set-card__title">تماس صوتی</h2></div>`);
+  const link = location.origin + location.pathname + '?room=' + online.roomCode;
+  const msg = `بیا توی اتاق «نخ بده»! کد اتاق: ${online.roomCode}`;
+  if(url){
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    card.appendChild(el(`<p class="lobby-call__txt">میزبان یه تماس گروهی گذاشته. وارد شو تا همدیگه رو بشنوید.</p>`));
+    const a = el(`<a class="lobby-call__join" target="_blank" rel="noopener noreferrer"><span>پیوستن به تماس</span><small dir="ltr"></small></a>`);
+    a.href = url;
+    a.querySelector('small').textContent = host;
+    card.appendChild(a);
+  } else {
+    card.appendChild(el(`<p class="lobby-call__txt">${online.isHost
+      ? 'بازی با حرف زدنه. یه تماس گروهی بساز (واتس‌اپ، تلگرام یا Google Meet) و لینکش رو اینجا بذار تا بقیه با یه دکمه وارد بشن.'
+      : 'میزبان هنوز لینک تماسی نذاشته. می‌تونید خودتون هم تو واتس‌اپ یا تلگرام تماس بگیرید.'}</p>`));
+  }
+  if(online.isHost){
+    const quick = el(`<div class="lobby-call__quick"></div>`);
+    const mk = (label, href) => { const a = el(`<a class="lobby-call__q" target="_blank" rel="noopener noreferrer"></a>`); a.textContent = label; a.href = href; return a; };
+    quick.appendChild(mk('ساخت تماس Google Meet', 'https://meet.google.com/new'));
+    quick.appendChild(mk('ارسال به تلگرام', 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(msg)));
+    quick.appendChild(mk('ارسال به واتس‌اپ', 'https://wa.me/?text=' + encodeURIComponent(msg + '\n' + link)));
+    card.appendChild(quick);
+    const form = el(`<form class="lobby-call__form" autocomplete="off"><input class="room-form__input lobby-call__in" type="url" dir="ltr" placeholder="https://… لینک تماس رو اینجا بذار" maxlength="300"><button type="submit" class="lobby-call__save">ذخیره</button></form>`);
+    keepInput(form.querySelector('input'), 'callUrl');
+    const err = el(`<div class="lobby-call__err" role="alert" hidden>لینک باید با https شروع بشه.</div>`);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = safeCallUrl(form.querySelector('input').value);
+      if(!v){ err.hidden = false; return; }
+      err.hidden = true;
+      drafts.callUrl = '';
+      window.FB.update(fbRoomRef(), { callUrl: v });
+    });
+    card.appendChild(form);
+    card.appendChild(err);
+    if(url){
+      const rm = el(`<button class="lobby-call__rm" type="button">حذف لینک تماس</button>`);
+      rm.addEventListener('click', () => { window.FB.update(fbRoomRef(), { callUrl: null }); });
+      card.appendChild(rm);
+    }
+  }
+  return card;
+}
+
+const ROUND_CHOICES = [60, 90, 120, 180];
+function buildPlayModeCard(){
+  const room = online.room || {};
+  const mode = room.mode === 'text' ? 'text' : 'voice';
+  const sec = onlineBaseSec();
+  const card = el(`<div class="team-card lobby-mode"><h2 class="set-card__title">روش بازی</h2></div>`);
+  if(online.isHost){
+    const modes = el(`<div class="set-presets"></div>`);
+    [['voice', '🎙️ صحبتی'], ['text', '⌨️ متنی']].forEach(([id, label]) => {
+      const b = el(`<button type="button" class="set-chip ${mode === id ? 'is-on' : ''}"></button>`);
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        const upd = { mode: id };
+        if(id === 'text' && sec < 120) upd.roundSec = 120;   // typing is slower than talking
+        window.FB.update(fbRoomRef(), upd);
+      });
+      modes.appendChild(b);
+    });
+    card.appendChild(modes);
+  } else {
+    card.appendChild(el(`<p class="lobby-packs__list">${mode === 'text' ? '⌨️ متنی' : '🎙️ صحبتی'}</p>`));
+  }
+  card.appendChild(el(`<small class="set-hint">${mode === 'text'
+    ? 'توضیح‌دهنده سرنخ رو تایپ می‌کنه و هم‌تیمی‌ها حدسشون رو تایپ می‌کنن. حدس درست خودکار ثبت می‌شه و سرنخی که خود کلمه رو داشته باشه ارسال نمی‌شه.'
+    : 'توضیح‌دهنده با صدا توضیح می‌ده (بهتره همه تو یه تماس باشید).'}</small>`));
+  card.appendChild(el(`<h2 class="set-card__title lobby-mode__sub">زمان هر راند</h2>`));
+  if(online.isHost){
+    const row = el(`<div class="set-presets"></div>`);
+    ROUND_CHOICES.forEach(v => {
+      const b = el(`<button type="button" class="set-chip ${sec === v ? 'is-on' : ''}">${faNum(v)}</button>`);
+      b.addEventListener('click', () => { window.FB.update(fbRoomRef(), { roundSec: v }); });
+      row.appendChild(b);
+    });
+    card.appendChild(row);
+  } else {
+    card.appendChild(el(`<p class="lobby-packs__list">${faNum(sec)} ثانیه</p>`));
+  }
+  return card;
+}
+
+// ---- text mode: typed clues and guesses ----
+// Persian is typed in many spellings, so both sides are folded to one form before comparing:
+// Arabic ي/ك, hamza/alef forms, diacritics, half-spaces, spaces, digits and punctuation.
+function nbNorm(s){
+  return String(s == null ? '' : s).toLowerCase()
+    .replace(/[ً-ٰٟـ]/g, '')
+    .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[ةۀ]/g, 'ه')
+    .replace(/[آأإٱ]/g, 'ا').replace(/ؤ/g, 'و').replace(/ئ/g, 'ی')
+    .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x660)).replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x6F0))
+    .replace(/[^\p{L}\p{N}]+/gu, '');
+}
+function nbParts(s){
+  return String(s == null ? '' : s).split(/[\s‌.,،؛;:!?؟()«»"'\-–—_/\\]+/).map(nbNorm).filter(Boolean);
+}
+// true when a clue gives the word away: it contains the whole word, or (for a
+// several-word card) one of its words on its own
+function clueHasWord(clue, word){
+  const wn = nbNorm(word), cn = nbNorm(clue);
+  if(wn.length >= 2 && cn.includes(wn)) return true;
+  const wp = nbParts(word);
+  if(wp.length > 1){
+    const cp = nbParts(clue);
+    return wp.some(p => p.length >= 3 && cp.includes(p));
+  }
+  return false;
+}
+
+let tpLastSend = 0;
+function onlineTextSend(kind, text){
+  const room = online.room;
+  text = String(text || '').trim().slice(0, 80);
+  if(!room || !text) return 'empty';
+  if(kind === 'c' && clueHasWord(text, onlineWordAt(room.currentCardIdx || 0, room.wordSeed))) return 'word';
+  if(Date.now() - tpLastSend < 350) return 'fast';
+  tpLastSend = Date.now();
+  const me = (room.players && room.players[online.playerId]) || {};
+  const key = 'm' + srvNow().toString(36) + Math.random().toString(36).slice(2, 5);
+  window.FB.set(fbRoomRef('feed/' + key), { c: room.currentCardIdx || 0, p: online.playerId, n: String(me.name || online.playerName || '').slice(0, 20), k: kind, t: text });
+  return null;
+}
+
+// Only the describer's phone judges guesses (it is the one that already moves the
+// round forward), so two teammates guessing at once can never count twice.
+const tpJudged = new Set();
+function onlineTextJudge(){
+  const room = online.room;
+  if(!room || room.mode !== 'text' || !room.feed || !room.roundEndAt || room.foulPending || room.roundEnded) return;
+  if(room.roundEndAt <= srvNow()) return;
+  const t = onlineTeamsArray().find(x => x.id === room.currentTeamId);
+  if(!t || !t.memberIds.length) return;
+  if(t.memberIds[(t.describerIdx || 0) % t.memberIds.length] !== online.playerId) return;
+  const cur = room.currentCardIdx || 0;
+  const word = onlineWordAt(cur, room.wordSeed);
+  const wn = nbNorm(word);
+  for(const k of Object.keys(room.feed).sort()){
+    const m = room.feed[k];
+    if(!m || m.k !== 'g' || m.c !== cur || m.ok || tpJudged.has(k)) continue;
+    const g = room.players && room.players[m.p];
+    if(!g || g.teamId !== t.id || m.p === online.playerId) continue;   // only teammates guess
+    tpJudged.add(k);
+    if(nbNorm(m.t) === wn){
+      sfxCorrect();
+      window.FB.update(fbRoomRef(), {
+        correctCount: (room.correctCount || 0) + 1,
+        currentCardIdx: cur + 1,
+        ['feed/' + k + '/ok']: true,
+        lastCorrect: { c: cur, w: word, n: String(m.n || '') },
+      });
+      return;
+    }
+  }
+}
+
+function buildTextFeed(room){
+  const cur = room.currentCardIdx || 0;
+  const box = el(`<div class="tp-feed" aria-live="polite"></div>`);
+  const lc = room.lastCorrect;
+  if(lc && lc.c === cur - 1){
+    const ok = el(`<div class="tp-ok"></div>`);
+    ok.textContent = `✓ «${lc.w}» درست بود${lc.n ? ' — ' + lc.n : ''}`;
+    box.appendChild(ok);
+  }
+  const msgs = Object.keys(room.feed || {}).sort().map(k => room.feed[k]).filter(m => m && m.c === cur && (m.k === 'c' || m.k === 'g')).slice(-8);
+  if(!msgs.length && !(lc && lc.c === cur - 1)){
+    box.appendChild(el(`<div class="tp-empty">${state.timerRunning ? 'هنوز سرنخی نیومده…' : 'بعد از شروع تایمر، سرنخ‌ها و حدس‌ها اینجا نشون داده می‌شن.'}</div>`));
+  }
+  msgs.forEach(m => {
+    const b = el(`<div class="tp-msg ${m.k === 'c' ? 'tp-msg--clue' : 'tp-msg--guess'} ${m.ok ? 'is-ok' : ''}"><b class="tp-msg__n"></b><span class="tp-msg__t"></span></div>`);
+    b.querySelector('.tp-msg__n').textContent = (m.k === 'c' ? '💡 ' : '') + String(m.n || '');
+    b.querySelector('.tp-msg__t').textContent = String(m.t || '').slice(0, 80);
+    box.appendChild(b);
+  });
+  return box;
+}
+function patchTextFeed(){
+  const old = document.querySelector('.tp-feed');
+  if(!old || !online.room) return false;
+  old.replaceWith(buildTextFeed(online.room));
+  return true;
+}
+
+function buildTextPlay(isDescriber, isTurnTeam){
+  const room = online.room;
+  const box = el(`<div class="tp"></div>`);
+  box.appendChild(buildTextFeed(room));
+  if(!isDescriber && !isTurnTeam) return box;      // the rival team only watches
+  const kind = isDescriber ? 'c' : 'g';
+  const active = state.timerRunning && !state.foulPending;
+  const form = el(`<form class="tp-form" autocomplete="off"><input class="tp-input" type="text" maxlength="80" enterkeyhint="send" autocapitalize="off"><button class="tp-send" type="submit">ارسال</button></form>`);
+  const inp = form.querySelector('input');
+  keepInput(inp, isDescriber ? 'tpClue' : 'tpGuess');
+  inp.disabled = !active;
+  inp.placeholder = !active ? 'منتظر شروع تایمر…' : (isDescriber ? 'سرنخ بنویس (نه خود کلمه!)' : 'حدست رو بنویس');
+  form.querySelector('button').disabled = !active;
+  const err = el(`<div class="tp-err" role="alert" hidden></div>`);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const r = onlineTextSend(kind, inp.value);
+    if(r === 'word'){ err.textContent = 'سرنخ نباید خود کلمه (یا بخشی از اون) رو داشته باشه.'; err.hidden = false; return; }
+    err.hidden = true;
+    if(r === null){ drafts[isDescriber ? 'tpClue' : 'tpGuess'] = ''; inp.value = ''; }
+  });
+  box.appendChild(form);
+  box.appendChild(err);
+  return box;
 }
 
 function renderOnlineBoard(){
@@ -1580,6 +1856,7 @@ function renderOnlineBoard(){
   applyScene(wrap);
   wrap.appendChild(sceneStage(renderPlayTimer(), cardViewEl));
   wrap.appendChild(buildFoulRow(onlineFoul, onlineResolveFoul));
+  if(room.mode === 'text') wrap.appendChild(buildTextPlay(isDescriber, isTurnTeam));
 
   if(isDescriber){
     const blocked = t.mods && t.mods.blockSkip;
@@ -1604,6 +1881,12 @@ function renderOnlineBoard(){
   }
 
   wrap.appendChild(buildPlayScore());
+  const callUrl = safeCallUrl(room.callUrl);
+  if(callUrl){
+    const callBtn = el(`<a class="play-call" target="_blank" rel="noopener noreferrer">🎙️ پیوستن به تماس</a>`);
+    callBtn.href = callUrl;
+    wrap.appendChild(callBtn);
+  }
   const leaveBtn = el(`<button class="play-leave">خروج از اتاق</button>`);
   leaveBtn.addEventListener('click', onlineLeaveRoom);
   wrap.appendChild(leaveBtn);
