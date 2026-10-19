@@ -4,15 +4,15 @@
     ".write": false,
     "rooms": {
       "$code": {
-        ".validate": "!data.exists() ? newData.hasChildren(['hostId','players','createdAt']) : true && $code.length <= 5",
+        ".validate": "newData.hasChildren(['hostId','createdAt']) && (data.exists() || newData.hasChild('players')) && $code.length <= 5",
         ".read": "auth != null",
-        ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid && newData.child('players').child(auth.uid).exists() && newData.child('players').getChildrenCount() === 1",
+        ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid && newData.child('players').child(auth.uid).exists()",
         "createdAt": {
-          ".write": "root.child('rooms').child($code).child('players').child(auth.uid).exists()",
+          ".write": "root.child('rooms').child($code).child('players').child(auth.uid).exists() && newData.exists()",
           ".validate": "newData.isNumber()"
         },
         "hostId": {
-          ".write": "root.child('rooms').child($code).child('players').child(auth.uid).exists()",
+          ".write": "root.child('rooms').child($code).child('players').child(auth.uid).exists() && newData.exists()",
           ".validate": "newData.isString() && newData.val().length <= 40 && newData.parent().child('players').child(newData.val()).exists()"
         },
         "phase": {
@@ -37,7 +37,7 @@
         },
         "packs": {
           ".write": "root.child('rooms').child($code).child('players').child(auth.uid).exists()",
-          ".validate": "newData.hasChildren() ? newData.getChildrenCount() <= 12 : false",
+          ".validate": "newData.hasChildren() && !newData.hasChild('12')",
           "$i": {
             ".validate": "newData.isString() && newData.val().length <= 30"
           }
@@ -57,9 +57,9 @@
               ".validate": "(newData.val() == null || newData.isString() && newData.val().length <= 4)"
             },
             "av": {
-              ".validate": "newData.hasChildren() ? newData.getChildrenCount() <= 3 : false",
+              ".validate": "newData.hasChildren()",
               "l": {
-                ".validate": "newData.hasChildren() && newData.getChildrenCount() <= 12",
+                ".validate": "newData.hasChildren() && !newData.hasChild('12')",
                 "$i": {
                   ".validate": "newData.isNumber()"
                 }
@@ -102,9 +102,33 @@
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
             },
             "mods": {
-              ".validate": "newData.hasChildren() ? newData.getChildrenCount() <= 12 : false",
-              "$m": {
+              ".validate": "newData.hasChildren()",
+              "shieldNegative": {
                 ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "doubleFirstCorrect": {
+                ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "bonusThreshold": {
+                ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "bonusAmount": {
+                ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "skipPenalty": {
+                ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "blockSkip": {
+                ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "blockMoveThreshold": {
+                ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "shieldAttack": {
+                ".validate": "newData.isNumber() || newData.isBoolean()"
+              },
+              "$o": {
+                ".validate": false
               }
             },
             "$o": {
