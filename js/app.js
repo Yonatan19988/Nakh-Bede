@@ -508,7 +508,7 @@ function render(){
   const keepSel = keepKey ? [ae.selectionStart, ae.selectionEnd] : null;
   document.body.classList.toggle('home-mode', state.screen === 'home');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick' || state.screen === 'daily');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -543,6 +543,8 @@ function render(){
     app.appendChild(renderOnlineJoin());
   } else if(state.screen === 'online-quick'){
     app.appendChild(renderOnlineQuick());
+  } else if(state.screen === 'daily'){
+    app.appendChild(renderDaily());
   } else if(state.screen === 'online-lobby'){
     app.appendChild(renderOnlineLobby());
   } else if(state.screen === 'online-board'){
@@ -1008,6 +1010,12 @@ function renderHome(){
     <span class="hm-out hm-out--teal" data-text="ورود با کد">ورود با کد</span></button>`);
   joinTile.addEventListener('click', () => { state.homeSheet = 'join'; render(); });
   tiles.appendChild(joinTile);
+  const dst = dailyStreak();
+  const dailyDone = dailyLoad().done;
+  const dailyTile = el(`<button class="hm-btn hm-btn--red hm-tile"><span class="hm-btn__gloss"></span>
+    <span class="hm-out hm-out--red" data-text="کلمه‌ی امروز${dst.n ? ' 🔥' + faNum(dst.n) : (dailyDone ? ' ✓' : '')}">کلمه‌ی امروز${dst.n ? ' 🔥' + faNum(dst.n) : (dailyDone ? ' ✓' : '')}</span></button>`);
+  dailyTile.addEventListener('click', openDaily);
+  tiles.appendChild(dailyTile);
   wrap.appendChild(tiles);
 
   if(SHOW_BOTTOM_NAV){
@@ -2648,7 +2656,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial'];
+  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }

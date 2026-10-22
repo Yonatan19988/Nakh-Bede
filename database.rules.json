@@ -315,6 +315,34 @@
           ".validate": false
         }
       }
+    },
+    "daily": {
+      "$day": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "s"
+        ],
+        ".validate": "$day.matches(/^[0-9]{8}$/)",
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid && !data.exists()",
+          ".validate": "newData.hasChildren(['n','s','a','t']) && newData.child('s').val() === 100 - 15 * (newData.child('a').val() - 1) || newData.child('s').val() === 0 && newData.hasChildren(['n','s','a','t'])",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+          },
+          "s": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+          },
+          "a": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 6"
+          },
+          "t": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }

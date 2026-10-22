@@ -2587,3 +2587,43 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
   font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer; }
 .rp-btn--danger{ background:rgba(199,74,53,.3); border-color:#C74A35; color:#FFD9D2; }
 .rp-btn--ghost{ background:none; border-color:transparent; color:var(--text-dim); }
+
+/* ---------------- daily challenge: «کلمه‌ی امروز» ---------------- */
+.dl{ --dl-g:#2E9B63; --dl-y:#D8A52B; --dl-x:#3A4B57; --dl-tile:44px; }
+.dl-info{ display:flex; justify-content:space-between; align-items:center; margin:0 4px 6px; font-weight:800; color:#F3D37A; }
+.dl-info__s{ font-size:14px; color:#FFD9A0; }
+.dl-help{ margin:0 6px 10px; font-size:12.5px; line-height:1.9; color:var(--text-dim); text-align:center; }
+.dl-board{ display:flex; flex-direction:column; align-items:center; gap:6px; margin:6px 0 4px; }
+.dl-row{ display:flex; gap:6px; direction:rtl; }
+.dl-tile{
+  width:var(--dl-tile); height:var(--dl-tile); border-radius:10px; display:flex; align-items:center; justify-content:center;
+  font-size:24px; font-weight:800; color:#FFF1CD; background:rgba(255,255,255,.06); border:2px solid rgba(217,173,76,.28);
+}
+.dl-tile.has{ border-color:rgba(240,201,107,.7); }
+.dl-tile.is-g{ background:var(--dl-g); border-color:var(--dl-g); color:#fff; }
+.dl-tile.is-y{ background:var(--dl-y); border-color:var(--dl-y); color:#2b1a05; }
+.dl-tile.is-x{ background:var(--dl-x); border-color:var(--dl-x); color:#CBD6DD; }
+.dl-tile.is-flip{ animation:dlFlip .5s ease both; }
+@keyframes dlFlip{ 0%{ transform:rotateX(0); } 50%{ transform:rotateX(90deg); } 100%{ transform:rotateX(0); } }
+.dl-board.is-shake{ animation:dlShake .35s ease; }
+@keyframes dlShake{ 0%,100%{ transform:translateX(0); } 20%,60%{ transform:translateX(-7px); } 40%,80%{ transform:translateX(7px); } }
+.dl-msg{ min-height:22px; text-align:center; font-size:13px; font-weight:700; color:#FFB8A8; }
+.dl-kb{ display:flex; flex-direction:column; gap:7px; margin-top:6px; }
+.dl-kb__row{ display:flex; justify-content:center; gap:5px; direction:rtl; }
+.dl-key{
+  flex:1 1 0; min-width:0; max-width:34px; height:42px; border-radius:9px; border:none; cursor:pointer; font-family:inherit;
+  font-size:17px; font-weight:800; color:#EAF6FF; background:rgba(255,255,255,.14); touch-action:manipulation;
+}
+.dl-key--wide{ max-width:52px; }
+.dl-key--enter{ max-width:none; height:42px; width:100%; background:linear-gradient(180deg,#F4C443,#D9AD4C); color:#102331; font-size:15px; box-shadow:0 3px 0 #9E7A22; }
+.dl-key:disabled{ opacity:.5; cursor:default; }
+.dl-key.is-g{ background:var(--dl-g); color:#fff; }
+.dl-key.is-y{ background:var(--dl-y); color:#2b1a05; }
+.dl-key.is-x{ background:#26343d; color:#7C8C97; }
+.dl-res,.dl-lb,.dl-name{ margin-top:12px; text-align:center; }
+.dl-lb__row{ display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px solid rgba(255,255,255,.08); text-align:right; }
+.dl-lb__row.is-me{ background:rgba(217,173,76,.16); border-radius:10px; }
+.dl-lb__rk{ flex:0 0 28px; font-weight:800; color:#F3D37A; text-align:center; }
+.dl-lb__n{ flex:1 1 auto; font-weight:700; overflow-wrap:anywhere; }
+.dl-lb__s{ flex:0 0 auto; font-size:12.5px; color:var(--text-dim); }
+@media (prefers-reduced-motion:reduce){ .dl-tile.is-flip,.dl-board.is-shake{ animation:none; } }
