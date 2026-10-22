@@ -96,7 +96,13 @@ async function accountSignOut(){
   if(acc.busy || !accountReady()) return;
   if(!confirm('از حساب گوگل خارج بشی؟ پروفایل روی همین گوشی می‌ماند ولی دیگر ذخیره‌ی ابری نمی‌شود.')) return;
   acc.busy = true; render();
-  try{ await accountPush(); await window.FB.account.signOut(); }catch(e){}
+  try{
+    // save the latest changes, unless the account already holds a newer copy from another phone
+    let cloud = null;
+    try{ cloud = (await window.FB.get(accountRef())).val(); }catch(e){}
+    if(!cloud || (LS.get('profileAt', 0) || 0) >= (cloud.at || 0)) await accountPush();
+    await window.FB.account.signOut();
+  }catch(e){}
   location.reload();
 }
 
