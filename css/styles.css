@@ -2589,7 +2589,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .rp-btn--ghost{ background:none; border-color:transparent; color:var(--text-dim); }
 
 /* ---------------- daily challenge: «کلمه‌ی امروز» ---------------- */
-.dl{ --dl-g:#2E9B63; --dl-y:#D8A52B; --dl-x:#3A4B57; --dl-tile:46px; }
+.dl{ --dl-g:#2E9B63; --dl-y:#D8A52B; --dl-x:#3A4B57; --dl-tile:44px; }
 .dl-info{ display:flex; justify-content:space-between; align-items:center; margin:0 4px 6px; font-weight:800; color:#F3D37A; }
 .dl-info__s{ font-size:14px; color:#FFD9A0; }
 .dl-help{ margin:0 6px 10px; font-size:12.5px; line-height:1.9; color:var(--text-dim); text-align:center; }
@@ -2611,11 +2611,11 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .dl-kb{ display:flex; flex-direction:column; gap:7px; margin-top:6px; }
 .dl-kb__row{ display:flex; justify-content:center; gap:5px; direction:rtl; }
 .dl-key{
-  flex:1 1 0; min-width:0; max-width:34px; height:46px; border-radius:9px; border:none; cursor:pointer; font-family:inherit;
+  flex:1 1 0; min-width:0; max-width:34px; height:42px; border-radius:9px; border:none; cursor:pointer; font-family:inherit;
   font-size:17px; font-weight:800; color:#EAF6FF; background:rgba(255,255,255,.14); touch-action:manipulation;
 }
 .dl-key--wide{ max-width:52px; }
-.dl-key--enter{ max-width:none; height:46px; width:100%; background:linear-gradient(180deg,#F4C443,#D9AD4C); color:#102331; font-size:15px; box-shadow:0 3px 0 #9E7A22; }
+.dl-key--enter{ max-width:none; height:42px; width:100%; background:linear-gradient(180deg,#F4C443,#D9AD4C); color:#102331; font-size:15px; box-shadow:0 3px 0 #9E7A22; }
 .dl-key:disabled{ opacity:.5; cursor:default; }
 .dl-key.is-g{ background:var(--dl-g); color:#fff; }
 .dl-key.is-y{ background:var(--dl-y); color:#2b1a05; }

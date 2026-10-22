@@ -221,7 +221,7 @@ function dailyBuildLeaderboard(s){
     const row = el(`<div class="dl-lb__row${mine ? ' is-me' : ''}"><span class="dl-lb__rk"></span><span class="dl-lb__n"></span><span class="dl-lb__s"></span></div>`);
     row.querySelector('.dl-lb__rk').textContent = faNum(i + 1);
     row.querySelector('.dl-lb__n').textContent = NBSafety.clean(r.n) + (mine ? ' (تو)' : '');
-    row.querySelector('.dl-lb__s').textContent = `${faNum(r.s)} · ${faNum(r.a)} حدس`;
+    row.querySelector('.dl-lb__s').textContent = `${faNum(r.s)} امتیاز، ${faNum(r.a)} حدس`;
     box.appendChild(row);
   });
   const refresh = el(`<button type="button" class="lobby-call__rm">تازه‌سازی جدول</button>`);
