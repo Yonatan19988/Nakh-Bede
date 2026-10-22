@@ -1,6 +1,6 @@
 // The Firebase SDK (app, realtime database and anonymous auth only) is bundled in js/firebase-sdk.js,
 // so nothing is loaded from Google's servers except the live connection to the database itself.
-import { initializeApp, getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect, getAuth, signInAnonymously, onAuthStateChanged } from "./firebase-sdk.js";
+import { initializeApp, getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect, query, orderByChild, limitToLast, getAuth, signInAnonymously, onAuthStateChanged } from "./firebase-sdk.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDSrLKHeMsY6qD2FZggiBqZY4GNmhdj3q8",
@@ -15,7 +15,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 const auth = getAuth(fbApp);
-window.FB = { ref, set, get, update, onValue, off, remove, onDisconnect, db, uid: null, offset: 0 };
+window.FB = { ref, set, get, update, onValue, off, remove, onDisconnect, query, orderByChild, limitToLast, db, uid: null, offset: 0 };
 // how far this phone's clock is from the database's; shared timers are measured on the database clock
 onValue(ref(db, '.info/serverTimeOffset'), (snap) => { window.FB.offset = Number(snap.val()) || 0; });
 // the security rules identify players by their auth uid, so nothing goes
