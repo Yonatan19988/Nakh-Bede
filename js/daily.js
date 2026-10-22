@@ -56,8 +56,10 @@ function dailyBumpStreak(won){
   if(won){
     const n = (st.last === dailyKeyOf(today - 1)) ? st.n + 1 : (st.last === dailyKeyOf(today) ? st.n : 1);
     LS.set('dailyStreak', { last: dailyKeyOf(today), n, best: Math.max(st.best || 0, n) });
+    if(typeof accountTouch === 'function') accountTouch();
   } else {
     LS.set('dailyStreak', { last: st.last, n: 0, best: st.best || 0 });
+    if(typeof accountTouch === 'function') accountTouch();
   }
 }
 
