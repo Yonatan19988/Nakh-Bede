@@ -2627,3 +2627,13 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .dl-lb__n{ flex:1 1 auto; font-weight:700; overflow-wrap:anywhere; }
 .dl-lb__s{ flex:0 0 auto; font-size:12.5px; color:var(--text-dim); }
 @media (prefers-reduced-motion:reduce){ .dl-tile.is-flip,.dl-board.is-shake{ animation:none; } }
+
+/* ---------------- Google account card ---------------- */
+.acc__txt{ margin:0 0 10px; font-size:13px; line-height:1.9; color:var(--text-dim); text-align:center; }
+.acc__google{
+  width:100%; height:48px; display:flex; align-items:center; justify-content:center; gap:10px; border-radius:14px; border:none;
+  cursor:pointer; font-family:inherit; font-size:15px; font-weight:800; color:#202124; background:#fff; box-shadow:0 3px 0 #b9c2c8;
+}
+.acc__google:disabled{ opacity:.6; cursor:default; }
+.acc__g{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff;
+  background:conic-gradient(#EA4335 0 25%, #FBBC05 0 50%, #34A853 0 75%, #4285F4 0); }

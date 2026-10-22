@@ -605,7 +605,7 @@ function loadFriends(){
   const f = LS.get('friends', []);
   return Array.isArray(f) ? f.filter(x => x && typeof x.name === 'string' && x.name.trim()).map(x => ({ name: x.name.slice(0, 14) })).slice(0, 30) : [];
 }
-function saveFriends(f){ LS.set('friends', f); }
+function saveFriends(f){ LS.set('friends', f); if(typeof accountTouch === 'function') accountTouch(); }
 const CARD_ICONS = ['⏱️','🕵️','🛡️','✨','⚡','🪬','🧿','🚫','🔒','👣','↩️'];
 
 function renderFriends(){
@@ -863,7 +863,7 @@ function frameStyle(p){
   const c = ringColor(p);
   return `border-color:${c}; box-shadow:0 0 0 3px ${c}55, 0 8px 20px rgba(0,0,0,.35);`;
 }
-function saveProfile(p){ LS.set('profile', p); }
+function saveProfile(p){ LS.set('profile', p); if(typeof accountTouch === 'function') accountTouch(); }
 function recordRound(sum){
   try{
     const p = loadProfile(), s = p.stats;
@@ -2462,6 +2462,7 @@ function renderProfile(){
   wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">پروفایل</div></div>`));
 
   wrap.appendChild(buildProfileEditor());
+  wrap.appendChild(buildAccountCard());
 
   const shopBtn = el(`<button class="team-card__add set-learn prof-shopbtn">🛍️ رفتن به فروشگاه</button>`);
   shopBtn.addEventListener('click', () => { state.screen = 'shop'; render(); });
