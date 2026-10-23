@@ -1,0 +1,33 @@
+name: Android build
+
+# Builds the Android app so a broken packaging step shows up before a store upload.
+# Run it by hand from the Actions tab ("Run workflow"); the APK is attached to the run.
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Install packages
+        run: npm ci
+      - name: Pack the web app and sync it into the Android project
+        run: |
+          npm run build:www
+          npx cap sync android
+      - name: Build the debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nakh-bede-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk

@@ -1,0 +1,20 @@
+{
+  "name": "nakh-bede",
+  "version": "1.0.0",
+  "private": true,
+  "description": "نخ بده — بازی حدس کلمات (وب و اپلیکیشن موبایل با Capacitor)",
+  "scripts": {
+    "build:www": "node scripts/build-www.mjs",
+    "cap:sync": "npm run build:www && cap sync",
+    "android:debug": "npm run cap:sync && cd android && ./gradlew assembleDebug",
+    "android:bundle": "npm run cap:sync && cd android && ./gradlew bundleRelease",
+    "assets": "capacitor-assets generate --android --ios"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  }
+}

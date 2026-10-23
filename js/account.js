@@ -109,6 +109,11 @@ async function accountSignOut(){
 function buildAccountCard(){
   const card = el(`<div class="team-card set-card acc"></div>`);
   card.appendChild(el(`<h2 class="set-card__title">حساب گوگل</h2>`));
+  if(IS_NATIVE){
+    // Google's sign-in page refuses to open inside an app's web view; the native sign-in comes later
+    card.appendChild(el(`<p class="acc__txt">ورود با گوگل در نسخه‌ی اپلیکیشن به‌زودی اضافه می‌شود. تا آن موقع پروفایلت روی همین گوشی می‌ماند.</p>`));
+    return card;
+  }
   if(!accountReady()){
     card.appendChild(el(`<p class="acc__txt">برای ورود، اتصال به اینترنت لازم است.</p>`));
     return card;
