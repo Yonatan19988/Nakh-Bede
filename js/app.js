@@ -945,10 +945,31 @@ function homeBanner(){
 const SHOW_FUTURE_FEATURES = false;   // coins — not asked for yet
 const SHOW_BOTTOM_NAV = true;         // the five tabs along the bottom
 
-function renderHome(){
-  const wrap = el(`<div class="hm"></div>`);
+// share the link of the game (used by the friends row on the home screen)
+function shareGameLink(){
+  const link = location.origin + location.pathname;
+  const text = 'بیا «نخ بده» بازی کنیم! بازی حدس کلمات گروهی:';
+  if(navigator.share){ navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {}); }
+  else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text + '\n' + link).then(() => toastHome('لینک کپی شد')).catch(() => {}); }
+  else toastHome(link);
+}
 
-  const top = el(`<div class="hm-top"></div>`);
+// the boards the player may use on the home screen (owned ones), and moving between them
+function ownedMaps(){ return MAPS.filter(m => mapOwned(m.id)); }
+function stepHomeMap(dir){
+  const list = ownedMaps(); if(!list.length) return;
+  const i = Math.max(0, list.findIndex(m => m.id === activeMapId));
+  const m = list[(i + dir + list.length) % list.length];
+  LS.set('mapId', m.id); setActiveMap(m.id);
+  state.heroDir = dir;
+  sfxTap(); render();
+}
+
+function renderHome(){
+  const wrap = el(`<div class="hm hm2"></div>`);
+
+  // ---- top row: profile (right), logo (middle), settings (left) ----
+  const top = el(`<div class="hm2-top"></div>`);
   const prof = loadProfile();
   const profChip = el(`<button class="hm-prof" aria-label="پروفایل">
     <span class="hm-prof__av" style="${frameStyle(prof).replace(/box-shadow:[^;]*;/,'')}">${avatarMarkup(prof)}</span>
@@ -957,19 +978,10 @@ function renderHome(){
   profChip.querySelector('b').textContent = prof.name || 'بازیکن مهمان';
   profChip.addEventListener('click', () => { state.screen = 'profile'; render(); });
   top.appendChild(profChip);
-  const tools = el(`<div class="hm-tools"></div>`);
-  if(SHOW_FUTURE_FEATURES){
-    tools.appendChild(el(`<div class="hm-coins">
-      <span class="hm-coins__ico"></span><span class="hm-coins__n">${faNum(0)}</span>
-      <button class="hm-coins__add" aria-label="افزودن سکه">+</button></div>`));
-  }
-  const gear = el(`<button class="hm-gear" aria-label="تنظیمات"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#EAF6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg></button>`);
+  top.appendChild(el(`<img class="hm2-logo" src="${HOME_LOGO}" alt="نخ بده" />`));
+  const gear = el(`<button class="hm-gear" aria-label="تنظیمات"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#EAF6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>`);
   gear.addEventListener('click', () => { state.screen = 'settings'; render(); });
-  const learn = el(`<button class="hm-learn" aria-label="آموزش بازی"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 12 5l9 4.2-9 4.2Z"/><path d="M7 11.4v4.1c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.1"/></svg>${LS.get('seenTutorial', false) ? '' : '<span class="hm-learn__dot" aria-label="جدید"></span>'}</button>`);
-  learn.addEventListener('click', () => { state.screen = 'tutorial'; render(); });
-  tools.appendChild(learn);
-  tools.appendChild(gear);
-  top.appendChild(tools);
+  top.appendChild(gear);
   wrap.appendChild(top);
 
   const banner = homeBanner();
@@ -992,34 +1004,23 @@ function renderHome(){
     wrap.appendChild(b);
   }
 
-  wrap.appendChild(el(`<div class="hm-logo">
-    <span class="hm-rays"></span><span class="hm-halo"></span>
-      <img class="hm-logo__img" src="${HOME_LOGO}" alt="نخ بده" />
-    <span class="hm-spark hm-spark--l1"></span>
-    <span class="hm-spark hm-spark--l2"></span>
-    <span class="hm-spark hm-spark--l3"></span>
-  </div>`));
-  wrap.appendChild(el(`<div class="hm-ribbon"><span class="hm-out hm-out--ribbon" data-text="بازی حدس کلمات">بازی حدس کلمات</span></div>`));
-  wrap.appendChild(el(`<p class="hm-tag">توضیح بده، حدس بزن، جلو برو!</p>`));
-
-  wrap.appendChild(el(`<div class="hm-scene">
-    <span class="hm-pawn hm-pawn--r">${PAWN_SVG('#F0503F')}</span>
-    <span class="hm-pawn hm-pawn--t">${PAWN_SVG('#22B3A6')}</span>
-    <span class="hm-podium"></span>
-    <img class="hm-card hm-card--back" src="${HOME_CARD_BACK}" alt="" />
-    <img class="hm-card hm-card--act"  src="${HOME_CARD_ACT}"  alt="" />
-    <img class="hm-card hm-card--word" src="${HOME_CARD_WORD}" alt="" />
-    <span class="hm-spark hm-spark--1"></span>
-    <span class="hm-spark hm-spark--2"></span>
-    <span class="hm-spark hm-spark--3"></span>
-  </div>`));
-
-  const play = el(`<button class="hm-btn hm-btn--gold hm-play">
-    <span class="hm-btn__gloss"></span>
-    <span class="hm-play__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span>
-    <span class="hm-play__txt hm-out hm-out--gold" data-text="ساخت بازی">ساخت بازی</span></button>`);
-  play.addEventListener('click', () => { state.homeSheet = 'new'; render(); });
-  wrap.appendChild(play);
+  // ---- friends ----
+  const friends = loadFriends();
+  const fr = el(`<section class="hm2-fr"><div class="hm2-sec"><h3>دوستان</h3><button type="button" class="hm2-link">همه ←</button></div><div class="hm2-frow"></div></section>`);
+  fr.querySelector('.hm2-link').addEventListener('click', () => { state.screen = 'friends'; render(); });
+  const frow = fr.querySelector('.hm2-frow');
+  const invite = el(`<button type="button" class="hm2-fr__item hm2-fr__add"><span class="hm2-fr__av">+</span><small>دعوت</small></button>`);
+  invite.addEventListener('click', shareGameLink);
+  frow.appendChild(invite);
+  friends.slice(0, 6).forEach(f => {
+    const it = el(`<button type="button" class="hm2-fr__item"><span class="hm2-fr__av"></span><small></small></button>`);
+    it.querySelector('.hm2-fr__av').textContent = Array.from(f.name)[0] || '؟';
+    it.querySelector('small').textContent = f.name;
+    it.addEventListener('click', () => { state.screen = 'friends'; render(); });
+    frow.appendChild(it);
+  });
+  if(!friends.length) frow.appendChild(el(`<p class="hm2-fr__hint">دوستانت رو دعوت کن تا با هم بازی کنید.</p>`));
+  wrap.appendChild(fr);
 
   // quick ways back in: a fresh game next to a saved one, and the room you left
   const quick = [];
@@ -1036,19 +1037,49 @@ function renderHome(){
     wrap.appendChild(row);
   }
 
-  const tiles = el(`<div class="hm-tiles"></div>`);
-  const joinTile = el(`<button class="hm-btn hm-btn--teal hm-tile"><span class="hm-btn__gloss"></span>
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="3.6"/><path d="M11.6 12H21"/><path d="M17.5 12v3.2"/><path d="M20.4 12v2.4"/></svg>
-    <span class="hm-out hm-out--teal" data-text="ورود با کد">ورود با کد</span></button>`);
-  joinTile.addEventListener('click', () => { state.homeSheet = 'join'; render(); });
-  tiles.appendChild(joinTile);
+  // ---- the arena: the board in use, one big play button and three shortcuts ----
+  const maps = ownedMaps(), cur = curMap();
+  const hero = el(`<div class="hm2-hero"><div class="hm2-hero__img"></div><div class="hm2-hero__shade"></div>
+    <button type="button" class="hm2-nav hm2-nav--l" aria-label="نقشه‌ی بعدی"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></button>
+    <button type="button" class="hm2-nav hm2-nav--r" aria-label="نقشه‌ی قبلی"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 L16 12 L10 18"/></svg></button>
+    <div class="hm2-hero__info"><span class="hm2-hero__name"></span><small class="hm2-hero__blurb"></small><span class="hm2-dots"></span></div></div>`);
+  const img = hero.querySelector('.hm2-hero__img');
+  img.style.backgroundImage = `url("${cur.hero || cur.preview || cur.lite}")`;
+  if(state.heroDir) img.classList.add(state.heroDir > 0 ? 'is-in-l' : 'is-in-r');
+  state.heroDir = 0;
+  hero.querySelector('.hm2-hero__name').textContent = '🗺️ ' + cur.name;
+  hero.querySelector('.hm2-hero__blurb').textContent = cur.blurb || '';
+  const dots = hero.querySelector('.hm2-dots');
+  maps.forEach(m => dots.appendChild(el(`<i class="${m.id === cur.id ? 'is-on' : ''}"></i>`)));
+  hero.querySelector('.hm2-nav--l').addEventListener('click', () => stepHomeMap(1));
+  hero.querySelector('.hm2-nav--r').addEventListener('click', () => stepHomeMap(-1));
+  if(maps.length < 2){ hero.querySelectorAll('.hm2-nav').forEach(n => n.hidden = true); }
+  if(maps.length < MAPS.length){
+    const more = el(`<button type="button" class="hm2-more">نقشه‌های بیشتر ←</button>`);
+    more.addEventListener('click', () => { shopTab = 'map'; state.screen = 'shop'; render(); });
+    hero.appendChild(more);
+  }
+  wrap.appendChild(hero);
+
+  const play = el(`<button class="hm-btn hm-btn--gold hm2-play">
+    <span class="hm-btn__gloss"></span>
+    <span class="hm2-play__ico"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span>
+    <span class="hm2-play__txt hm-out hm-out--gold" data-text="بازی کن">بازی کن</span></button>`);
+  play.addEventListener('click', () => { state.homeSheet = 'new'; render(); });
+  wrap.appendChild(play);
+
   const dst = dailyStreak();
   const dailyDone = dailyLoad().done;
-  const dailyTile = el(`<button class="hm-btn hm-btn--red hm-tile"><span class="hm-btn__gloss"></span>
-    <span class="hm-out hm-out--red" data-text="کلمه‌ی امروز${dst.n ? ' 🔥' + faNum(dst.n) : (dailyDone ? ' ✓' : '')}">کلمه‌ی امروز${dst.n ? ' 🔥' + faNum(dst.n) : (dailyDone ? ' ✓' : '')}</span></button>`);
-  dailyTile.addEventListener('click', openDaily);
-  tiles.appendChild(dailyTile);
-  wrap.appendChild(tiles);
+  const shortcuts = el(`<div class="hm2-sc"></div>`);
+  const sc = (cls, ico, label, fn) => {
+    const b = el(`<button type="button" class="hm-btn ${cls} hm2-sc__b"><span class="hm-btn__gloss"></span><span class="hm2-sc__ico"></span><span class="hm2-sc__t"></span></button>`);
+    b.querySelector('.hm2-sc__ico').textContent = ico; b.querySelector('.hm2-sc__t').textContent = label;
+    b.addEventListener('click', fn); shortcuts.appendChild(b);
+  };
+  sc('hm-btn--teal', '🌐', 'بازی سریع', openQuick);
+  sc('hm-btn--teal', '🔑', 'ورود با کد', () => { state.homeSheet = 'join'; render(); });
+  sc('hm-btn--red', '🔥', 'کلمه‌ی امروز' + (dst.n ? ' · ' + faNum(dst.n) : (dailyDone ? ' ✓' : '')), openDaily);
+  wrap.appendChild(shortcuts);
 
   if(SHOW_BOTTOM_NAV){
     const ico = {
