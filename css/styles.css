@@ -2664,9 +2664,9 @@ body.pm-open{ overflow:hidden; }
 .hm2-top > :first-child{ justify-self:start; }
 .hm2-top > :last-child{ justify-self:end; }
 .hm2-logo{ height:54px; width:auto; min-width:0; max-width:100%; object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
-.hm2 .hm-prof{ padding:4px 12px 4px 5px; max-width:42%; }
+.hm2 .hm-prof{ padding:4px 10px 4px 5px; max-width:100%; min-width:0; gap:7px; }
 .hm2 .hm-prof__txt{ min-width:0; }
-.hm2 .hm-prof__txt b{ display:block; max-width:84px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hm2 .hm-prof__txt b{ display:block; max-width:62px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .hm2-fr{ width:100%; flex:0 0 auto; }
 .hm2-sec{ display:flex; align-items:baseline; justify-content:space-between; padding:0 4px 4px; }
 .hm2-sec h3{ font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400; font-size:19px; color:#F3D37A; }
