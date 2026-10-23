@@ -128,7 +128,7 @@ window.addEventListener('fb-ready', () => { setTimeout(janitor, 8000); });
 
 // the packed app runs on a private address, so shared links must point to the public site
 // Sign in with Apple shows up once it is set up in Firebase (Authentication > Sign-in method > Apple) and this is true
-const APPLE_LOGIN = true;
+const APPLE_LOGIN = false;
 const IS_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
 const PUBLIC_URL = 'https://yonatan19988.github.io/Nakh-Bede/';
 function gameLink(){ return IS_NATIVE ? PUBLIC_URL : (location.origin + location.pathname); }
@@ -1040,7 +1040,7 @@ function renderWelcome(){
     g.addEventListener('click', () => welcomeGoogle());
     box.appendChild(g);
     if(APPLE_LOGIN){
-      const ap = el(`<button type="button" class="wl__apple"><span class="wl__ap">\uF8FF</span><span>${acc.busy ? 'در حال ورود…' : 'ورود با اپل'}</span></button>`);
+      const ap = el(`<button type="button" class="wl__apple"><span class="wl__ap"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 6.9 1.2 9.2.8 1.1 1.700 2.400 2.900 2.300 1.200 0 1.600-.7 3-.7s1.800.7 3 .7c1.300 0 2.100-1.100 2.800-2.200.9-1.300 1.300-2.500 1.300-2.600 0 0-2.500-1-2.500-3.800zM14.200 5.900c.6-.8 1.100-1.900.9-3-.9 0-2.100.6-2.700 1.400-.6.700-1.100 1.800-.9 2.900 1 .1 2-.5 2.700-1.300z"/></svg></span><span>${acc.busy ? 'در حال ورود…' : 'ورود با اپل'}</span></button>`);
       ap.disabled = acc.busy || !accountReady();
       ap.addEventListener('click', () => welcomeGoogle('apple'));
       box.appendChild(ap);
