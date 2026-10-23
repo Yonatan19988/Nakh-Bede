@@ -474,7 +474,9 @@ function musicSync(){
     else bgm.a.pause();
   }catch(e){}
 }
-document.addEventListener('pointerdown', () => { if(!bgm.started){ bgm.started = true; musicSync(); } }, { passive: true });
+// load the track at launch so the first tap can start it at once
+try{ bgm.a = new Audio('assets/music/fun.mp3'); bgm.a.loop = true; bgm.a.preload = 'auto'; bgm.a.load(); }catch(e){}
+['pointerdown', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if(!bgm.started){ bgm.started = true; musicSync(); } }, { passive: true }));
 document.addEventListener('visibilitychange', musicSync);
 
 // ---------------- SOUND EFFECTS (Web Audio, no external files) ----------------
