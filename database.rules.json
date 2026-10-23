@@ -259,11 +259,7 @@
         "$other": {
           ".validate": false
         }
-      },
-      ".indexOn": [
-        "createdAt"
-      ],
-      ".read": "auth != null && query.orderByChild === 'createdAt' && query.limitToFirst <= 20 && query.endAt <= now - 86400000"
+      }
     },
     "publicRooms": {
       ".read": "auth != null",

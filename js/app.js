@@ -98,23 +98,31 @@ let online = {
 function srvNow(){ return Date.now() + ((window.FB && window.FB.offset) || 0); }
 function onlineBaseSec(){ return (online.room && online.room.roundSec) || state.roundDuration; }
 
-// ---- housekeeping: nobody deletes old rooms for us, so every phone clears a few now and then ----
-// The rules let anybody read (in small batches) and delete only rooms older than a day and
-// public-list entries older than two hours, so this can never touch a live game.
+// ---- housekeeping: nobody deletes old rooms for us, so every phone clears the ones it knew ----
+// The database has no server-side timer on the free plan and the rules (rightly) don't let anybody
+// list the rooms, so each phone remembers the codes of the rooms it joined and, on a later launch,
+// deletes those that are a day old. The rules allow deleting only a room older than 24 hours (or by
+// its host), so this can never touch a live game. Stale entries of the public list go the same way.
+function rememberSeenRoom(code){
+  const list = (LS.get('seenRooms', []) || []).filter(r => r && r.c !== code);
+  list.push({ c: code, at: srvNow() });
+  LS.set('seenRooms', list.slice(-40));
+}
 function janitor(){
   const F = window.FB;
-  if(!F || !F.uid || !F.endAt || !F.limitToFirst) return;
+  if(!F || !F.uid) return;
   if(srvNow() - (LS.get('janitorAt', 0) || 0) < 6 * 3600 * 1000) return;
   LS.set('janitorAt', srvNow());
-  const clear = (path, field, ttl) => {
-    const q = F.query(F.ref(F.db, path), F.orderByChild(field), F.endAt(srvNow() - ttl - 60000), F.limitToFirst(20));
-    return F.get(q).then(snap => {
-      const jobs = [];
-      snap.forEach(c => { jobs.push(F.remove(F.ref(F.db, path + '/' + c.key)).catch(() => {})); });
-      return Promise.all(jobs);
-    }).catch(() => {});
-  };
-  clear('rooms', 'createdAt', 24 * 3600 * 1000).then(() => clear('publicRooms', 't', 2 * 3600 * 1000));
+  const day = 24 * 3600 * 1000 + 60000;
+  const seen = LS.get('seenRooms', []) || [];
+  const old = seen.filter(r => r && typeof r.c === 'string' && srvNow() - r.at > day && r.c !== online.roomCode);
+  LS.set('seenRooms', seen.filter(r => !old.includes(r)));
+  old.slice(0, 20).forEach(r => { F.remove(F.ref(F.db, 'rooms/' + r.c)).catch(() => {}); });
+  F.get(F.ref(F.db, 'publicRooms')).then(snap => {
+    const v = snap.val() || {};
+    Object.keys(v).filter(k => v[k] && typeof v[k].t === 'number' && srvNow() - v[k].t > 2 * 3600 * 1000).slice(0, 20)
+      .forEach(k => { F.remove(F.ref(F.db, 'publicRooms/' + k)).catch(() => {}); });
+  }).catch(() => {});
 }
 window.addEventListener('fb-ready', () => { setTimeout(janitor, 8000); });
 
@@ -217,6 +225,7 @@ function onlineCreateRoom(playerName, opts){
   }
   return window.FB.set(window.FB.ref(window.FB.db, 'rooms/'+code), roomData).then(() => {
     rememberRoom();
+    rememberSeenRoom(code);
     armPresence();
     subscribeRoom();
     state.screen = 'online-lobby';
@@ -257,6 +266,7 @@ function onlineJoinRoom(code, playerName, restoreTeamId, opts){
     pubJson = null;
     return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: teamId || null, av: myAvatarPayload()}).then(() => {
       rememberRoom();
+      rememberSeenRoom(code);
       armPresence();
       subscribeRoom();
       state.screen = 'online-lobby';
