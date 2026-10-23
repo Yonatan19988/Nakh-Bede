@@ -461,14 +461,16 @@ let state = {
 
 // ---------------- BACKGROUND MUSIC ----------------
 // one looped track; starts after the first tap (browsers block autoplay), pauses when the app is hidden
-const bgm = { a: null, started: false };
+const bgm = { a: null, started: false, ducked: false };
 function musicSync(){
   try{
     if(!bgm.a){
       bgm.a = new Audio('assets/music/fun.mp3');
-      bgm.a.loop = true; bgm.a.volume = 0.22; bgm.a.preload = 'auto';
+      bgm.a.loop = true; bgm.a.preload = 'auto';
     }
-    if(prefs.music && bgm.started && !document.hidden){ const p = bgm.a.play(); if(p && p.catch) p.catch(() => {}); }
+    // menus: normal level; during a round: quiet so the timer and cards stay clear
+    bgm.a.volume = (state.screen === 'board' || state.screen === 'online-board') ? 0.09 : 0.22;
+    if(prefs.music && bgm.started && !document.hidden && !bgm.ducked){ const p = bgm.a.play(); if(p && p.catch) p.catch(() => {}); }
     else bgm.a.pause();
   }catch(e){}
 }
@@ -496,6 +498,18 @@ function sfxCorrect(){ haptic(18); playTone(880,0.14,'sine',0.18); setTimeout(()
 function sfxWrong(){ haptic([28,40,28]); playTone(180,0.25,'sawtooth',0.14); }
 function sfxTick(){ playTone(1000,0.05,'square',0.05); }
 function sfxWin(){ haptic([40,60,40,60,120]); [660,880,990,1320].forEach((f,i)=>setTimeout(()=>playTone(f,0.28,'triangle',0.18), i*140)); }
+function sfxOpen(){ haptic(8); playTone(420,0.07,'sine',0.07); setTimeout(()=>playTone(640,0.1,'sine',0.07),55); }
+function sfxClose(){ playTone(560,0.06,'sine',0.06); setTimeout(()=>playTone(380,0.09,'sine',0.06),50); }
+function sfxSelect(){ haptic(8); playTone(780,0.05,'triangle',0.09); setTimeout(()=>playTone(1040,0.07,'triangle',0.08),45); }
+// the game-won fanfare (own melody, made in code): the background music rests while it plays
+function sfxVictory(){
+  haptic([40,60,40,60,160]);
+  if(prefs.music && bgm.a){ bgm.ducked = true; musicSync(); setTimeout(() => { bgm.ducked = false; musicSync(); }, 5200); }
+  const mel = [[523,0],[659,160],[784,320],[1047,480],[784,800],[1047,960],[1319,1120],[1568,1500],[1319,1900],[1568,2100],[2093,2300]];
+  mel.forEach(([f,t]) => setTimeout(() => playTone(f, t > 2200 ? 0.9 : 0.3, 'triangle', 0.17), t));
+  [[262,0],[330,480],[392,960],[523,1500],[392,1900],[523,2300]].forEach(([f,t]) => setTimeout(() => playTone(f, t > 2200 ? 1.1 : 0.45, 'sine', 0.13), t));
+  for(let i=0;i<14;i++) setTimeout(() => playTone(1800+Math.random()*1800, 0.05, 'sine', 0.05), 2300+i*110);
+}
 function sfxCheer(big){
   haptic(big ? [30,40,30,40,30,40,160] : [30,40,60]);
   const seq = big ? [523,659,784,1047,784,1047,1319] : [659,784,1047];
@@ -629,7 +643,9 @@ function keepInput(inp, key){
 
 function playScreenEntrance(app){
   if(lastRenderedScreen === state.screen) return false;
+  if(lastRenderedScreen !== null && lastRenderedScreen !== undefined && state.screen !== 'board' && state.screen !== 'online-board') sfxOpen();
   lastRenderedScreen = state.screen;
+  musicSync();
   app.classList.remove('screen-in');
   void app.offsetWidth;             // restart the entrance for the new screen
   app.classList.add('screen-in');
@@ -1682,7 +1698,7 @@ function syncStateFromOnlineRoom(){
   state.currentCard = onlineWordAt(curCardIdx, room.wordSeed);
   if(room.winnerTeamId){
     const wt = state.teams.find(t => t.id === room.winnerTeamId);
-    if(wt && !state.winner){ sfxWin(); }
+    if(wt && !state.winner){ sfxVictory(); }
     state.winner = wt || null;
   } else {
     state.winner = null;
@@ -4271,7 +4287,7 @@ function checkWinOrObstacle(){
     state.timerRunning = false;
     state.winner = t;
     recordGameFinished();
-    sfxWin();
+    sfxVictory();
     render();
     return;
   }
@@ -4349,8 +4365,16 @@ try {
 document.addEventListener('pointerdown', (e) => {
   const b = e.target.closest && e.target.closest('button');
   if(!b || b.disabled || b.closest('.play-actions, .foul-row, .wheel-stage')) return;
+  // picking an item (chip, tab, switch, shop/avatar/map/pack tile) sounds different from a plain button
+  if(b.closest('[role=switch], [role=tab], .set-chip, .shop-grid, .pm-panel, .pm-tabs, .map-grid, .pack-grid, .hm-sheet-back, .rp-back') || /chip|tile|swatch|pick|opt|tab|item|choice/.test(b.className || '')){ sfxSelect(); return; }
   sfxTap();
 }, { passive: true });
+// a window (sheet / modal) opening or closing
+let dlgWas = false;
+new MutationObserver(() => {
+  const now = !!document.querySelector('[role=dialog]');
+  if(now !== dlgWas){ dlgWas = now; if(now) sfxOpen(); else sfxClose(); }   // not on every re-render of an open window
+}).observe(document.body, { childList: true, subtree: true });
 document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape' && state.homeSheet){ state.homeSheet = false; render(); }
 });
