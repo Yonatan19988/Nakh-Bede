@@ -1,0 +1,61 @@
+name: Android release (AAB)
+
+# Builds the signed Android App Bundle that is uploaded to Google Play.
+# It needs four repository secrets (Settings -> Secrets and variables -> Actions):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# Run it by hand ("Run workflow"); the .aab file is attached to the run.
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Visible version, e.g. 1.0.0"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Check the signing secrets
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KK: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for v in KS KP KA KK; do
+            if [ -z "${!v}" ]; then echo "::error::A signing secret is missing (see the comment at the top of this file)"; exit 1; fi
+          done
+      - name: Install packages
+        run: npm ci
+      - name: Pack the web app and sync it into the Android project
+        run: |
+          npm run build:www
+          npx cap sync android
+      - name: Build the signed bundle
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ inputs.version_name }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
+          ./gradlew bundleRelease --no-daemon
+          rm -f "$RUNNER_TEMP/upload.jks"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nakh-bede-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
