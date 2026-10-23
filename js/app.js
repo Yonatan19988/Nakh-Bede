@@ -1020,8 +1020,17 @@ async function welcomeGoogle(){
 }
 function renderWelcome(){
   const wrap = el(`<div class="wl"></div>`);
+  const mus = el(`<button type="button" class="wl__music" aria-label="موزیک"></button>`);
+  const paintMus = () => { mus.textContent = prefs.music ? '🔊' : '🔇'; };
+  paintMus();
+  mus.addEventListener('click', () => { prefs.music = !prefs.music; LS.set('music', prefs.music); musicSync(); paintMus(); });
+  wrap.appendChild(mus);
+  wrap.appendChild(el(`<div class="wl__cards" aria-hidden="true">
+    <img class="wl__card wl__card--a" src="assets/card-action.webp" alt="">
+    <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
+    <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
   wrap.appendChild(el(`<div class="wl__logo"><img src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
-  wrap.appendChild(el(`<p class="wl__tag">بازی حدس کلمه‌ی دسته‌جمعی<br>با دوستات، رو به‌رو یا آنلاین</p>`));
+  wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns"></div>`);
   if(!IS_NATIVE){
     const g = el(`<button type="button" class="wl__google"><span class="acc__g">G</span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
@@ -1033,9 +1042,13 @@ function renderWelcome(){
   guest.disabled = acc.busy;
   guest.addEventListener('click', welcomeEnter);
   box.appendChild(guest);
+  const code = el(`<button type="button" class="wl__code">🔑 کد اتاق دارم</button>`);
+  code.disabled = acc.busy;
+  code.addEventListener('click', () => { LS.set('welcomed', true); state.screen = 'home'; state.homeSheet = 'join'; render(); });
+  box.appendChild(code);
   wrap.appendChild(box);
   if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; wrap.appendChild(e); }
-  wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن. بعداً هم می‌تونی از تنظیمات وصلش کنی.'}</small>`));
+  wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
   return wrap;
 }
 
