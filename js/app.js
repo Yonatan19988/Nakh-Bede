@@ -924,8 +924,6 @@ function resumeBanner(){
 }
 
 function homeBanner(){
-  const rb = resumeBanner();
-  if(rb) return rb;
   if(!LS.get('seenTutorial', false)){
     return { kind:'learn', icon:'🎓', text:'اولین بازی‌ته؟ قانون‌ها رو تو یک دقیقه یاد بگیر.', cta:'آموزش',
       go(){ state.screen = 'tutorial'; render(); }, close(){ LS.set('seenTutorial', true); } };
@@ -1119,6 +1117,13 @@ function renderHome(){
       const quick = el(`<button class="hm-btn hm-btn--teal hm-sheet__opt"><span class="hm-btn__gloss"></span>
         <span class="hm-sheet__t">بازی سریع با فارسی‌زبان‌ها</span></button>`);
       quick.addEventListener('click', () => { state.homeSheet = false; openQuick(); });
+      if(hasSavedGame()){
+        // the unfinished local game is offered here, not as a message on the home screen
+        const cont = el(`<button class="hm-btn hm-btn--red hm-sheet__opt"><span class="hm-btn__gloss"></span>
+          <span class="hm-sheet__t">ادامه‌ی بازی قبلی</span></button>`);
+        cont.addEventListener('click', () => { state.homeSheet = false; resumeLocalGame(); });
+        sheet.appendChild(cont);
+      }
       sheet.appendChild(quick); sheet.appendChild(online); sheet.appendChild(local);
     }
     back.appendChild(sheet);
@@ -2355,7 +2360,8 @@ function renderShop(){
 // ---------------- PROFILE EDITOR (avatar builder + banner) ----------------
 let profTab = 'face';
 const PROF_TABS = [['face','چهره'],['hair','مو و ریش'],['acc','عینک و کلاه'],['look','لباس و پس‌زمینه'],['cover','کاور و قاب'],['emoji','شکلک']];
-function buildProfileEditor(){
+// The avatar editor edits a working copy (work.p); the caller stores it only on «ثبت تغییرات».
+function buildAvatarEditor(work){
   const A = NBAvatar;
   const card = el(`<div class="team-card pe">
     <div class="pe-cover"></div>
@@ -2363,23 +2369,17 @@ function buildProfileEditor(){
       <div class="pe-av"></div>
       <div class="prof-coins"><span>🪙</span><b></b><span>سکه</span></div>
     </div>
-    <label class="prof-lbl" for="profName">نام تو</label>
-    <input class="prof-name" id="profName" type="text" maxlength="14" autocomplete="off" placeholder="بازیکن مهمان" />
-    <div class="prof-hint">این نام بالای صفحه‌ی اول نشان داده می‌شود.</div>
     <div class="pe-tabs" role="tablist"></div>
     <div class="pe-panel"></div>
     <div class="pe-acts"><button type="button" class="pe-btn" data-a="rnd">🎲 تصادفی</button><button type="button" class="pe-btn" data-a="rst">بازنشانی چهره</button></div>
   </div>`);
-  const nameIn = card.querySelector('#profName');
-  nameIn.value = loadProfile().name;
-  nameIn.addEventListener('input', () => { const q = loadProfile(); q.name = nameIn.value.trim().slice(0, 14); saveProfile(q); });
 
   const zoom = svg => svg.replace('viewBox="0 0 100 100"', 'viewBox="12 6 76 76"');
   const lockedLabel = (kind, i, p) => { const pr = partPrice(kind, i); return pr && !p.parts.includes(kind + ':' + i) ? pr : 0; };
 
   // buy a locked piece, or just pick an owned one; returns true if the pick went through
   function pick(kind, i){
-    const q = loadProfile(), pr = lockedLabel(kind, i, q);
+    const q = work.p, pr = lockedLabel(kind, i, q);
     if(pr){
       if(q.coins < pr){ toastHome(`برای این گزینه ${faNum(pr - q.coins)} سکه‌ی دیگر لازم داری`); return false; }
       if(!confirm(`این گزینه را با ${pr} سکه می‌خری؟`)) return false;
@@ -2387,11 +2387,11 @@ function buildProfileEditor(){
     } else sfxTap();
     if(kind === 'cover' || kind === 'ring') q[kind] = i; else q.look[kind] = i;
     q.avatar = '';
-    saveProfile(q); return true;
+    return true;
   }
 
   function sw(title, kind, arr, names){
-    const p = loadProfile(), cur = kind === 'ring' ? p.ring : p.look[kind];
+    const p = work.p, cur = kind === 'ring' ? p.ring : p.look[kind];
     const row = el(`<div class="pe-row"><h3></h3><div class="pe-sws"></div></div>`);
     row.querySelector('h3').textContent = title;
     arr.forEach((c, i) => {
@@ -2405,7 +2405,7 @@ function buildProfileEditor(){
     return row;
   }
   function grid(title, kind, list, render){
-    const p = loadProfile(), cur = kind === 'cover' ? p.cover : p.look[kind];
+    const p = work.p, cur = kind === 'cover' ? p.cover : p.look[kind];
     const row = el(`<div class="pe-row"><h3></h3><div class="pe-opts"></div></div>`);
     row.querySelector('h3').textContent = title;
     list.forEach((it, i) => {
@@ -2420,7 +2420,7 @@ function buildProfileEditor(){
   const variant = (p, k, i) => { const l = Object.assign({}, p.look); l[k] = i; return zoom(A.svg(l)); };
 
   function panel(){
-    const p = loadProfile(), box = card.querySelector('.pe-panel');
+    const p = work.p, box = card.querySelector('.pe-panel');
     box.textContent = '';
     if(profTab === 'face'){
       box.appendChild(sw('رنگ پوست', 'skin', A.SKIN));
@@ -2444,20 +2444,20 @@ function buildProfileEditor(){
       const row = el(`<div class="pe-row"><h3>شکلک به جای چهره</h3><div class="prof-avs" role="radiogroup" aria-label="شکلک"></div></div>`);
       const g = row.querySelector('.prof-avs');
       const mine = el(`<button type="button" class="prof-avs__btn ${p.avatar ? '' : 'is-on'}" aria-label="چهره‌ی ساخته‌شده" style="padding:2px">${zoom(A.svg(p.look))}</button>`);
-      mine.addEventListener('click', () => { const q = loadProfile(); q.avatar = ''; saveProfile(q); sfxTap(); refresh(); });
+      mine.addEventListener('click', () => { const q = work.p; q.avatar = ''; sfxTap(); refresh(); });
       g.appendChild(mine);
       const ownedAv = SHOP_ITEMS.filter(i => i.kind === 'avatar' && (i.free || p.owned.includes(i.id))).map(i => i.value);
       [...new Set([...AVATARS, ...ownedAv])].forEach(av => {
         const b = el(`<button type="button" class="prof-avs__btn ${av === p.avatar ? 'is-on' : ''}" aria-label="شکلک"></button>`);
         b.textContent = av;
-        b.addEventListener('click', () => { const q = loadProfile(); q.avatar = av; saveProfile(q); sfxTap(); refresh(); });
+        b.addEventListener('click', () => { const q = work.p; q.avatar = av; sfxTap(); refresh(); });
         g.appendChild(b);
       });
       box.appendChild(row);
     }
   }
   function head(){
-    const p = loadProfile();
+    const p = work.p;
     card.querySelector('.pe-cover').innerHTML = A.cover(p.cover);
     const av = card.querySelector('.pe-av');
     av.innerHTML = avatarMarkup(p); av.style.cssText = frameStyle(p);
@@ -2474,19 +2474,84 @@ function buildProfileEditor(){
   }
   function refresh(){ head(); panel(); }
   card.querySelector('[data-a="rnd"]').addEventListener('click', () => {
-    const q = loadProfile(), r = n => Math.floor(Math.random() * n), L = A.LISTS;
+    const q = work.p, r = n => Math.floor(Math.random() * n), L = A.LISTS;
     // only pieces that are free or already bought
     const free = (kind, n) => { for(let t = 0; t < 12; t++){ const v = r(n); if(!lockedLabel(kind, v, q)) return v; } return 0; };
     Object.keys(A.DEFAULT_LOOK).forEach(k => { q.look[k] = free(k, L[k].length); });
     q.cover = free('cover', L.cover.length); q.avatar = '';
-    saveProfile(q); sfxTap(); refresh();
+    sfxTap(); refresh();
   });
   card.querySelector('[data-a="rst"]').addEventListener('click', () => {
     if(!confirm('چهره به حالت اول برگردد؟ چیزهایی که خریده‌ای می‌ماند.')) return;
-    const q = loadProfile(); q.look = Object.assign({}, A.DEFAULT_LOOK); q.avatar = ''; saveProfile(q); sfxTap(); refresh();
+    const q = work.p; q.look = Object.assign({}, A.DEFAULT_LOOK); q.avatar = ''; sfxTap(); refresh();
   });
   tabs(); refresh();
   return card;
+}
+
+// the player's card: name (saved with the button) and the entrance to the avatar window
+function buildProfileCard(){
+  const A = NBAvatar, p = loadProfile();
+  const card = el(`<div class="team-card pe pe--sum">
+    <div class="pe-cover"></div>
+    <div class="pe-who">
+      <div class="pe-av"></div>
+      <div class="prof-coins"><span>🪙</span><b></b><span>سکه</span></div>
+    </div>
+    <label class="prof-lbl" for="profName">نام تو</label>
+    <input class="prof-name" id="profName" type="text" maxlength="14" autocomplete="off" placeholder="بازیکن مهمان" />
+    <div class="prof-hint">این نام بالای صفحه‌ی اول و برای بقیه‌ی بازیکنان آنلاین نشان داده می‌شود.</div>
+    <div class="prof-err" role="alert" hidden></div>
+    <div class="pe-acts">
+      <button type="button" class="pe-btn" data-a="avatar">🎨 شخصی‌سازی آواتار</button>
+      <button type="button" class="pe-btn pe-btn--save" data-a="save" disabled>ثبت تغییرات</button>
+    </div>
+  </div>`);
+  card.querySelector('.pe-cover').innerHTML = A.cover(p.cover);
+  const av = card.querySelector('.pe-av');
+  av.innerHTML = avatarMarkup(p); av.style.cssText = frameStyle(p);
+  card.querySelector('.prof-coins b').textContent = faNum(p.coins);
+  const nameIn = card.querySelector('#profName'), save = card.querySelector('[data-a="save"]'), err = card.querySelector('.prof-err');
+  let saved = p.name;
+  nameIn.value = saved;
+  nameIn.addEventListener('input', () => { err.hidden = true; save.disabled = nameIn.value.trim().slice(0, 14) === saved; save.textContent = 'ثبت تغییرات'; });
+  save.addEventListener('click', () => {
+    const name = nameIn.value.trim().slice(0, 14);
+    if(NBSafety.bad(name)){ err.textContent = 'این اسم مناسب نیست. یه اسم دیگه بنویس.'; err.hidden = false; return; }
+    const q = loadProfile(); q.name = name; saveProfile(q);
+    saved = name; save.disabled = true; save.textContent = 'ذخیره شد ✓'; sfxWin();
+  });
+  card.querySelector('[data-a="avatar"]').addEventListener('click', openAvatarModal);
+  return card;
+}
+
+// the avatar editor in its own window; changes (and anything bought in it) apply on «ثبت تغییرات»
+function openAvatarModal(){
+  const work = { p: loadProfile() };
+  const before = JSON.stringify(work.p);
+  const back = el(`<div class="pm-back" role="dialog" aria-modal="true" aria-label="شخصی‌سازی آواتار"></div>`);
+  const sheet = el(`<div class="pm">
+    <div class="pm-head"><h2>شخصی‌سازی آواتار</h2><button type="button" class="pm-x" aria-label="بستن">✕</button></div>
+    <div class="pm-body"></div>
+    <div class="pm-foot"><button type="button" class="pm-btn pm-btn--ghost">انصراف</button><button type="button" class="pm-btn pm-btn--save">ثبت تغییرات</button></div>
+  </div>`);
+  sheet.querySelector('.pm-body').appendChild(buildAvatarEditor(work));
+  const close = () => { back.remove(); document.body.classList.remove('pm-open'); };
+  const cancel = () => {
+    if(JSON.stringify(work.p) !== before && !confirm('تغییرات ذخیره نشده از بین می‌رود. بسته شود؟')) return;
+    close();
+  };
+  sheet.querySelector('.pm-x').addEventListener('click', cancel);
+  sheet.querySelector('.pm-btn--ghost').addEventListener('click', cancel);
+  back.addEventListener('click', (e) => { if(e.target === back) cancel(); });
+  sheet.querySelector('.pm-btn--save').addEventListener('click', () => {
+    if(JSON.stringify(work.p) !== before){ saveProfile(work.p); sfxWin(); }
+    close();
+    if(state.screen === 'profile') render();
+  });
+  back.appendChild(sheet);
+  document.body.appendChild(back);
+  document.body.classList.add('pm-open');
 }
 
 // ---------------- PROFILE SCREEN ----------------
@@ -2495,8 +2560,8 @@ function renderProfile(){
   const wrap = el(`<div class="setup-page prof"></div>`);
   wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">پروفایل</div></div>`));
 
-  wrap.appendChild(buildProfileEditor());
   wrap.appendChild(buildAccountCard());
+  wrap.appendChild(buildProfileCard());
 
   const shopBtn = el(`<button class="team-card__add set-learn prof-shopbtn">🛍️ رفتن به فروشگاه</button>`);
   shopBtn.addEventListener('click', () => { state.screen = 'shop'; render(); });
