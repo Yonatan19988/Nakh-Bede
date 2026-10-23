@@ -6,7 +6,7 @@
       "$code": {
         ".validate": "newData.hasChildren(['hostId','createdAt']) && (data.exists() || newData.hasChild('players')) && $code.length <= 5",
         ".read": "auth != null",
-        ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid && newData.child('players').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('hostId').val() === auth.uid && newData.child('players').child(auth.uid).exists()) || (data.exists() && !newData.exists() && (data.child('hostId').val() === auth.uid || data.child('createdAt').val() < now - 86400000)))",
         "createdAt": {
           ".write": "root.child('rooms').child($code).child('players').child(auth.uid).exists() && newData.exists()",
           ".validate": "newData.isNumber()"
@@ -267,7 +267,7 @@
         "t"
       ],
       "$code": {
-        ".write": "auth != null && (root.child('rooms').child($code).child('hostId').val() === auth.uid || (!newData.exists() && data.child('h').val() === auth.uid))",
+        ".write": "auth != null && (root.child('rooms').child($code).child('hostId').val() === auth.uid || (!newData.exists() && (data.child('h').val() === auth.uid || data.child('t').val() < now - 3600000)))",
         ".validate": "newData.hasChildren(['h','n','c','m','t'])",
         "h": {
           ".validate": "newData.val() === auth.uid"

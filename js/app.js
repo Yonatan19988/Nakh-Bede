@@ -98,6 +98,34 @@ let online = {
 function srvNow(){ return Date.now() + ((window.FB && window.FB.offset) || 0); }
 function onlineBaseSec(){ return (online.room && online.room.roundSec) || state.roundDuration; }
 
+// ---- housekeeping: nobody deletes old rooms for us, so every phone clears the ones it knew ----
+// The database has no server-side timer on the free plan and the rules (rightly) don't let anybody
+// list the rooms, so each phone remembers the codes of the rooms it joined and, on a later launch,
+// deletes those that are a day old. The rules allow deleting only a room older than 24 hours (or by
+// its host), so this can never touch a live game. Stale entries of the public list go the same way.
+function rememberSeenRoom(code){
+  const list = (LS.get('seenRooms', []) || []).filter(r => r && r.c !== code);
+  list.push({ c: code, at: srvNow() });
+  LS.set('seenRooms', list.slice(-40));
+}
+function janitor(){
+  const F = window.FB;
+  if(!F || !F.uid) return;
+  if(srvNow() - (LS.get('janitorAt', 0) || 0) < 6 * 3600 * 1000) return;
+  LS.set('janitorAt', srvNow());
+  const day = 24 * 3600 * 1000 + 60000;
+  const seen = LS.get('seenRooms', []) || [];
+  const old = seen.filter(r => r && typeof r.c === 'string' && srvNow() - r.at > day && r.c !== online.roomCode);
+  LS.set('seenRooms', seen.filter(r => !old.includes(r)));
+  old.slice(0, 20).forEach(r => { F.remove(F.ref(F.db, 'rooms/' + r.c)).catch(() => {}); });
+  F.get(F.ref(F.db, 'publicRooms')).then(snap => {
+    const v = snap.val() || {};
+    Object.keys(v).filter(k => v[k] && typeof v[k].t === 'number' && srvNow() - v[k].t > 2 * 3600 * 1000).slice(0, 20)
+      .forEach(k => { F.remove(F.ref(F.db, 'publicRooms/' + k)).catch(() => {}); });
+  }).catch(() => {});
+}
+window.addEventListener('fb-ready', () => { setTimeout(janitor, 8000); });
+
 function genRoomCode(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let s = '';
@@ -197,6 +225,7 @@ function onlineCreateRoom(playerName, opts){
   }
   return window.FB.set(window.FB.ref(window.FB.db, 'rooms/'+code), roomData).then(() => {
     rememberRoom();
+    rememberSeenRoom(code);
     armPresence();
     subscribeRoom();
     state.screen = 'online-lobby';
@@ -237,6 +266,7 @@ function onlineJoinRoom(code, playerName, restoreTeamId, opts){
     pubJson = null;
     return window.FB.update(window.FB.ref(window.FB.db, `rooms/${code}/players/${playerId}`), {name: playerName, teamId: teamId || null, av: myAvatarPayload()}).then(() => {
       rememberRoom();
+      rememberSeenRoom(code);
       armPresence();
       subscribeRoom();
       state.screen = 'online-lobby';
@@ -362,7 +392,11 @@ function onlineLeaveRoom(){
   if(roomUnsub){ roomUnsub(); roomUnsub = null; }
   clearTimeout(autoStartTimer); autoStartTimer = null;
   if(online.isHost && online.room && online.room.public && online.roomCode){ window.FB.remove(pubRef()).catch(() => {}); }
-  if(online.roomCode && online.playerId){
+  // the host leaving an otherwise empty room takes the room with it
+  const alone = online.isHost && online.room && online.room.players && Object.keys(online.room.players).every(id => id === online.playerId);
+  if(alone && online.roomCode){
+    window.FB.remove(window.FB.ref(window.FB.db, `rooms/${online.roomCode}`)).catch(() => {});
+  } else if(online.roomCode && online.playerId){
     window.FB.remove(window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`));
   }
   if(presenceUnsub){ presenceUnsub(); presenceUnsub = null; }
