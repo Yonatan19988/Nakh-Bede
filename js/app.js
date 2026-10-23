@@ -98,6 +98,26 @@ let online = {
 function srvNow(){ return Date.now() + ((window.FB && window.FB.offset) || 0); }
 function onlineBaseSec(){ return (online.room && online.room.roundSec) || state.roundDuration; }
 
+// ---- housekeeping: nobody deletes old rooms for us, so every phone clears a few now and then ----
+// The rules let anybody read (in small batches) and delete only rooms older than a day and
+// public-list entries older than two hours, so this can never touch a live game.
+function janitor(){
+  const F = window.FB;
+  if(!F || !F.uid || !F.endAt || !F.limitToFirst) return;
+  if(srvNow() - (LS.get('janitorAt', 0) || 0) < 6 * 3600 * 1000) return;
+  LS.set('janitorAt', srvNow());
+  const clear = (path, field, ttl) => {
+    const q = F.query(F.ref(F.db, path), F.orderByChild(field), F.endAt(srvNow() - ttl - 60000), F.limitToFirst(20));
+    return F.get(q).then(snap => {
+      const jobs = [];
+      snap.forEach(c => { jobs.push(F.remove(F.ref(F.db, path + '/' + c.key)).catch(() => {})); });
+      return Promise.all(jobs);
+    }).catch(() => {});
+  };
+  clear('rooms', 'createdAt', 24 * 3600 * 1000).then(() => clear('publicRooms', 't', 2 * 3600 * 1000));
+}
+window.addEventListener('fb-ready', () => { setTimeout(janitor, 8000); });
+
 function genRoomCode(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let s = '';
@@ -362,7 +382,11 @@ function onlineLeaveRoom(){
   if(roomUnsub){ roomUnsub(); roomUnsub = null; }
   clearTimeout(autoStartTimer); autoStartTimer = null;
   if(online.isHost && online.room && online.room.public && online.roomCode){ window.FB.remove(pubRef()).catch(() => {}); }
-  if(online.roomCode && online.playerId){
+  // the host leaving an otherwise empty room takes the room with it
+  const alone = online.isHost && online.room && online.room.players && Object.keys(online.room.players).every(id => id === online.playerId);
+  if(alone && online.roomCode){
+    window.FB.remove(window.FB.ref(window.FB.db, `rooms/${online.roomCode}`)).catch(() => {});
+  } else if(online.roomCode && online.playerId){
     window.FB.remove(window.FB.ref(window.FB.db, `rooms/${online.roomCode}/players/${online.playerId}`));
   }
   if(presenceUnsub){ presenceUnsub(); presenceUnsub = null; }
