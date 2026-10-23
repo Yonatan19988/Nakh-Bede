@@ -8,7 +8,7 @@ const LS = {
   set(k, v){ try{ localStorage.setItem('nb_' + k, JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem('nb_' + k); }catch(e){} },
 };
-const prefs = { sound: LS.get('sound', true) !== false, haptic: LS.get('haptic', true) !== false };
+const prefs = { sound: LS.get('sound', true) !== false, music: LS.get('music', true) !== false, haptic: LS.get('haptic', true) !== false };
 
 function PERSIAN_ORNAMENT(size){
   size = size || 20;
@@ -458,6 +458,22 @@ let state = {
   wordSource: WORD_LIST.slice(),   // what the game draws from (the built-in list, or the player's own)
   deck: [],                         // words left in the current shuffle
 };
+
+// ---------------- BACKGROUND MUSIC ----------------
+// one looped track; starts after the first tap (browsers block autoplay), pauses when the app is hidden
+const bgm = { a: null, started: false };
+function musicSync(){
+  try{
+    if(!bgm.a){
+      bgm.a = new Audio('assets/music/fun.mp3');
+      bgm.a.loop = true; bgm.a.volume = 0.22; bgm.a.preload = 'auto';
+    }
+    if(prefs.music && bgm.started && !document.hidden){ const p = bgm.a.play(); if(p && p.catch) p.catch(() => {}); }
+    else bgm.a.pause();
+  }catch(e){}
+}
+document.addEventListener('pointerdown', () => { if(!bgm.started){ bgm.started = true; musicSync(); } }, { passive: true });
+document.addEventListener('visibilitychange', musicSync);
 
 // ---------------- SOUND EFFECTS (Web Audio, no external files) ----------------
 function playTone(freq, duration, type, vol){
@@ -2265,11 +2281,12 @@ function renderSettings(){
   // ---- sound & vibration ----
   const fbCard = el(`<div class="team-card set-card"></div>`);
   fbCard.appendChild(el(`<h2 class="set-card__title">صدا و لرزش</h2>`));
-  [['sound', 'صدای بازی'], ['haptic', 'لرزش']].forEach(([key, label]) => {
+  [['sound', 'صدای بازی'], ['music', 'موسیقی پس‌زمینه'], ['haptic', 'لرزش']].forEach(([key, label]) => {
     const row = el(`<button class="set-switch" role="switch" aria-checked="${prefs[key]}"><span class="set-switch__lbl">${label}</span><span class="set-switch__knob" aria-hidden="true"></span></button>`);
     row.addEventListener('click', () => {
       prefs[key] = !prefs[key];
       LS.set(key, prefs[key]);
+      if(key === 'music') musicSync();
       if(prefs[key]) sfxTap();
       render();
     });
@@ -2281,6 +2298,7 @@ function renderSettings(){
   const aboutCard = el(`<div class="team-card set-card"><h2 class="set-card__title">درباره</h2></div>`);
   const privacyLink = el(`<a class="set-link" href="privacy.html" target="_blank" rel="noopener"><span>سیاست حریم خصوصی</span><span aria-hidden="true">←</span></a>`);
   aboutCard.appendChild(privacyLink);
+  aboutCard.appendChild(el(`<small class="set-hint" dir="ltr" style="text-align:left;">Music: “Fun - Fun Music” by andriih (Pixabay Content License).</small>`));
   wrap.appendChild(aboutCard);
 
   // ---- board quality ----
