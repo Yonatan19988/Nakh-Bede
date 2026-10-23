@@ -127,6 +127,8 @@ function janitor(){
 window.addEventListener('fb-ready', () => { setTimeout(janitor, 8000); });
 
 // the packed app runs on a private address, so shared links must point to the public site
+// Sign in with Apple shows up once it is set up in Firebase (Authentication > Sign-in method > Apple) and this is true
+const APPLE_LOGIN = true;
 const IS_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
 const PUBLIC_URL = 'https://yonatan19988.github.io/Nakh-Bede/';
 function gameLink(){ return IS_NATIVE ? PUBLIC_URL : (location.origin + location.pathname); }
@@ -1012,9 +1014,9 @@ function welcomeEnter(){
   state.screen = 'home';
   render();
 }
-async function welcomeGoogle(){
+async function welcomeGoogle(kind){
   LS.set('welcomed', true);               // set first: signing in to a known account reloads the page
-  await accountSignIn();
+  await accountSignIn(kind);
   if(accountIsGoogle()) welcomeEnter();
   else { LS.set('welcomed', false); render(); }
 }
@@ -1035,8 +1037,14 @@ function renderWelcome(){
   if(!IS_NATIVE){
     const g = el(`<button type="button" class="wl__google"><span class="acc__g">G</span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
     g.disabled = acc.busy || !accountReady();
-    g.addEventListener('click', welcomeGoogle);
+    g.addEventListener('click', () => welcomeGoogle());
     box.appendChild(g);
+    if(APPLE_LOGIN){
+      const ap = el(`<button type="button" class="wl__apple"><span class="wl__ap">\uF8FF</span><span>${acc.busy ? 'در حال ورود…' : 'ورود با اپل'}</span></button>`);
+      ap.disabled = acc.busy || !accountReady();
+      ap.addEventListener('click', () => welcomeGoogle('apple'));
+      box.appendChild(ap);
+    }
   }
   const guest = el(`<button type="button" class="wl__guest"><span>${IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان'}</span></button>`);
   guest.disabled = acc.busy;
