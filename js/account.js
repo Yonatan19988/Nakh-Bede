@@ -73,17 +73,17 @@ function accountErrorText(e){
   if(c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return '';
   if(c === 'auth/popup-blocked') return 'پنجره‌ی ورود باز نشد. اجازه‌ی پنجره‌ی بازشو (popup) را بده و دوباره امتحان کن.';
   if(c === 'auth/unauthorized-domain') return 'این آدرس بازی هنوز در Firebase مجاز نشده است (Authentication ← Settings ← Authorized domains).';
-  if(c === 'auth/operation-not-allowed') return 'ورود با گوگل هنوز در Firebase فعال نشده است.';
+  if(c === 'auth/operation-not-allowed') return 'این روش ورود هنوز در Firebase فعال نشده است.';
   if(c === 'auth/network-request-failed') return 'اتصال به اینترنت برقرار نیست.';
   if(c === 'auth/operation-not-supported-in-this-environment' || c === 'auth/web-storage-unsupported') return 'این مرورگر ورود با گوگل را پشتیبانی نمی‌کند. بازی را در Chrome یا Safari باز کن.';
   return 'ورود انجام نشد. دوباره امتحان کن. (' + (c || 'خطای نامشخص') + ')';
 }
 
-async function accountSignIn(){
+async function accountSignIn(kind){
   if(acc.busy || !accountReady()) return;
   acc.busy = true; acc.err = ''; acc.note = ''; render();
   try{
-    const how = await window.FB.account.google();
+    const how = await (kind === 'apple' ? window.FB.account.apple() : window.FB.account.google());
     await accountSync(how === 'switched');
     acc.note = how === 'linked' ? 'حساب گوگل وصل شد؛ پروفایلت از الان ذخیره‌ی ابری می‌شود.' : 'وارد حساب گوگل شدی.';
     if(how === 'switched'){ location.reload(); return; }
@@ -130,8 +130,14 @@ function buildAccountCard(){
     card.appendChild(el(`<p class="acc__txt">با حساب گوگل وارد شو تا پروفایل، سکه‌ها و خریدهات روی حسابت بمانند و اگر گوشی را عوض کردی یا برنامه را پاک کردی از دست نروند.</p>`));
     const btn = el(`<button type="button" class="acc__google"><span class="acc__g">G</span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
     btn.disabled = acc.busy;
-    btn.addEventListener('click', accountSignIn);
+    btn.addEventListener('click', () => accountSignIn());
     card.appendChild(btn);
+    if(APPLE_LOGIN){
+      const ab = el(`<button type="button" class="acc__google acc__apple"><span class="wl__ap"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 6.9 1.2 9.2.8 1.1 1.700 2.400 2.900 2.300 1.200 0 1.600-.7 3-.7s1.800.7 3 .7c1.300 0 2.100-1.100 2.800-2.200.9-1.300 1.300-2.500 1.300-2.600 0 0-2.500-1-2.500-3.800zM14.200 5.900c.6-.8 1.100-1.900.9-3-.9 0-2.100.6-2.700 1.400-.6.700-1.100 1.800-.9 2.900 1 .1 2-.5 2.700-1.300z"/></svg></span><span>${acc.busy ? 'در حال ورود…' : 'ورود با اپل'}</span></button>`);
+      ab.disabled = acc.busy;
+      ab.addEventListener('click', () => accountSignIn('apple'));
+      card.appendChild(ab);
+    }
   }
   if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; card.appendChild(e); }
   if(acc.note){ const n = el(`<small class="set-hint"></small>`); n.textContent = acc.note; card.appendChild(n); }

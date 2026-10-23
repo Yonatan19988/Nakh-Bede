@@ -1,6 +1,6 @@
 // The Firebase SDK (app, realtime database and anonymous auth only) is bundled in js/firebase-sdk.js,
 // so nothing is loaded from Google's servers except the live connection to the database itself.
-import { initializeApp, getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect, query, orderByChild, limitToLast, getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithCredential, signOut } from "./firebase-sdk.js";
+import { initializeApp, getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect, query, orderByChild, limitToLast, getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, linkWithPopup, signInWithCredential, signOut } from "./firebase-sdk.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDSrLKHeMsY6qD2FZggiBqZY4GNmhdj3q8",
@@ -39,22 +39,26 @@ signInAnonymously(auth).catch((err) => {
 // account, so the uid (rooms, daily scores, saved profile) stays the same. If the Google account was
 // already used on another phone, we switch to it instead ("switched").
 const googleProvider = new GoogleAuthProvider();
+const appleProvider = new OAuthProvider('apple.com');
+appleProvider.addScope('name');
+async function linkOrSwitch(provider, Cls){
+  const cur = auth.currentUser;
+  try{
+    await linkWithPopup(cur, provider);
+    return 'linked';
+  }catch(e){
+    if(e && e.code === 'auth/credential-already-in-use'){
+      const cred = Cls.credentialFromError(e);
+      if(cred){ await signInWithCredential(auth, cred); return 'switched'; }
+    }
+    throw e;
+  }
+}
 window.FB.account = {
   user: () => auth.currentUser,
   isGoogle: () => !!(auth.currentUser && !auth.currentUser.isAnonymous),
   displayName: () => (auth.currentUser && auth.currentUser.displayName) || '',
-  async google(){
-    const cur = auth.currentUser;
-    try{
-      await linkWithPopup(cur, googleProvider);
-      return 'linked';
-    }catch(e){
-      if(e && e.code === 'auth/credential-already-in-use'){
-        const cred = GoogleAuthProvider.credentialFromError(e);
-        if(cred){ await signInWithCredential(auth, cred); return 'switched'; }
-      }
-      throw e;
-    }
-  },
+  google(){ return linkOrSwitch(googleProvider, GoogleAuthProvider); },
+  apple(){ return linkOrSwitch(appleProvider, OAuthProvider); },
   async signOut(){ await signOut(auth); await signInAnonymously(auth); },
 };
