@@ -183,7 +183,7 @@ function dailyShareText(s){
   const grid = s.guesses.map(gs => dailyFeedback(gs, dailyWord()).map(c => emo[c]).join('')).join('\n');
   const st = dailyStreak();
   const head = `نخ بده — کلمه‌ی امروز ${dailyDateText()}\n${s.won ? `${faNum(s.guesses.length)}/${faNum(DAILY_TRIES)}` : `✕/${faNum(DAILY_TRIES)}`}${st.n > 1 ? ` 🔥${faNum(st.n)}` : ''}`;
-  return `${head}\n\n${grid}\n\n${location.origin}${location.pathname}`;
+  return `${head}\n\n${grid}\n\n${gameLink()}`;
 }
 
 // ---- leaderboard (everybody who finished today's word) ----

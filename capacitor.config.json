@@ -1,0 +1,16 @@
+{
+  "appId": "com.yomorgames.nakhbede",
+  "appName": "نخ بده",
+  "webDir": "www",
+  "backgroundColor": "#022638",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#022638"
+  }
+}

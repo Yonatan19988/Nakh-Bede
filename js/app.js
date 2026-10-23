@@ -126,6 +126,11 @@ function janitor(){
 }
 window.addEventListener('fb-ready', () => { setTimeout(janitor, 8000); });
 
+// the packed app runs on a private address, so shared links must point to the public site
+const IS_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+const PUBLIC_URL = 'https://yonatan19988.github.io/Nakh-Bede/';
+function gameLink(){ return IS_NATIVE ? PUBLIC_URL : (location.origin + location.pathname); }
+
 function genRoomCode(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let s = '';
@@ -690,7 +695,7 @@ function renderFriends(){
     <button class="hm-btn hm-btn--teal frn-share"><span class="hm-btn__gloss"></span><span class="hm-out hm-out--teal" data-text="فرستادن لینک بازی">فرستادن لینک بازی</span></button>
   </div>`);
   inv.querySelector('.frn-share').addEventListener('click', () => {
-    const link = location.origin + location.pathname;
+    const link = gameLink();
     const text = 'بیا «نخ بده» بازی کنیم! بازی حدس کلمات گروهی:';
     if(navigator.share){ navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {}); }
     else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text + '\n' + link).then(() => toastHome('لینک کپی شد')).catch(() => {}); }
@@ -947,7 +952,7 @@ const SHOW_BOTTOM_NAV = true;         // the five tabs along the bottom
 
 // share the link of the game (used by the friends row on the home screen)
 function shareGameLink(){
-  const link = location.origin + location.pathname;
+  const link = gameLink();
   const text = 'بیا «نخ بده» بازی کنیم! بازی حدس کلمات گروهی:';
   if(navigator.share){ navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {}); }
   else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text + '\n' + link).then(() => toastHome('لینک کپی شد')).catch(() => {}); }
@@ -1486,7 +1491,7 @@ function renderOnlineLobby(){
   });
   const shareBtn = el(`<button class="lobby-code__copy lobby-code__copy--share">دعوت دوستان</button>`);
   shareBtn.addEventListener('click', () => {
-    const link = location.origin + location.pathname + '?room=' + online.roomCode;
+    const link = gameLink() + '?room=' + online.roomCode;
     const text = `بیا توی اتاق «نخ بده»! کد اتاق: ${online.roomCode}`;
     if(navigator.share){
       navigator.share({ title: 'نخ بده', text, url: link }).catch(() => {});
@@ -1855,7 +1860,7 @@ function buildCallCard(){
   const room = online.room || {};
   const url = safeCallUrl(room.callUrl);
   const card = el(`<div class="team-card lobby-call"><h2 class="set-card__title">تماس صوتی</h2></div>`);
-  const link = location.origin + location.pathname + '?room=' + online.roomCode;
+  const link = gameLink() + '?room=' + online.roomCode;
   const msg = `بیا توی اتاق «نخ بده»! کد اتاق: ${online.roomCode}`;
   if(url){
     const host = new URL(url).hostname.replace(/^www\./, '');

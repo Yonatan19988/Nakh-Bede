@@ -21,7 +21,8 @@
 <div class="wrap" id="app"></div>
 
   <script>
-    if('serviceWorker' in navigator){
+    // the installed app (Capacitor) carries every file itself, so no service worker there
+    if('serviceWorker' in navigator && !window.Capacitor){
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
           .then((reg) => reg.update().catch(() => {})).catch(() => {});
