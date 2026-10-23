@@ -411,7 +411,7 @@ function onlineLeaveRoom(){
 }
 
 let state = {
-  screen: 'home', // home | setup | board | settings
+  screen: LS.get('welcomed', false) ? 'home' : 'welcome', // welcome | home | setup | board | settings
   hasActiveGame: false,
   showAbout: false,
   homeSheet: false,
@@ -577,8 +577,8 @@ function render(){
   const ae = document.activeElement;
   const keepKey = ae && ae.dataset && ae.dataset.keep ? ae.dataset.keep : null;
   const keepSel = keepKey ? [ae.selectionStart, ae.selectionEnd] : null;
-  document.body.classList.toggle('home-mode', state.screen === 'home');
-  document.documentElement.classList.toggle('home-mode', state.screen === 'home');
+  document.body.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome');
+  document.documentElement.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome');
   document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick' || state.screen === 'daily');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
@@ -590,7 +590,9 @@ function render(){
   document.documentElement.classList.toggle('play-mode', playScreen);
   app.innerHTML = '';
   app.appendChild(renderBrand());
-  if(state.screen === 'home'){
+  if(state.screen === 'welcome'){
+    app.appendChild(renderWelcome());
+  } else if(state.screen === 'home'){
     app.appendChild(renderHome());
   } else if(state.screen === 'settings'){
     app.appendChild(renderSettings());
@@ -1002,6 +1004,39 @@ function stepHomeMap(dir){
   LS.set('mapId', m.id); setActiveMap(m.id);
   state.heroDir = dir;
   sfxTap(); render();
+}
+
+// ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
+function welcomeEnter(){
+  LS.set('welcomed', true);
+  state.screen = 'home';
+  render();
+}
+async function welcomeGoogle(){
+  LS.set('welcomed', true);               // set first: signing in to a known account reloads the page
+  await accountSignIn();
+  if(accountIsGoogle()) welcomeEnter();
+  else { LS.set('welcomed', false); render(); }
+}
+function renderWelcome(){
+  const wrap = el(`<div class="wl"></div>`);
+  wrap.appendChild(el(`<div class="wl__logo"><img src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
+  wrap.appendChild(el(`<p class="wl__tag">بازی حدس کلمه‌ی دسته‌جمعی<br>با دوستات، رو به‌رو یا آنلاین</p>`));
+  const box = el(`<div class="wl__btns"></div>`);
+  if(!IS_NATIVE){
+    const g = el(`<button type="button" class="wl__google"><span class="acc__g">G</span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
+    g.disabled = acc.busy || !accountReady();
+    g.addEventListener('click', welcomeGoogle);
+    box.appendChild(g);
+  }
+  const guest = el(`<button type="button" class="wl__guest"><span>${IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان'}</span></button>`);
+  guest.disabled = acc.busy;
+  guest.addEventListener('click', welcomeEnter);
+  box.appendChild(guest);
+  wrap.appendChild(box);
+  if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; wrap.appendChild(e); }
+  wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن. بعداً هم می‌تونی از تنظیمات وصلش کنی.'}</small>`));
+  return wrap;
 }
 
 function renderHome(){
@@ -2763,7 +2798,7 @@ function renderTutorial(){
 
 // Screens you may leave with a visible control. The board is deliberately
 // excluded: a round in progress should not be abandoned by a stray tap.
-const NO_BACK_SCREENS = ['home', 'board', 'online-board'];
+const NO_BACK_SCREENS = ['welcome', 'home', 'board', 'online-board'];
 
 function attachBackButton(app){
   if(NO_BACK_SCREENS.includes(state.screen)) return;
@@ -2828,7 +2863,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily'];
+  const ownHeader = ['welcome','home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -4359,9 +4394,11 @@ try {
   if(q){
     state.joinCode = q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
     state.homeSheet = 'join';
+    if(state.screen === 'welcome') state.screen = 'home';   // an invite link goes straight to joining
     history.replaceState(null, '', location.pathname);
   }
 } catch(e){}
+window.addEventListener('fb-ready', () => { if(state.screen === 'welcome') render(); });
 
 // a soft tick on every button, except the ones that play their own game sound
 document.addEventListener('pointerdown', (e) => {
