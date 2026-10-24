@@ -2764,3 +2764,10 @@ body.pm-open{ overflow:hidden; }
 @keyframes spSh{ 0%{ opacity:1; transform:translateX(-200%) skewX(-20deg); } 100%{ opacity:1; transform:translateX(750%) skewX(-20deg); } }
 .sp--still .sp__base, .sp--still .sp__d{ opacity:1; transform:none; }
 .sp--still .sp__shine{ display:none; }
+
+.sp{ transition:opacity .9s ease-in-out; }
+.sp__lg{ transition:transform .9s cubic-bezier(.4,0,.2,1); }
+.sp.out{ opacity:0; }
+.sp.out .sp__lg{ transform:scale(.62); }
+.wl{ animation:wlFade .7s ease-out both; }
+@keyframes wlFade{ from{ opacity:0; } to{ opacity:1; } }
