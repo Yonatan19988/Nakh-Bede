@@ -1056,8 +1056,8 @@ function renderSplash(){
   const wrap = el(`<div class="sp${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
     <div class="sp__stage"><div class="sp__lg">
       <img class="sp__base" src="assets/logo-base.webp" alt="" decoding="async">
-      <div class="sp__d sp__d--a" style="${pc(487, 1, 132, 99)}"><img src="assets/logo-dot-a.webp" alt=""></div>
-      <div class="sp__d sp__d--b" style="${pc(673, 35, 115, 112)}"><img src="assets/logo-dot-b.webp" alt=""></div>
+      <div class="sp__d sp__d--a" style="${pc(498, 1, 121, 96)}"><img src="assets/logo-dot-a.webp" alt=""></div>
+      <div class="sp__d sp__d--b" style="${pc(673, 35, 115, 101)}"><img src="assets/logo-dot-b.webp" alt=""></div>
       <div class="sp__shbox"><i class="sp__shine"></i></div>
     </div></div></div>`);
   const fit = () => {
