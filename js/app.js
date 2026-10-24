@@ -413,7 +413,7 @@ function onlineLeaveRoom(){
 }
 
 let state = {
-  screen: LS.get('welcomed', false) ? 'home' : 'welcome', // welcome | home | setup | board | settings
+  screen: 'welcome', // welcome | home | setup | board | settings
   hasActiveGame: false,
   showAbout: false,
   homeSheet: false,
@@ -1034,7 +1034,8 @@ function renderWelcome(){
   wrap.appendChild(el(`<div class="wl__logo"><img src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns"></div>`);
-  if(!IS_NATIVE){
+  const signedIn = !IS_NATIVE && accountIsGoogle();
+  if(!IS_NATIVE && !signedIn){
     const g = el(`<button type="button" class="wl__google"><span class="acc__g">G</span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
     g.disabled = acc.busy || !accountReady();
     g.addEventListener('click', () => welcomeGoogle());
@@ -1046,7 +1047,7 @@ function renderWelcome(){
       box.appendChild(ap);
     }
   }
-  const guest = el(`<button type="button" class="wl__guest"><span>${IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان'}</span></button>`);
+  const guest = el(`<button type="button" class="wl__guest"><span>${signedIn ? 'ادامه به‌عنوان ' + ((window.FB.account.displayName() || '').split(' ')[0] || 'حساب گوگل') : (IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان')}</span></button>`);
   guest.disabled = acc.busy;
   guest.addEventListener('click', welcomeEnter);
   box.appendChild(guest);
