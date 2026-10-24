@@ -1039,10 +1039,11 @@ function renderSplash(){
   };
   fit();
   window.addEventListener('resize', fit);
-  wrap.addEventListener('pointerdown', splashDone);
   splashEl = wrap;
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
-  splashTimer = setTimeout(splashDone, reduce ? 900 : 4300);
+  // after the shine the logo zooms out softly while the welcome screen fades in
+  if(!reduce) splashSfx.push(setTimeout(() => wrap.classList.add('out'), 4250));
+  splashTimer = setTimeout(splashDone, reduce ? 900 : 5150);
   if(!reduce){
     // sounds in step with the animation (silent until the browser allows audio, e.g. after a first tap)
     const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
