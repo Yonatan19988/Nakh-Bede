@@ -2742,7 +2742,8 @@ body.pm-open{ overflow:hidden; }
 .acc__apple{ margin-top:8px; box-shadow:none; border:1px solid #444; height:46px; }
 
 /* ---- splash: the dots of ن and خ hop in and land ---- */
-.sp{ position:relative; width:100%; height:100%; min-height:100vh; overflow:hidden; background:radial-gradient(circle at 50% 38%,#0b5b78,#022638 72%); }
+.sp{ position:relative; width:100%; height:100%; min-height:100vh; overflow:hidden; }
+.sp::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 38%,#0b5b78,#022638 72%); transition:opacity .7s ease-in-out; }
 .sp__stage{ position:absolute; left:50%; top:50%; width:390px; height:780px; transform-origin:center; }
 .sp__lg{ position:absolute; left:35px; top:310px; width:320px; height:160.4px; }
 .sp__base{ position:absolute; inset:0; width:100%; height:100%; opacity:0; transform:scale(.7); transform-origin:center; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
@@ -2765,9 +2766,19 @@ body.pm-open{ overflow:hidden; }
 .sp--still .sp__base, .sp--still .sp__d{ opacity:1; transform:none; }
 .sp--still .sp__shine{ display:none; }
 
-.sp{ transition:opacity .9s ease-in-out; }
+/* the splash logo zooms out to the welcome logo's place; the welcome parts appear around it */
 .sp__lg{ transition:transform .9s cubic-bezier(.4,0,.2,1); }
-.sp.out{ opacity:0; }
-.sp.out .sp__lg{ transform:scale(.62); }
-.wl{ animation:wlFade .7s ease-out both; }
+.sp--over{ min-height:0; }
+.sp.out::before{ opacity:0; }
+.wl--hold .wl__logo{ visibility:hidden; }
+.wl--intro .wl__logo{ animation:none; }
+.wl--intro .wl__cards{ animation:wlRise .7s .25s ease-out both; }
+.wl--intro .wl__music{ animation:wlFade .6s .3s ease-out both; }
+.wl--intro .wl__tag{ animation:wlRise .6s .5s ease-out both; }
+.wl--intro .wl__btns{ animation:wlRise .6s .65s ease-out both; }
+.wl--intro .wl__note{ animation:wlFade .6s .85s ease-out both; }
 @keyframes wlFade{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes wlRise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+/* moving the splash into <body> restarts its animations, so the finished pose is set directly */
+.sp--over .sp__base, .sp--over .sp__d, .sp--over .sp__d img{ animation:none!important; opacity:1; transform:none; }
+.sp--over .sp__shbox{ display:none; }

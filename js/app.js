@@ -1021,6 +1021,32 @@ function splashDone(){
   state.screen = 'welcome';
   render();
 }
+let welcomeIntro = false;
+function splashHandoff(){
+  const ov = splashEl;
+  if(state.screen !== 'splash' || !ov || !ov.parentNode){ splashDone(); return; }
+  const r = ov.getBoundingClientRect();
+  Object.assign(ov.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', zIndex: 60 });
+  ov.classList.add('sp--over');
+  document.body.appendChild(ov);            // survives the rebuild of #app
+  splashEl = null;
+  state.screen = 'welcome';
+  welcomeIntro = true;
+  render();
+  const lg = ov.querySelector('.sp__lg');
+  const dst = document.querySelector('.wl__logo img');
+  requestAnimationFrame(() => {
+    const a = lg.getBoundingClientRect(), b = dst ? dst.getBoundingClientRect() : null;
+    if(b && a.width){
+      const k = a.width / 320;                // the stage is scaled, the move is in its units
+      const dx = ((b.left + b.width / 2) - (a.left + a.width / 2)) / k;
+      const dy = ((b.top + b.height / 2) - (a.top + a.height / 2)) / k;
+      lg.style.transform = `translate(${dx}px, ${dy}px) scale(${b.width / a.width})`;
+    }
+    ov.classList.add('out');
+  });
+  setTimeout(() => { ov.remove(); const w = document.querySelector('.wl'); if(w) w.classList.remove('wl--hold'); }, 1000);
+}
 function renderSplash(){
   if(splashEl) return splashEl;
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1041,9 +1067,8 @@ function renderSplash(){
   window.addEventListener('resize', fit);
   splashEl = wrap;
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
-  // after the shine the logo zooms out softly while the welcome screen fades in
-  if(!reduce) splashSfx.push(setTimeout(() => wrap.classList.add('out'), 4250));
-  splashTimer = setTimeout(splashDone, reduce ? 900 : 5150);
+  // after the shine the logo zooms out to its place on the welcome screen, whose parts then appear around it
+  splashTimer = setTimeout(reduce ? splashDone : splashHandoff, reduce ? 900 : 4300);
   if(!reduce){
     // sounds in step with the animation (silent until the browser allows audio, e.g. after a first tap)
     const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
@@ -1070,7 +1095,8 @@ async function welcomeGoogle(kind){
   else { LS.set('welcomed', false); render(); }
 }
 function renderWelcome(){
-  const wrap = el(`<div class="wl"></div>`);
+  const intro = welcomeIntro; welcomeIntro = false;
+  const wrap = el(`<div class="wl${intro ? ' wl--intro wl--hold' : ''}"></div>`);
   const mus = el(`<button type="button" class="wl__music" aria-label="موزیک"></button>`);
   const paintMus = () => { mus.textContent = prefs.music ? '🔊' : '🔇'; };
   paintMus();
