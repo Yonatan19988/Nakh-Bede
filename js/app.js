@@ -128,7 +128,7 @@ window.addEventListener('fb-ready', () => { setTimeout(janitor, 8000); });
 
 // the packed app runs on a private address, so shared links must point to the public site
 // Sign in with Apple shows up once it is set up in Firebase (Authentication > Sign-in method > Apple) and this is true
-const APPLE_LOGIN = false;
+const APPLE_LOGIN = true;
 const IS_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
 const PUBLIC_URL = 'https://yonatan19988.github.io/Nakh-Bede/';
 function gameLink(){ return IS_NATIVE ? PUBLIC_URL : (location.origin + location.pathname); }
