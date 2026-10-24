@@ -413,7 +413,7 @@ function onlineLeaveRoom(){
 }
 
 let state = {
-  screen: 'welcome', // welcome | home | setup | board | settings
+  screen: 'splash', // splash | welcome | home | setup | board | settings
   hasActiveGame: false,
   showAbout: false,
   homeSheet: false,
@@ -579,8 +579,8 @@ function render(){
   const ae = document.activeElement;
   const keepKey = ae && ae.dataset && ae.dataset.keep ? ae.dataset.keep : null;
   const keepSel = keepKey ? [ae.selectionStart, ae.selectionEnd] : null;
-  document.body.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome');
-  document.documentElement.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome');
+  document.body.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'splash');
+  document.documentElement.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'splash');
   document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick' || state.screen === 'daily');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
@@ -592,7 +592,9 @@ function render(){
   document.documentElement.classList.toggle('play-mode', playScreen);
   app.innerHTML = '';
   app.appendChild(renderBrand());
-  if(state.screen === 'welcome'){
+  if(state.screen === 'splash'){
+    app.appendChild(renderSplash());
+  } else if(state.screen === 'welcome'){
     app.appendChild(renderWelcome());
   } else if(state.screen === 'home'){
     app.appendChild(renderHome());
@@ -1006,6 +1008,42 @@ function stepHomeMap(dir){
   LS.set('mapId', m.id); setActiveMap(m.id);
   state.heroDir = dir;
   sfxTap(); render();
+}
+
+// ---------------- SPLASH: the logo is stitched with needle and thread, then the welcome screen opens ----------------
+const SPLASH_PATH = 'M350 340 L40 340 Q10 367 40 394 L350 394 Q380 421 350 448 L40 448';
+let splashEl = null, splashTimer = null;
+function splashDone(){
+  clearTimeout(splashTimer);
+  if(state.screen !== 'splash') return;
+  splashEl = null;
+  state.screen = 'welcome';
+  render();
+}
+function renderSplash(){
+  if(splashEl) return splashEl;
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wrap = el(`<div class="sp${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
+    <div class="sp__stage">
+      <svg viewBox="0 0 390 780" aria-hidden="true">
+        <defs><mask id="spm"><path class="sp__reveal" pathLength="1000" d="${SPLASH_PATH}"/></mask></defs>
+        <path class="sp__thread" mask="url(#spm)" d="${SPLASH_PATH}"/>
+        <g class="sp__logo"><image href="assets/logo.webp" x="35" y="310" width="320" height="160" mask="url(#spm)"/></g>
+        <rect class="sp__shine" x="0" y="310" width="50" height="170"/>
+      </svg>
+      <svg class="sp__needle" viewBox="0 0 90 90" style="offset-path:path('${SPLASH_PATH}')" aria-hidden="true"><g transform="rotate(35 45 45)"><rect x="10" y="42" width="70" height="5" rx="2.5" fill="#E8EEF2"/><ellipse cx="18" cy="44.5" rx="3" ry="1.6" fill="#022638"/><path d="M14 44.5 Q2 52 -4 70" fill="none" stroke="#F4A81E" stroke-width="3" stroke-linecap="round"/></g></svg>
+    </div></div>`);
+  const fit = () => {
+    const k = Math.min(window.innerWidth / 390, window.innerHeight / 780, 1.6);
+    wrap.querySelector('.sp__stage').style.transform = `translate(-50%,-50%) scale(${k})`;
+  };
+  fit();
+  window.addEventListener('resize', fit);
+  wrap.addEventListener('pointerdown', splashDone);
+  splashEl = wrap;
+  requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
+  splashTimer = setTimeout(splashDone, reduce ? 900 : 3900);
+  return wrap;
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
@@ -2820,7 +2858,7 @@ function renderTutorial(){
 
 // Screens you may leave with a visible control. The board is deliberately
 // excluded: a round in progress should not be abandoned by a stray tap.
-const NO_BACK_SCREENS = ['welcome', 'home', 'board', 'online-board'];
+const NO_BACK_SCREENS = ['splash', 'welcome', 'home', 'board', 'online-board'];
 
 function attachBackButton(app){
   if(NO_BACK_SCREENS.includes(state.screen)) return;
@@ -2830,6 +2868,7 @@ function attachBackButton(app){
   app.appendChild(btn);
 }
 function handleAppBack(){
+  if(state.screen === 'splash') return true;
   if(state.homeSheet){ state.homeSheet = false; render(); return true; }
   // a mid-round decision must not be skipped by a stray back press
   if(state.showAbout){ state.showAbout = false; render(); return true; }
@@ -2885,7 +2924,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['welcome','home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily'];
+  const ownHeader = ['splash','welcome','home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -4416,7 +4455,7 @@ try {
   if(q){
     state.joinCode = q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
     state.homeSheet = 'join';
-    if(state.screen === 'welcome') state.screen = 'home';   // an invite link goes straight to joining
+    if(state.screen === 'splash' || state.screen === 'welcome') state.screen = 'home';   // an invite link goes straight to joining
     history.replaceState(null, '', location.pathname);
   }
 } catch(e){}

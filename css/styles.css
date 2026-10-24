@@ -2740,3 +2740,25 @@ body.pm-open{ overflow:hidden; }
 .wl__ap{ display:flex; width:22px; height:22px; }
 .wl__apple:disabled{ opacity:.6; cursor:default; }
 .acc__apple{ margin-top:8px; box-shadow:none; border:1px solid #444; height:46px; }
+
+/* ---- splash: the logo is stitched ---- */
+.sp{ position:relative; width:100%; height:100%; min-height:100vh; overflow:hidden; background:radial-gradient(circle at 50% 38%,#0b5b78,#022638 72%); }
+.sp__stage{ position:absolute; left:50%; top:50%; width:390px; height:780px; transform-origin:center; }
+.sp__stage svg{ position:absolute; inset:0; width:390px; height:780px; overflow:visible; }
+.sp__thread{ fill:none; stroke:#F4A81E; stroke-width:3; stroke-linecap:round; stroke-dasharray:8 7; opacity:0; }
+.sp__reveal{ fill:none; stroke:#fff; stroke-width:66; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:1000; stroke-dashoffset:1000; }
+.sp__needle{ position:absolute!important; left:0; top:0; width:120px!important; height:120px!important; inset:auto!important; margin:-60px 0 0 -60px; offset-distance:0%; offset-rotate:0deg; opacity:0; filter:drop-shadow(0 4px 4px rgba(0,0,0,.55)); }
+.sp__logo{ transform-box:fill-box; transform-origin:center; }
+.sp__shine{ fill:#fff; fill-opacity:.35; opacity:0; }
+.sp.go .sp__thread{ animation:spTh .2s forwards, spTf .5s 2.7s forwards; }
+.sp.go .sp__reveal{ animation:spRv 2.4s .2s linear forwards; }
+.sp.go .sp__needle{ animation:spNd 2.4s .2s linear forwards, spNf .4s 2.6s forwards; }
+.sp.go .sp__logo{ animation:spPop .6s 2.6s cubic-bezier(.2,1.5,.4,1); }
+.sp.go .sp__shine{ animation:spSh .9s 2.7s ease-in-out; }
+@keyframes spTh{ to{ opacity:1; } } @keyframes spTf{ to{ opacity:0; } }
+@keyframes spRv{ to{ stroke-dashoffset:0; } }
+@keyframes spNd{ 0%{ opacity:1; offset-distance:0%; } 100%{ opacity:1; offset-distance:100%; } } @keyframes spNf{ to{ opacity:0; } }
+@keyframes spPop{ 0%{ transform:scale(1); } 50%{ transform:scale(1.08); } 100%{ transform:scale(1); } }
+@keyframes spSh{ 0%{ opacity:1; transform:translateX(-120px) skewX(-20deg); } 100%{ opacity:1; transform:translateX(480px) skewX(-20deg); } }
+.sp--still .sp__reveal{ stroke-dashoffset:0; }
+.sp--still .sp__thread, .sp--still .sp__needle, .sp--still .sp__shine{ display:none; }
