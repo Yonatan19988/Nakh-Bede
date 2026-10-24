@@ -2782,3 +2782,8 @@ body.pm-open{ overflow:hidden; }
 /* moving the splash into <body> restarts its animations, so the finished pose is set directly */
 .sp--over .sp__base, .sp--over .sp__d, .sp--over .sp__d img{ animation:none!important; opacity:1; transform:none; }
 .sp--over .sp__shbox{ display:none; }
+
+.wl__auto{ width:100%; max-width:340px; height:4px; border-radius:3px; background:rgba(255,255,255,.18); overflow:hidden; }
+.wl__auto i{ display:block; height:100%; width:100%; background:var(--yellow); transform-origin:right center; animation:wlAuto 2s linear both; }
+.wl__autotxt{ font-size:12.5px; color:var(--text-dim); }
+@keyframes wlAuto{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }

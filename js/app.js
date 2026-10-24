@@ -1046,7 +1046,7 @@ function splashHandoff(){
     }
     ov.classList.add('out');
   });
-  setTimeout(() => { ov.remove(); const w = document.querySelector('.wl'); if(w) w.classList.remove('wl--hold'); }, 1000);
+  setTimeout(() => { ov.remove(); const w = document.querySelector('.wl'); if(w) w.classList.remove('wl--hold'); if(accountIsGoogle()) render(); }, 1000);
 }
 function renderSplash(){
   if(splashEl) return splashEl;
@@ -1084,7 +1084,15 @@ function renderSplash(){
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
+// a player who is already signed in passes this screen by himself after two seconds
+let welcomeAutoTimer = null, welcomeAutoAt = 0;
+function welcomeAutoStart(){
+  if(welcomeAutoTimer || state.screen !== 'welcome' || !accountIsGoogle()) return;
+  welcomeAutoAt = Date.now() + (document.querySelector('.sp--over') ? 900 : 0);   // the two seconds count from when the screen is in place
+  welcomeAutoTimer = setTimeout(() => { welcomeAutoTimer = null; if(state.screen === 'welcome') welcomeEnter(); }, welcomeAutoAt - Date.now() + 2000);
+}
 function welcomeEnter(){
+  clearTimeout(welcomeAutoTimer); welcomeAutoTimer = null;
   LS.set('welcomed', true);
   state.screen = 'home';
   render();
@@ -1132,6 +1140,12 @@ function renderWelcome(){
   code.addEventListener('click', () => { LS.set('welcomed', true); state.screen = 'home'; state.homeSheet = 'join'; render(); });
   box.appendChild(code);
   wrap.appendChild(box);
+  if(signedIn){
+    welcomeAutoStart();
+    const elapsed = Math.max(0, Date.now() - welcomeAutoAt);
+    wrap.appendChild(el(`<div class="wl__auto" aria-hidden="true"><i style="animation-delay:${-Math.min(elapsed, 2000)}ms"></i></div>`));
+    wrap.appendChild(el(`<small class="wl__autotxt">وارد شدی؛ تا چند لحظه‌ی دیگر خودکار وارد بازی می‌شی</small>`));
+  }
   if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; wrap.appendChild(e); }
   wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
   return wrap;
