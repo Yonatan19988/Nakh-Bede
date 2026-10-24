@@ -21,17 +21,21 @@ onValue(ref(db, '.info/serverTimeOffset'), (snap) => { window.FB.offset = Number
 // the security rules identify players by their auth uid, so nothing goes
 // online until an anonymous identity exists
 onAuthStateChanged(auth, (user) => {
-  if(!user) return;
+  if(!user){
+    // nobody is remembered on this phone yet: start as an anonymous player. (This must not run when a
+    // Google/Apple player is remembered: signInAnonymously would replace that account with a new one.)
+    signInAnonymously(auth).catch((err) => {
+      window.__fbAuthError = (err && (err.code || err.message)) || 'unknown';
+      console.error('Anonymous sign-in failed:', err);
+    });
+    return;
+  }
   window.FB.uid = user.uid;
   window.__fbAuthError = null;
   if(!window.__fbReady){
     window.__fbReady = true;
     window.dispatchEvent(new Event('fb-ready'));
   }
-});
-signInAnonymously(auth).catch((err) => {
-  window.__fbAuthError = (err && (err.code || err.message)) || 'unknown';
-  console.error('Anonymous sign-in failed:', err);
 });
 
 // ---- Google account ----
