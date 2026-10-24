@@ -1010,8 +1010,7 @@ function stepHomeMap(dir){
   sfxTap(); render();
 }
 
-// ---------------- SPLASH: the logo is stitched with needle and thread, then the welcome screen opens ----------------
-const SPLASH_PATH = 'M350 340 L40 340 Q10 367 40 394 L350 394 Q380 421 350 448 L40 448';
+// ---------------- SPLASH: the logo shows, then the dots of ن and خ hop in from the left and land ----------------
 let splashEl = null, splashTimer = null;
 function splashDone(){
   clearTimeout(splashTimer);
@@ -1023,16 +1022,15 @@ function splashDone(){
 function renderSplash(){
   if(splashEl) return splashEl;
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // positions are the pieces' places inside the 820 x 411 logo
+  const pc = (x, y, w, h) => `left:${x / 8.2}%;top:${y / 4.11}%;width:${w / 8.2}%;height:${h / 4.11}%`;
   const wrap = el(`<div class="sp${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
-    <div class="sp__stage">
-      <svg viewBox="0 0 390 780" aria-hidden="true">
-        <defs><mask id="spm"><path class="sp__reveal" pathLength="1000" d="${SPLASH_PATH}"/></mask></defs>
-        <path class="sp__thread" mask="url(#spm)" d="${SPLASH_PATH}"/>
-        <g class="sp__logo"><image href="assets/logo.webp" x="35" y="310" width="320" height="160" mask="url(#spm)"/></g>
-        <rect class="sp__shine" x="0" y="310" width="50" height="170"/>
-      </svg>
-      <svg class="sp__needle" viewBox="0 0 90 90" style="offset-path:path('${SPLASH_PATH}')" aria-hidden="true"><g transform="rotate(35 45 45)"><rect x="10" y="42" width="70" height="5" rx="2.5" fill="#E8EEF2"/><ellipse cx="18" cy="44.5" rx="3" ry="1.6" fill="#022638"/><path d="M14 44.5 Q2 52 -4 70" fill="none" stroke="#F4A81E" stroke-width="3" stroke-linecap="round"/></g></svg>
-    </div></div>`);
+    <div class="sp__stage"><div class="sp__lg">
+      <img class="sp__base" src="assets/logo-base.webp" alt="" decoding="async">
+      <div class="sp__d sp__d--a" style="${pc(487, 1, 132, 99)}"><img src="assets/logo-dot-a.webp" alt=""></div>
+      <div class="sp__d sp__d--b" style="${pc(673, 35, 115, 112)}"><img src="assets/logo-dot-b.webp" alt=""></div>
+      <div class="sp__shbox"><i class="sp__shine"></i></div>
+    </div></div></div>`);
   const fit = () => {
     const k = Math.min(window.innerWidth / 390, window.innerHeight / 780, 1.6);
     wrap.querySelector('.sp__stage').style.transform = `translate(-50%,-50%) scale(${k})`;
@@ -1042,7 +1040,7 @@ function renderSplash(){
   wrap.addEventListener('pointerdown', splashDone);
   splashEl = wrap;
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
-  splashTimer = setTimeout(splashDone, reduce ? 900 : 3900);
+  splashTimer = setTimeout(splashDone, reduce ? 900 : 4300);
   return wrap;
 }
 

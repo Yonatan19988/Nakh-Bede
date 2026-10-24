@@ -1,5 +1,5 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v107';
+const CACHE = 'nakh-bede-v108';
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
 // The board image is fetched by the page itself (it picks the full or the lite size)
@@ -10,7 +10,7 @@ const CORE = [
   './', './index.html',
   './css/styles.css',
   './js/data.js', './js/packs.js', './js/maps.js', './js/avatar.js', './js/wheel.js', './js/mapfx.js', './js/safety.js', './js/dailywords.js', './js/daily.js', './js/account.js', './js/app.js', './js/firebase.js', './js/firebase-sdk.js',
-  './assets/logo.webp',
+  './assets/logo.webp', './assets/logo-base.webp', './assets/logo-dot-a.webp', './assets/logo-dot-b.webp',
   './assets/fonts/vazirmatn-arabic.woff2', './assets/fonts/vazirmatn-latin.woff2',
   './assets/fonts/lalezar-arabic.woff2', './assets/fonts/kufam-arabic.woff2', './assets/fonts/lalezar-latin.woff2',
   './assets/music/fun.mp3', './assets/card-back.webp', './assets/card-word.webp', './assets/card-action.webp',
