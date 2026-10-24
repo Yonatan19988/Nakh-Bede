@@ -2635,8 +2635,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
   cursor:pointer; font-family:inherit; font-size:15px; font-weight:800; color:#202124; background:#fff; box-shadow:0 3px 0 #b9c2c8;
 }
 .acc__google:disabled{ opacity:.6; cursor:default; }
-.acc__g{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff;
-  background:conic-gradient(#EA4335 0 25%, #FBBC05 0 50%, #34A853 0 75%, #4285F4 0); }
+.acc__g{ width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex:none; }
 
 /* ---------------- profile: name card, avatar window ---------------- */
 .pe--sum .pe-acts{ display:flex; gap:10px; margin-top:12px; }
