@@ -1032,6 +1032,7 @@ function splashHandoff(){
   splashEl = null;
   state.screen = 'welcome';
   welcomeIntro = true;
+  lastRenderedScreen = 'welcome';           // no page-entrance animation: it would move the logo while it is measured
   render();
   const lg = ov.querySelector('.sp__lg');
   const dst = document.querySelector('.wl__logo img');
@@ -1106,7 +1107,7 @@ function renderWelcome(){
     <img class="wl__card wl__card--a" src="assets/card-action.webp" alt="">
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
-  wrap.appendChild(el(`<div class="wl__logo"><img src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
+  wrap.appendChild(el(`<div class="wl__logo"><img src="assets/logo.webp" width="820" height="411" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns"></div>`);
   const signedIn = !IS_NATIVE && accountIsGoogle();
@@ -4496,7 +4497,7 @@ try {
     history.replaceState(null, '', location.pathname);
   }
 } catch(e){}
-window.addEventListener('fb-ready', () => { if(state.screen === 'welcome') render(); });
+window.addEventListener('fb-ready', () => { if(state.screen === 'welcome' && !document.querySelector('.sp--over')) render(); });
 
 // a soft tick on every button, except the ones that play their own game sound
 document.addEventListener('pointerdown', (e) => {
