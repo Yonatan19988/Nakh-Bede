@@ -486,6 +486,7 @@ function playTone(freq, duration, type, vol){
   if(!prefs.sound) return;
   try{
     const ctx = window.__audioCtx || (window.__audioCtx = new (window.AudioContext||window.webkitAudioContext)());
+    if(ctx.state === 'suspended' && ctx.resume) ctx.resume();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = type || 'sine';
@@ -1011,9 +1012,10 @@ function stepHomeMap(dir){
 }
 
 // ---------------- SPLASH: the logo shows, then the dots of ن and خ hop in from the left and land ----------------
-let splashEl = null, splashTimer = null;
+let splashEl = null, splashTimer = null, splashSfx = [];
 function splashDone(){
   clearTimeout(splashTimer);
+  splashSfx.forEach(clearTimeout); splashSfx = [];
   if(state.screen !== 'splash') return;
   splashEl = null;
   state.screen = 'welcome';
@@ -1041,6 +1043,16 @@ function renderSplash(){
   splashEl = wrap;
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
   splashTimer = setTimeout(splashDone, reduce ? 900 : 4300);
+  if(!reduce){
+    // sounds in step with the animation (silent until the browser allows audio, e.g. after a first tap)
+    const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
+    at(150, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });             // logo pops in
+    for(let i = 0; i < 5; i++) at(800 + 300 * (i + 1) - 40, () => playTone(330 + i * 45, .09, 'sine', .13));     // hops of the first dot
+    at(2300, () => { playTone(784, .16, 'triangle', .16); playTone(1175, .2, 'sine', .1); });               // it lands
+    for(let i = 0; i < 6; i++) at(1200 + 300 * (i + 1) - 40, () => playTone(300 + i * 50, .09, 'sine', .13));    // hops of the second dot
+    at(3000, () => { playTone(988, .16, 'triangle', .16); playTone(1480, .24, 'sine', .1); });              // it lands
+    [1568, 1976, 2349, 3136].forEach((f, i) => at(3250 + i * 90, () => playTone(f, .18, 'sine', .07)));        // shine
+  }
   return wrap;
 }
 
