@@ -1103,11 +1103,6 @@ async function welcomeGoogle(kind){
   if(accountIsGoogle()) welcomeEnter();
   else { LS.set('welcomed', false); render(); }
 }
-// the player's name in the game, else the first name of the account; empty when neither is known
-function welcomeName(){
-  const n = (loadProfile().name || '').trim() || ((window.FB && window.FB.account && window.FB.account.displayName()) || '').split(' ')[0];
-  return n;
-}
 function renderWelcome(){
   const intro = welcomeIntro; welcomeIntro = false;
   const wrap = el(`<div class="wl${intro ? ' wl--intro wl--hold' : ''}"></div>`);
@@ -1136,7 +1131,15 @@ function renderWelcome(){
       box.appendChild(ap);
     }
   }
-  const guest = el(`<button type="button" class="wl__guest"><span>${signedIn ? (welcomeName() ? 'ادامه به‌عنوان ' + welcomeName() : 'ادامه') : (IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان')}</span></button>`);
+  if(signedIn){
+    // already signed in: nothing to read or press, only a thin bar while the game opens by itself
+    welcomeAutoStart();
+    const elapsed = Math.max(0, Date.now() - welcomeAutoAt);
+    box.appendChild(el(`<div class="wl__auto" aria-hidden="true"><i style="animation-delay:${-Math.min(elapsed, 2000)}ms"></i></div>`));
+    wrap.appendChild(box);
+    return wrap;
+  }
+  const guest = el(`<button type="button" class="wl__guest"><span>${IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان'}</span></button>`);
   guest.disabled = acc.busy;
   guest.addEventListener('click', welcomeEnter);
   box.appendChild(guest);
@@ -1145,12 +1148,6 @@ function renderWelcome(){
   code.addEventListener('click', () => { LS.set('welcomed', true); state.screen = 'home'; state.homeSheet = 'join'; render(); });
   box.appendChild(code);
   wrap.appendChild(box);
-  if(signedIn){
-    welcomeAutoStart();
-    const elapsed = Math.max(0, Date.now() - welcomeAutoAt);
-    wrap.appendChild(el(`<div class="wl__auto" aria-hidden="true"><i style="animation-delay:${-Math.min(elapsed, 2000)}ms"></i></div>`));
-    wrap.appendChild(el(`<small class="wl__autotxt">وارد شدی؛ تا چند لحظه‌ی دیگر خودکار وارد بازی می‌شی</small>`));
-  }
   if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; wrap.appendChild(e); }
   wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
   return wrap;

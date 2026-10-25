@@ -1,5 +1,5 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v118';
+const CACHE = 'nakh-bede-v119';
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
 // The board image is fetched by the page itself (it picks the full or the lite size)
