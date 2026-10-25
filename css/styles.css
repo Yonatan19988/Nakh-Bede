@@ -2807,6 +2807,5 @@ body.pm-open{ overflow:hidden; }
 @media (prefers-reduced-motion:reduce){ .hm2-card, .hm2-card--b{ animation:none; } }
 
 
-.wl--auto .wl__btns > :not(.wl__auto), .wl--auto .wl__note{ visibility:hidden; pointer-events:none; }
 .wl__btns{ position:relative; }
-.wl--auto .wl__auto{ position:absolute; left:0; right:0; top:calc(50% - 2px); max-width:none; }
+.wl--auto .wl__btns{ margin-top:-4px; }

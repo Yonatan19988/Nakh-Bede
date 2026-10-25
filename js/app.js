@@ -1119,7 +1119,7 @@ function renderWelcome(){
   wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns${IS_NATIVE ? '' : ' wl__btns--full'}"></div>`);
   const signedIn = !IS_NATIVE && accountIsGoogle();
-  if(!IS_NATIVE){
+  if(!IS_NATIVE && !signedIn){
     const g = el(`<button type="button" class="wl__google"><span class="acc__g"><svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.300-8.300 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg></span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
     g.disabled = acc.busy || !accountReady();
     g.addEventListener('click', () => welcomeGoogle());
@@ -1131,25 +1131,26 @@ function renderWelcome(){
       box.appendChild(ap);
     }
   }
+  if(!signedIn){
   const guest = el(`<button type="button" class="wl__guest"><span>${IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان'}</span></button>`);
-  guest.disabled = acc.busy;
-  guest.addEventListener('click', welcomeEnter);
-  box.appendChild(guest);
-  const code = el(`<button type="button" class="wl__code">🔑 کد اتاق دارم</button>`);
-  code.disabled = acc.busy;
-  code.addEventListener('click', () => { LS.set('welcomed', true); state.screen = 'home'; state.homeSheet = 'join'; render(); });
-  box.appendChild(code);
+    guest.disabled = acc.busy;
+    guest.addEventListener('click', welcomeEnter);
+    box.appendChild(guest);
+    const code = el(`<button type="button" class="wl__code">🔑 کد اتاق دارم</button>`);
+    code.disabled = acc.busy;
+    code.addEventListener('click', () => { LS.set('welcomed', true); state.screen = 'home'; state.homeSheet = 'join'; render(); });
+    box.appendChild(code);
+  }
   wrap.appendChild(box);
   if(signedIn){
-    // already signed in: nothing to read or press, only a thin bar while the game opens by itself.
-    // The buttons stay in place (hidden) so the logo does not move between the two states.
+    // already signed in: nothing to read or press, only a thin bar right under the tagline while the game opens by itself
     wrap.classList.add('wl--auto');
     welcomeAutoStart();
     const elapsed = Math.max(0, Date.now() - welcomeAutoAt);
     box.appendChild(el(`<div class="wl__auto" aria-hidden="true"><i style="animation-delay:${-Math.min(elapsed, 2000)}ms"></i></div>`));
   }
   if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; wrap.appendChild(e); }
-  wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
+  if(!signedIn) wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
   return wrap;
 }
 
