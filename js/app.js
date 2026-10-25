@@ -1225,29 +1225,29 @@ function renderHome(){
     wrap.appendChild(row);
   }
 
-  // ---- the arena: the board in use, one big play button and three shortcuts ----
+  // ---- the arena: the three game cards, the board in use, one big play button and three shortcuts ----
   const maps = ownedMaps(), cur = curMap();
-  const hero = el(`<div class="hm2-hero"><div class="hm2-hero__img"></div><div class="hm2-hero__shade"></div>
-    <button type="button" class="hm2-nav hm2-nav--l" aria-label="نقشه‌ی بعدی"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></button>
-    <button type="button" class="hm2-nav hm2-nav--r" aria-label="نقشه‌ی قبلی"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 L16 12 L10 18"/></svg></button>
-    <div class="hm2-hero__info"><span class="hm2-hero__name"></span><small class="hm2-hero__blurb"></small><span class="hm2-dots"></span></div></div>`);
-  const img = hero.querySelector('.hm2-hero__img');
-  img.style.backgroundImage = `url("${cur.hero || cur.preview || cur.lite}")`;
-  if(state.heroDir) img.classList.add(state.heroDir > 0 ? 'is-in-l' : 'is-in-r');
-  state.heroDir = 0;
-  hero.querySelector('.hm2-hero__name').textContent = '🗺️ ' + cur.name;
-  hero.querySelector('.hm2-hero__blurb').textContent = cur.blurb || '';
-  const dots = hero.querySelector('.hm2-dots');
-  maps.forEach(m => dots.appendChild(el(`<i class="${m.id === cur.id ? 'is-on' : ''}"></i>`)));
-  hero.querySelector('.hm2-nav--l').addEventListener('click', () => stepHomeMap(1));
-  hero.querySelector('.hm2-nav--r').addEventListener('click', () => stepHomeMap(-1));
-  if(maps.length < 2){ hero.querySelectorAll('.hm2-nav').forEach(n => n.hidden = true); }
-  if(maps.length < MAPS.length){
-    const more = el(`<button type="button" class="hm2-more">نقشه‌های بیشتر ←</button>`);
-    more.addEventListener('click', () => { shopTab = 'map'; state.screen = 'shop'; render(); });
-    hero.appendChild(more);
-  }
+  const hero = el(`<div class="hm2-cards" aria-hidden="true">
+    <img class="hm2-card hm2-card--a" src="assets/card-action.webp" alt="" decoding="async">
+    <img class="hm2-card hm2-card--c" src="assets/card-word.webp" alt="" decoding="async">
+    <img class="hm2-card hm2-card--b" src="assets/card-back.webp" alt="" decoding="async"></div>`);
   wrap.appendChild(hero);
+  // the board in use: a small picker above the play button
+  const picker = el(`<div class="hm2-mapbar">
+    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی بعدی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></button>
+    <span class="hm2-mapbar__name"></span>
+    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی قبلی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 L16 12 L10 18"/></svg></button></div>`);
+  picker.querySelector('.hm2-mapbar__name').textContent = '🗺️ ' + cur.name;
+  const navs = picker.querySelectorAll('.hm2-mapbar__nav');
+  navs[0].addEventListener('click', () => stepHomeMap(1));
+  navs[1].addEventListener('click', () => stepHomeMap(-1));
+  if(maps.length < 2) navs.forEach(n => { n.style.visibility = 'hidden'; });
+  if(maps.length < MAPS.length){
+    const more = el(`<button type="button" class="hm2-mapbar__more">نقشه‌های بیشتر ←</button>`);
+    more.addEventListener('click', () => { shopTab = 'map'; state.screen = 'shop'; render(); });
+    picker.appendChild(more);
+  }
+  wrap.appendChild(picker);
 
   const play = el(`<button class="hm-btn hm-btn--gold hm2-play">
     <span class="hm-btn__gloss"></span>
