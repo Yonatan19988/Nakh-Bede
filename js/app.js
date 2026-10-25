@@ -1103,6 +1103,11 @@ async function welcomeGoogle(kind){
   if(accountIsGoogle()) welcomeEnter();
   else { LS.set('welcomed', false); render(); }
 }
+// the player's name in the game, else the first name of the account; empty when neither is known
+function welcomeName(){
+  const n = (loadProfile().name || '').trim() || ((window.FB && window.FB.account && window.FB.account.displayName()) || '').split(' ')[0];
+  return n;
+}
 function renderWelcome(){
   const intro = welcomeIntro; welcomeIntro = false;
   const wrap = el(`<div class="wl${intro ? ' wl--intro wl--hold' : ''}"></div>`);
@@ -1131,7 +1136,7 @@ function renderWelcome(){
       box.appendChild(ap);
     }
   }
-  const guest = el(`<button type="button" class="wl__guest"><span>${signedIn ? 'ادامه به‌عنوان ' + ((window.FB.account.displayName() || '').split(' ')[0] || 'حساب گوگل') : (IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان')}</span></button>`);
+  const guest = el(`<button type="button" class="wl__guest"><span>${signedIn ? (welcomeName() ? 'ادامه به‌عنوان ' + welcomeName() : 'ادامه') : (IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان')}</span></button>`);
   guest.disabled = acc.busy;
   guest.addEventListener('click', welcomeEnter);
   box.appendChild(guest);
