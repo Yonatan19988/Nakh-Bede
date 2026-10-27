@@ -1234,14 +1234,15 @@ function renderHome(){
     <img class="hm2-card hm2-card--b" src="assets/card-back.webp" alt="" decoding="async"></div>`);
   wrap.appendChild(hero);
   // the board in use: a small picker above the play button
+  // right-to-left: "previous" is on the right (arrow points right), "next" on the left (arrow points left)
   const picker = el(`<div class="hm2-mapbar">
-    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی بعدی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></button>
+    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی قبلی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 L16 12 L10 18"/></svg></button>
     <span class="hm2-mapbar__name"></span>
-    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی قبلی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 L16 12 L10 18"/></svg></button></div>`);
+    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی بعدی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></button></div>`);
   picker.querySelector('.hm2-mapbar__name').textContent = '🗺️ ' + cur.name;
   const navs = picker.querySelectorAll('.hm2-mapbar__nav');
-  navs[0].addEventListener('click', () => stepHomeMap(1));
-  navs[1].addEventListener('click', () => stepHomeMap(-1));
+  navs[0].addEventListener('click', () => stepHomeMap(-1));
+  navs[1].addEventListener('click', () => stepHomeMap(1));
   if(maps.length < 2) navs.forEach(n => { n.style.visibility = 'hidden'; });
   if(maps.length < MAPS.length){
     const more = el(`<button type="button" class="hm2-mapbar__more">نقشه‌های بیشتر ←</button>`);
