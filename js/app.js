@@ -2393,9 +2393,9 @@ function renderOnlineBoard(){
     const correctBtn = el(`<button class="play-act play-act--ok"><span class="play-act__ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg></span><span>درست گفت</span></button>`);
     correctBtn.disabled = !state.timerRunning;
     correctBtn.addEventListener('click', onlineCorrect);
-    actions.appendChild(skipBtn);
-    actions.appendChild(startBtn);
     actions.appendChild(correctBtn);
+    actions.appendChild(startBtn);
+    actions.appendChild(skipBtn);
     wrap.appendChild(actions);
   } else if(isTurnTeam){
     wrap.appendChild(el(`<div class="play-note">🙈 نوبت تیمته؛ فقط توضیح‌دهنده دکمه‌ها رو می‌زنه.</div>`));
@@ -3390,9 +3390,9 @@ function renderBoard(){
   correctBtn.disabled = !state.timerRunning;
   correctBtn.addEventListener('click', onCorrect);
 
-  actions.appendChild(skipBtn);
+  actions.appendChild(correctBtn);      // in a right-to-left screen the first button sits on the right: the most used one, under the thumb
   actions.appendChild(startBtn);
-  actions.appendChild(correctBtn);
+  actions.appendChild(skipBtn);
   wrap.appendChild(buildFoulRow(onFoul, resolveFoul));
   wrap.appendChild(actions);
 
