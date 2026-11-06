@@ -1108,11 +1108,6 @@ async function welcomeGoogle(kind){
 function renderWelcome(){
   const intro = welcomeIntro; welcomeIntro = false;
   const wrap = el(`<div class="wl${intro ? ' wl--intro wl--hold' : ''}"></div>`);
-  const mus = el(`<button type="button" class="wl__music" aria-label="موزیک"></button>`);
-  const paintMus = () => { mus.textContent = prefs.music ? '🔊' : '🔇'; };
-  paintMus();
-  mus.addEventListener('click', () => { prefs.music = !prefs.music; LS.set('music', prefs.music); musicSync(); paintMus(); });
-  wrap.appendChild(mus);
   wrap.appendChild(el(`<div class="wl__cards" aria-hidden="true">
     <img class="wl__card wl__card--a" src="assets/card-action.webp" alt="">
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
