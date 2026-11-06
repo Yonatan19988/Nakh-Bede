@@ -1131,7 +1131,7 @@
     color:#F3D37A; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
   }
   .play-brand{
-    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:30px; line-height:1.1; letter-spacing:.5px;
+    font-family:'Lalezar','Vazirmatn',sans-serif; font-size:30px; line-height:1.1; letter-spacing:normal;
     /* same knitted-yarn look as .setup-brand so the play screen matches the logo */
     background:
       repeating-linear-gradient(118deg, rgba(120,45,0,0) 0 3px, rgba(120,45,0,.28) 3px 4px),
@@ -2809,3 +2809,11 @@ body.pm-open{ overflow:hidden; }
 
 .wl__btns{ position:relative; }
 .wl--auto .wl__btns{ margin-top:-4px; }
+
+/* bigger touch areas for the small text links (the visible size stays the same) */
+.hm2-link, .hm2-mapbar__more{ min-height:44px; padding:0 10px; margin:-12px -10px; display:inline-flex; align-items:center; }
+.wl__note a{ padding:14px 6px; margin:-14px -6px; }
+/* buttons without their own size used the browser default 13.33px */
+button{ font-size:inherit; }
+/* the play screen: weight keeps its meaning, so only the number, the buttons and the active team are heavy */
+.play-status__item, .play-score__vals{ font-weight:500; }
