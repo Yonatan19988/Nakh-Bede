@@ -3007,6 +3007,7 @@ function renderSetup(){
     const head = el(`<div class="team-card__head"></div>`);
     const nameInput = el(`<input class="team-card__name" type="text" value="${team.name}" />`);
     nameInput.addEventListener('input', e => { team.name = e.target.value; syncScoreLabelsOnly(); });
+    nameInput.setAttribute('aria-label', 'نام تیم');
     head.appendChild(nameInput);
     head.appendChild(el(`<span class="team-card__color"><span class="team-card__swatch" style="background:${team.color}"></span><span>رنگ تیم روی نقشه</span></span>`));
     const removeTeamBtn = el(`<button class="team-card__x" title="حذف تیم"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>`);
@@ -3023,6 +3024,7 @@ function renderSetup(){
     team.members.forEach((m, mi) => {
       const cell = el(`<div class="player-cell"></div>`);
       const inp = el(`<input class="player-cell__input" type="text" value="${m}" />`);
+      inp.setAttribute('aria-label', 'نام بازیکن ' + faNum(mi + 1));
       inp.addEventListener('input', e => { team.members[mi] = e.target.value; });
       cell.appendChild(inp);
       if(team.members.length > 2){
@@ -3093,7 +3095,7 @@ function renderSetup(){
   const deckCard = el(`<div class="deck-card">
     <h2 class="deck-card__title">کلمه‌های بازی</h2>
     <p class="deck-card__sub">با پک‌های بالا بازی کلمه‌ی آماده داره. اگه خواستی خودت کلمه‌ها رو جایگزین کنی، اینجا بنویس (هر خط یک کلمه، حداقل ۱۰ تا).</p>
-    <textarea class="deck-card__area" id="deckInput" placeholder="برای جایگزینی، کلمه‌های خودت رو اینجا بنویس..."></textarea>
+    <textarea class="deck-card__area" id="deckInput" aria-label="کلمه‌های دلخواه" placeholder="برای جایگزینی، کلمه‌های خودت رو اینجا بنویس..."></textarea>
     <small class="deck-card__count" id="deckCount" aria-live="polite"></small>
   </div>`);
   const ta = deckCard.querySelector('#deckInput');
@@ -3281,7 +3283,7 @@ function renderBoard(){
   status.appendChild(el(`<div class="play-status__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="#E9B94C"><path d="M12 3 2.5 11h2.3v9h5.1v-5.6h4.2V20h5.1v-9h2.3L12 3Z"/></svg><span>خانه ${faNum(currentTeam().position + 1)} از ${faNum(state.trackLength)}</span></div>`));
   status.appendChild(el(`<span class="play-status__sep"></span>`));
   status.appendChild(el(`<div class="play-status__item play-status__role">${roleLabel}</div>`));
-  const select = el(`<select class="play-status__select"></select>`);
+  const select = el(`<select class="play-status__select" aria-label="دیدن صفحه به‌عنوان کدام بازیکن"></select>`);
   state.teams.forEach((team, ti) => {
     const optGroup = el(`<optgroup label="${team.name}"></optgroup>`);
     team.members.forEach((m, mi) => {
