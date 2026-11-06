@@ -472,7 +472,9 @@ function musicSync(){
     }
     // menus: normal level; during a round: quiet so the timer and cards stay clear
     bgm.a.volume = (state.screen === 'board' || state.screen === 'online-board') ? 0.09 : 0.22;
-    if(prefs.music && bgm.started && !document.hidden && !bgm.ducked){ const p = bgm.a.play(); if(p && p.catch) p.catch(() => {}); }
+    // no music on the splash and the welcome screen: it starts once the player is in the game
+    const inIntro = state.screen === 'splash' || state.screen === 'welcome';
+    if(prefs.music && bgm.started && !document.hidden && !bgm.ducked && !inIntro){ const p = bgm.a.play(); if(p && p.catch) p.catch(() => {}); }
     else bgm.a.pause();
   }catch(e){}
 }
