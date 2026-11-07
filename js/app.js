@@ -1048,18 +1048,21 @@ function splashHandoff(){
     }
     ov.classList.add('out');
   });
-  setTimeout(() => { ov.remove(); const w = document.querySelector('.wl'); if(w) w.classList.remove('wl--hold'); if(accountIsGoogle()) render(); }, 1000);
+  // the splash logo and the welcome logo are different drawings: cross-fade them
+  setTimeout(() => { ov.style.transition = 'opacity .25s ease'; ov.style.opacity = '0'; const w = document.querySelector('.wl'); if(w){ w.classList.remove('wl--hold'); w.classList.add('wl--logo-in'); } }, 850);
+  setTimeout(() => { ov.remove(); if(accountIsGoogle()) render(); }, 1150);
 }
 function renderSplash(){
   if(splashEl) return splashEl;
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // positions are the pieces' places inside the 820 x 411 logo
-  const pc = (x, y, w, h) => `left:${x / 8.2}%;top:${y / 4.11}%;width:${w / 8.2}%;height:${h / 4.11}%`;
+  // positions are the pieces' places inside the 1138 x 590 splash logo
+  const pc = (x, y, w, h) => `left:${x / 11.38}%;top:${y / 5.9}%;width:${w / 11.38}%;height:${h / 5.9}%`;
   const wrap = el(`<div class="sp${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
     <div class="sp__stage"><div class="sp__lg">
-      <img class="sp__base" src="assets/logo-base.webp" alt="" decoding="async">
-      <div class="sp__d sp__d--a" style="${pc(498, 1, 121, 96)}"><img src="assets/logo-dot-a.webp" alt=""></div>
-      <div class="sp__d sp__d--b" style="${pc(673, 35, 115, 101)}"><img src="assets/logo-dot-b.webp" alt=""></div>
+      <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">
+      <div class="sp__d sp__d--a" style="${pc(691, 14, 136, 130)}"><img src="assets/splash-dot-2.webp" alt=""></div>
+      <div class="sp__d sp__d--b" style="${pc(928, 47, 137, 131)}"><img src="assets/splash-dot-1.webp" alt=""></div>
+      <div class="sp__d sp__d--c" style="${pc(392, 427, 124, 130)}"><img src="assets/splash-dot-3.webp" alt=""></div>
       <div class="sp__shbox"><i class="sp__shine"></i></div>
     </div></div></div>`);
   const fit = () => {
@@ -1071,7 +1074,7 @@ function renderSplash(){
   splashEl = wrap;
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
   // after the shine the logo zooms out to its place on the welcome screen, whose parts then appear around it
-  splashTimer = setTimeout(reduce ? splashDone : splashHandoff, reduce ? 900 : 4300);
+  splashTimer = setTimeout(reduce ? splashDone : splashHandoff, reduce ? 900 : 4900);
   if(!reduce){
     // sounds in step with the animation (silent until the browser allows audio, e.g. after a first tap)
     const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
@@ -1080,7 +1083,9 @@ function renderSplash(){
     at(2300, () => { playTone(784, .16, 'triangle', .16); playTone(1175, .2, 'sine', .1); });               // it lands
     for(let i = 0; i < 6; i++) at(1200 + 300 * (i + 1) - 40, () => playTone(300 + i * 50, .09, 'sine', .13));    // hops of the second dot
     at(3000, () => { playTone(988, .16, 'triangle', .16); playTone(1480, .24, 'sine', .1); });              // it lands
-    [1568, 1976, 2349, 3136].forEach((f, i) => at(3250 + i * 90, () => playTone(f, .18, 'sine', .07)));        // shine
+    for(let i = 0; i < 7; i++) at(1600 + 300 * (i + 1) - 40, () => playTone(290 + i * 48, .09, 'sine', .13));    // hops of the third dot
+    at(3700, () => { playTone(880, .16, 'triangle', .16); playTone(1320, .24, 'sine', .1); });              // it lands
+    [1568, 1976, 2349, 3136].forEach((f, i) => at(3850 + i * 90, () => playTone(f, .18, 'sine', .07)));        // shine
   }
   return wrap;
 }
