@@ -2744,20 +2744,23 @@ body.pm-open{ overflow:hidden; }
 .sp{ position:relative; width:100%; height:100%; min-height:100vh; overflow:hidden; }
 .sp::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 38%,#0b5b78,#022638 72%); transition:opacity .7s ease-in-out; }
 .sp__stage{ position:absolute; left:50%; top:50%; width:390px; height:780px; transform-origin:center; }
-.sp__lg{ position:absolute; left:35px; top:310px; width:320px; height:160.4px; }
+.sp__lg{ position:absolute; left:35px; top:310px; width:320px; height:165.9px; }
 .sp__base{ position:absolute; inset:0; width:100%; height:100%; opacity:0; transform:scale(.7); transform-origin:center; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
 .sp__d{ position:absolute; opacity:0; }
 .sp__d img{ position:absolute; inset:0; width:100%; height:100%; display:block; }
-.sp__shbox{ position:absolute; inset:0; overflow:hidden; -webkit-mask:url(../assets/logo.webp) center/100% 100% no-repeat; mask:url(../assets/logo.webp) center/100% 100% no-repeat; pointer-events:none; }
+.sp__shbox{ position:absolute; inset:0; overflow:hidden; -webkit-mask:url(../assets/splash-full.webp) center/100% 100% no-repeat; mask:url(../assets/splash-full.webp) center/100% 100% no-repeat; pointer-events:none; }
 .sp__shine{ position:absolute; top:-6%; left:0; width:15%; height:112%; background:linear-gradient(90deg,#fff0,#ffffffa0,#fff0); transform:translateX(-200%) skewX(-20deg); opacity:0; }
 .sp.go .sp__base{ animation:spIn .6s .1s cubic-bezier(.2,1.4,.4,1) forwards; }
 .sp.go .sp__d--a{ animation:spDx 1.5s .8s linear both, spLand .35s 2.3s forwards; }
 .sp.go .sp__d--a img{ animation:spDy .3s .8s 5 both; }
 .sp.go .sp__d--b{ animation:spDxB 1.8s 1.2s linear both, spLand .35s 3s forwards; }
 .sp.go .sp__d--b img{ animation:spDy .3s 1.2s 6 both; }
-.sp.go .sp__shine{ animation:spSh .9s 3.25s ease-in-out forwards; }
+.sp.go .sp__d--c{ animation:spDxC 2.1s 1.6s linear both, spLand .35s 3.7s forwards; }
+.sp.go .sp__d--c img{ animation:spDy .3s 1.6s 7 both; }
+.sp.go .sp__shine{ animation:spSh .9s 3.85s ease-in-out forwards; }
 @keyframes spIn{ to{ opacity:1; transform:scale(1); } }
 @keyframes spDx{ 0%{ opacity:0; transform:translateX(-300px); } 1%{ opacity:1; } 100%{ opacity:1; transform:translateX(0); } }
+@keyframes spDxC{ 0%{ opacity:0; transform:translateX(-440px); } 1%{ opacity:1; } 100%{ opacity:1; transform:translateX(0); } }
 @keyframes spDxB{ 0%{ opacity:0; transform:translateX(-370px); } 1%{ opacity:1; } 100%{ opacity:1; transform:translateX(0); } }
 @keyframes spDy{ 0%{ transform:translateY(0) scale(1.12,.88); animation-timing-function:cubic-bezier(.2,.7,.4,1); } 12%{ transform:translateY(0) scale(1,1); } 50%{ transform:translateY(-62px) rotate(-8deg); animation-timing-function:cubic-bezier(.6,0,.8,.3); } 100%{ transform:translateY(0) scale(1.12,.88); } }
 @keyframes spLand{ 0%{ transform:scale(1); } 40%{ transform:scale(1.28); } 100%{ transform:scale(1); } }
@@ -2815,3 +2818,5 @@ body.pm-open{ overflow:hidden; }
 button{ font-size:inherit; }
 /* the play screen: weight keeps its meaning, so only the number, the buttons and the active team are heavy */
 .play-status__item, .play-score__vals{ font-weight:500; }
+
+.wl--logo-in .wl__logo{ animation:wlFade .25s ease both; }
