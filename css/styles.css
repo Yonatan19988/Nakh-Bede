@@ -2833,37 +2833,30 @@ button{ font-size:inherit; }
 .sp--still .sp__base{ opacity:1!important; transform:none!important; }
 .sp--still .sp__d{ opacity:1!important; transform:none!important; }
 .sp--still .sp__sw{ transform:none; }
-/* the four animations back to back, each as it was seen on its own: neon (0.2 s), heartbeat (2.3 s), stars (4.7 s), hopping dots (7.3 s) */
-.sp--st-combo{ --shd:9.3s; }
+/* neon flicker-on and the stars at the same time; right after, a heartbeat while the three dots hop in */
+.sp--st-combo{ --shd:4.4s; }
 .sp--st-combo .sp__base{ opacity:0; transform:none; filter:drop-shadow(0 0 16px rgba(255,176,58,.7)) drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
-.sp.sp--st-combo.go .sp__base{ animation:spFlick 1.3s .2s steps(1,end) forwards, spOutB .25s 2s forwards, spBeatIn 1.4s 2.3s ease-out forwards, spOutB .25s 4.4s forwards, spSpinIn 1s 4.7s cubic-bezier(.2,1.4,.4,1) forwards, spBeat3 .4s 8.2s, spBeat3 .4s 8.7s, spBeat3 .4s 9.2s; }
+.sp.sp--st-combo.go .sp__base{ animation:spFlick 1.3s .2s steps(1,end) forwards, spSpinIn 1s .2s cubic-bezier(.2,1.4,.4,1) forwards, spLub .8s 1.5s 4; }
 @keyframes spFlick{ 0%{opacity:0} 8%{opacity:1} 12%{opacity:.1} 20%{opacity:1} 24%{opacity:.2} 30%{opacity:.9} 34%{opacity:.15} 45%,100%{opacity:1} }
-@keyframes spOutB{ 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(.88)} }
-@keyframes spBeatIn{ 0%{opacity:0;transform:scale(.4);filter:blur(8px) drop-shadow(0 10px 14px rgba(0,0,0,.45))} 30%{opacity:1;transform:scale(1.15);filter:blur(0) drop-shadow(0 10px 14px rgba(0,0,0,.45))} 45%{transform:scale(.95)} 60%{transform:scale(1.1)} 75%{transform:scale(.98)} 100%{opacity:1;transform:scale(1);filter:blur(0) drop-shadow(0 10px 14px rgba(0,0,0,.45))} }
-@keyframes spSpinIn{ 0%{opacity:0;transform:scale(0) rotate(-25deg)} 60%{opacity:1;transform:scale(1.15) rotate(6deg)} 100%{opacity:1;transform:scale(1) rotate(0)} }
-@keyframes spBeat3{ 50%{transform:scale(1.04)} }
-/* dots: flicker on, out, pop in, out, pop in, out, then hop in from the left */
-.sp.sp--st-combo.go .sp__d--a{ animation:spFlickD .6s .9s steps(1,end) forwards, spOutD .25s 2s forwards, spPopD .45s 3.4s cubic-bezier(.2,1.8,.4,1) forwards, spOutD .25s 4.4s forwards, spPopD .45s 6s cubic-bezier(.2,1.8,.4,1) forwards, spOutD .25s 7s forwards, spHopA .9s 7.3s linear forwards, spLand .35s 8.2s forwards; }
-.sp.sp--st-combo.go .sp__d--b{ animation:spFlickD .6s 1.05s steps(1,end) forwards, spOutD .25s 2s forwards, spPopD .45s 3.55s cubic-bezier(.2,1.8,.4,1) forwards, spOutD .25s 4.4s forwards, spPopD .45s 6.2s cubic-bezier(.2,1.8,.4,1) forwards, spOutD .25s 7s forwards, spHopB 1.2s 7.5s linear forwards, spLand .35s 8.7s forwards; }
-.sp.sp--st-combo.go .sp__d--c{ animation:spFlickD .6s 1.2s steps(1,end) forwards, spOutD .25s 2s forwards, spPopD .45s 3.7s cubic-bezier(.2,1.8,.4,1) forwards, spOutD .25s 4.4s forwards, spPopD .45s 6.4s cubic-bezier(.2,1.8,.4,1) forwards, spOutD .25s 7s forwards, spHopC 1.5s 7.7s linear forwards, spLand .35s 9.2s forwards; }
-.sp.sp--st-combo.go .sp__d--a img{ animation:spDy .3s 7.3s 3 both; }
-.sp.sp--st-combo.go .sp__d--b img{ animation:spDy .3s 7.5s 4 both; }
-.sp.sp--st-combo.go .sp__d--c img{ animation:spDy .3s 7.7s 5 both; }
-@keyframes spFlickD{ 0%{opacity:0;transform:scale(1)} 15%{opacity:1;transform:scale(1)} 30%{opacity:.1;transform:scale(1)} 50%{opacity:1;transform:scale(1)} 65%{opacity:.3;transform:scale(1)} 100%{opacity:1;transform:scale(1)} }
-@keyframes spOutD{ 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(.6)} }
-@keyframes spPopD{ 0%{opacity:0;transform:scale(0)} 100%{opacity:1;transform:scale(1)} }
+@keyframes spSpinIn{ 0%{transform:scale(0) rotate(-25deg)} 60%{transform:scale(1.15) rotate(6deg)} 100%{transform:scale(1) rotate(0)} }
+@keyframes spLub{ 0%{transform:scale(1)} 18%{transform:scale(1.12)} 32%{transform:scale(.97)} 46%{transform:scale(1.07)} 60%,100%{transform:scale(1)} }
+/* the dots hop in as before, while the heart beats */
+.sp.sp--st-combo.go .sp__d--a{ animation:spHopA 1.5s 1.5s linear both, spLand .35s 3s forwards; }
+.sp.sp--st-combo.go .sp__d--b{ animation:spHopB 1.8s 1.8s linear both, spLand .35s 3.6s forwards; }
+.sp.sp--st-combo.go .sp__d--c{ animation:spHopC 2.1s 2.1s linear both, spLand .35s 4.2s forwards; }
+.sp.sp--st-combo.go .sp__d--a img{ animation:spDy .3s 1.5s 5 both; }
+.sp.sp--st-combo.go .sp__d--b img{ animation:spDy .3s 1.8s 6 both; }
+.sp.sp--st-combo.go .sp__d--c img{ animation:spDy .3s 2.1s 7 both; }
 @keyframes spHopA{ 0%{opacity:0;transform:translateX(-300px)} 1%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
 @keyframes spHopB{ 0%{opacity:0;transform:translateX(-370px)} 1%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
 @keyframes spHopC{ 0%{opacity:0;transform:translateX(-440px)} 1%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
-/* stars (during the third phase) and rings (heartbeat phase and each landing) */
+/* stars twinkle during the flicker and again during the heartbeat; a ring leaves the logo on every beat */
 .sp__star{ width:var(--z); height:var(--z); margin:calc(var(--z) / -2); background:#ffe9a8; clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%); opacity:0; }
-.sp.sp--st-combo.go .sp__star{ animation:spTwinkle .9s calc(var(--d) + 4.5s) ease-out forwards; }
+.sp.sp--st-combo.go .sp__star{ animation:spTwinkle .9s calc(var(--d) - .5s) ease-out forwards, spTwinkle .9s calc(var(--d) + 1.6s) ease-out forwards; }
 @keyframes spTwinkle{ 0%{opacity:0;transform:scale(0) rotate(0)} 40%{opacity:1;transform:scale(1.4) rotate(45deg)} 100%{opacity:0;transform:scale(0) rotate(90deg)} }
 .sp__ring{ left:135px; top:333px; width:120px; height:120px; border-radius:50%; border:3px solid rgba(244,196,67,.8); opacity:0; }
-.sp.sp--st-combo.go .sp__ring--1{ animation:spRing 1.2s 2.8s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--2{ animation:spRing 1.2s 3.1s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--3{ animation:spRing 1.2s 3.4s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--4{ animation:spRing 1.2s 8.2s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--5{ animation:spRing 1.2s 8.7s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--6{ animation:spRing 1.2s 9.2s ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--1{ animation:spRing 1.2s 1.65s ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--2{ animation:spRing 1.2s 2.45s ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--3{ animation:spRing 1.2s 3.25s ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--4{ animation:spRing 1.2s 4.05s ease-out forwards; }
 @keyframes spRing{ 0%{opacity:.9;transform:scale(.4)} 100%{opacity:0;transform:scale(4.2)} }
