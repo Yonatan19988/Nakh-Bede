@@ -2721,7 +2721,7 @@ body.pm-open{ overflow:hidden; }
 .wl__card--b{ left:50%; top:0; transform:translateX(-50%); z-index:2; }
 .wl__card--c{ right:2%; top:12%; height:88%; transform:rotate(14deg); }
 .wl__logo{ width:min(76vw,320px); flex:0 0 auto; animation:wlIn .7s .1s ease-out both; }
-.wl__logo img{ width:100%; height:auto; aspect-ratio:820/411; display:block; filter:drop-shadow(0 12px 22px rgba(0,0,0,.5)); }
+.wl__logo img{ width:100%; height:auto; aspect-ratio:1138/590; display:block; filter:drop-shadow(0 12px 22px rgba(0,0,0,.5)); }
 .wl__tag{ margin:0; font-size:16px; font-weight:800; line-height:1.7; color:var(--text); }
 .wl__tag span{ font-weight:400; font-size:14px; color:var(--text-dim); }
 .wl__btns{ width:100%; max-width:340px; display:flex; flex-direction:column; align-items:center; gap:clamp(8px,1.6vh,12px); margin-top:4px; }
