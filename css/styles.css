@@ -2901,7 +2901,8 @@ button{ font-size:inherit; }
 /* the finished pose, whatever the style (also used for the hand-off and for reduced motion) */
 .sp--over .sp__sw, .sp--over .sp__sw .sp__lg{ animation:none!important; filter:none; }
 .sp--over .sp__sw{ transform:none!important; }
-.sp--over .sp__base{ display:block!important; clip-path:none!important; }
+.sp--over .sp__base{ display:block!important; clip-path:none!important; opacity:1!important; transform:none!important; }
+.sp--over .sp__d{ opacity:1!important; }
 .sp--over .sp__d{ transform:none!important; }
 .sp--over .sp__cards, .sp--over .sp__cf, .sp--over .sp__thread, .sp--over .sp__spark, .sp--over .sp__sl{ display:none!important; }
 .sp--still .sp__sw{ transform:none; }
@@ -3010,3 +3011,16 @@ button{ font-size:inherit; }
 .sp--over .sp__ball, .sp--over .sp__cur, .sp--over .sp__cover, .sp--over .sp__bubble, .sp--over .sp__ring, .sp--over .sp__star,
 .sp--still .sp__ball, .sp--still .sp__cur, .sp--still .sp__cover, .sp--still .sp__bubble, .sp--still .sp__ring, .sp--still .sp__star{ display:none!important; }
 .sp--over .sp__lg{ perspective:none; }
+
+/* combo: neon flicker-on, a heartbeat, hopping dots with a beat and a ring at each landing, twinkling stars */
+.sp--st-combo{ --shd:3.85s; }
+.sp--st-combo .sp__base{ opacity:0; transform:none; filter:drop-shadow(0 0 16px rgba(255,176,58,.7)) drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
+.sp.sp--st-combo.go .sp__base{ animation:spFlick 1s .2s steps(1,end) forwards, spBeat2 .9s 1.2s ease-out, spBeat3 .4s 2.3s, spBeat3 .4s 3s, spBeat3 .4s 3.7s; }
+@keyframes spBeat2{ 0%{transform:scale(1)} 30%{transform:scale(1.1)} 50%{transform:scale(.97)} 70%{transform:scale(1.06)} 100%{transform:scale(1)} }
+@keyframes spBeat3{ 50%{transform:scale(1.04)} }
+.sp.sp--st-combo.go .sp__star{ animation:spTwinkle .9s calc(var(--d) + 1s) ease-out forwards, spTwinkle .9s calc(var(--d) + 2.4s) ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--1{ animation:spRing 1.2s .9s ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--2{ animation:spRing 1.2s 2.3s ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--3{ animation:spRing 1.2s 3s ease-out forwards; }
+.sp.sp--st-combo.go .sp__ring--4{ animation:spRing 1.2s 3.7s ease-out forwards; }
+.sp--over.sp--st-combo .sp__base{ filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); }

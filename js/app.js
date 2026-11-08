@@ -1017,19 +1017,19 @@ function stepHomeMap(dir){
 let splashEl = null, splashTimer = null, splashSfx = [];
 let splashPreviewStyle = null;             // set while the player is previewing a style from Settings
 const SPLASH_STYLES = [
-  ['hop', 'جهش نقطه‌ها'], ['stitch', 'دوختن'], ['drop', 'افتادن نقطه‌ها'], ['swing', 'تاب‌خوردن از نخ'],
+  ['combo', 'ترکیبی (جهش + نئون + ستاره + ضربان)'], ['hop', 'جهش نقطه‌ها'], ['stitch', 'دوختن'], ['drop', 'افتادن نقطه‌ها'], ['swing', 'تاب‌خوردن از نخ'],
   ['cards', 'ترکیدن کارت‌ها'], ['zoom', 'زوم از بافت'], ['wave', 'موج حروف'],
   ['ball', 'غلتیدن گلوله'], ['neon', 'نئون'], ['jelly', 'ژله‌ای'], ['flip', 'چرخش سه‌بعدی'], ['curtain', 'پرده‌ی تئاتر'],
   ['stars', 'ستاره‌باران'], ['rain', 'بارش حروف'], ['spot', 'نورافکن'], ['bubble', 'حباب'], ['pulse', 'ضربان']
 ];
-const SPLASH_MS = { hop: 4900, stitch: 4000, drop: 3800, swing: 4100, cards: 3900, zoom: 4500, wave: 3600,
+const SPLASH_MS = { combo: 4900, hop: 4900, stitch: 4000, drop: 3800, swing: 4100, cards: 3900, zoom: 4500, wave: 3600,
   ball: 4000, neon: 3500, jelly: 3500, flip: 3600, curtain: 3900, stars: 3400, rain: 3900, spot: 4200, bubble: 4000, pulse: 3700 };
 function splashStyle(){
   let id = '';
   try{ id = new URLSearchParams(location.search).get('splash') || ''; }catch(e){}
-  if(!id) id = LS.get('splashStyle', 'hop');
+  if(!id) id = LS.get('splashStyle', 'combo');
   if(id === 'random') id = SPLASH_STYLES[Math.floor(Math.random() * SPLASH_STYLES.length)][0];
-  return SPLASH_MS[id] ? id : 'hop';
+  return SPLASH_MS[id] ? id : 'combo';
 }
 function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; }
 function splashPreview(id){
@@ -1088,7 +1088,10 @@ function renderSplash(){
     ${[['#F4C443', -90, -110], ['#C74A35', 0, -130], ['#0AA6A2', 90, -110], ['#fff', -50, 90], ['#F4C443', 60, 100]].map(([c, x, y]) => `<i class="sp__cf" style="--x:${x}px;--y:${y}px;background:${c}"></i>`).join('')}` : '';
   const thread = style === 'swing' ? `<svg class="sp__thread" width="390" height="780" viewBox="0 0 390 780" aria-hidden="true"><path d="M195 -400 L195 313" stroke="#F4A81E" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round" fill="none"/><circle cx="195" cy="60" r="6" fill="#E8EEF2"/></svg>` : '';
   const spark = style === 'stitch' ? '<i class="sp__spark"></i>' : '';
+  const starHtml = [[40, 330, 30, 1.0], [330, 320, 26, 1.25], [90, 470, 22, 1.5], [300, 480, 34, 1.15], [190, 290, 24, 1.7], [20, 410, 18, 1.9], [360, 410, 20, 2.0], [140, 520, 26, 1.4], [250, 300, 18, 2.2], [210, 530, 22, 1.8]]
+    .map(([x, y, z, d]) => `<i class="sp__star" style="left:${x}px;top:${y}px;--z:${z}px;--d:${d}s"></i>`).join('');
   const stageX = {
+    combo: starHtml + '<i class="sp__ring sp__ring--1"></i><i class="sp__ring sp__ring--2"></i><i class="sp__ring sp__ring--3"></i><i class="sp__ring sp__ring--4"></i>',
     ball: '<i class="sp__ball"></i>',
     curtain: '<i class="sp__cur sp__cur--l"></i><i class="sp__cur sp__cur--r"></i>',
     spot: '<i class="sp__cover"></i>',
@@ -1123,7 +1126,17 @@ function splashSounds(style){
   const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
   const pop = (f) => { playTone(f, .12, 'triangle', .16); playTone(f * 1.5, .16, 'sine', .1); };
   const shine = (ms) => [1568, 1976, 2349, 3136].forEach((f, i) => at(ms + i * 90, () => playTone(f, .18, 'sine', .07)));
-  if(style === 'hop'){
+  if(style === 'combo'){
+    [280, 390, 490, 580, 700, 850].forEach((t, i) => at(t, () => playTone(i % 2 ? 900 : 1400, .04, 'square', .05)));     // neon flicker
+    at(250, () => playTone(120, .8, 'sine', .06));
+    [1200, 1500].forEach(t => { at(t, () => playTone(110, .15, 'sine', .3)); at(t + 40, () => playTone(880, .25, 'sine', .05)); });   // heartbeat
+    for(let i = 0; i < 5; i++) at(800 + 300 * (i + 1) - 40, () => playTone(330 + i * 45, .09, 'sine', .13));            // hops of the first dot
+    for(let i = 0; i < 6; i++) at(1200 + 300 * (i + 1) - 40, () => playTone(300 + i * 50, .09, 'sine', .13));           // second
+    for(let i = 0; i < 7; i++) at(1600 + 300 * (i + 1) - 40, () => playTone(290 + i * 48, .09, 'sine', .13));           // third
+    [2300, 3000, 3700].forEach((t, i) => at(t, () => { playTone(110, .12, 'sine', .25); pop(784 + i * 100); }));      // landings with a soft beat
+    [1900, 2150, 2400, 2700, 3000, 3300, 3600, 3900].forEach((t, i) => at(t, () => playTone(1800 + (i % 4) * 250, .07, 'sine', .06)));  // twinkles
+    shine(3850);
+  } else if(style === 'hop'){
     at(150, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });
     for(let i = 0; i < 5; i++) at(800 + 300 * (i + 1) - 40, () => playTone(330 + i * 45, .09, 'sine', .13));
     at(2300, () => { playTone(784, .16, 'triangle', .16); playTone(1175, .2, 'sine', .1); });
@@ -2588,7 +2601,7 @@ function renderSettings(){
   const spCard = el(`<div class="team-card set-card"></div>`);
   spCard.appendChild(el(`<h2 class="set-card__title">انیمیشن شروع</h2>`));
   const spChips = el(`<div class="set-presets set-presets--wrap"></div>`);
-  const spNow = LS.get('splashStyle', 'hop');
+  const spNow = LS.get('splashStyle', 'combo');
   [...SPLASH_STYLES, ['random', 'تصادفی']].forEach(([id, label]) => {
     const chip = el(`<button class="set-chip ${spNow === id ? 'is-on' : ''}">${label}</button>`);
     chip.addEventListener('click', () => { LS.set('splashStyle', id); splashPreview(id); });
