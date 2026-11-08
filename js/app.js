@@ -1117,7 +1117,7 @@ function renderWelcome(){
     <img class="wl__card wl__card--a" src="assets/card-action.webp" alt="">
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
-  wrap.appendChild(el(`<div class="wl__logo"><img src="assets/logo.webp" width="820" height="411" alt="نخ بده" decoding="async"></div>`));
+  wrap.appendChild(el(`<div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns${IS_NATIVE ? '' : ' wl__btns--full'}"></div>`);
   const signedIn = !IS_NATIVE && accountIsGoogle();
