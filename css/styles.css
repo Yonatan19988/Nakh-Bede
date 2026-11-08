@@ -2757,7 +2757,7 @@ body.pm-open{ overflow:hidden; }
 .sp.go .sp__d--b img{ animation:spDy .3s 1.2s 6 both; }
 .sp.go .sp__d--c{ animation:spDxC 2.1s 1.6s linear both, spLand .35s 3.7s forwards; }
 .sp.go .sp__d--c img{ animation:spDy .3s 1.6s 7 both; }
-.sp.go .sp__shine{ animation:spSh .9s 3.85s ease-in-out forwards; }
+.sp.go .sp__shine{ animation:spSh .9s var(--shd,3.85s) ease-in-out forwards; }
 @keyframes spIn{ to{ opacity:1; transform:scale(1); } }
 @keyframes spDx{ 0%{ opacity:0; transform:translateX(-300px); } 1%{ opacity:1; } 100%{ opacity:1; transform:translateX(0); } }
 @keyframes spDxC{ 0%{ opacity:0; transform:translateX(-440px); } 1%{ opacity:1; } 100%{ opacity:1; transform:translateX(0); } }
@@ -2820,3 +2820,91 @@ button{ font-size:inherit; }
 .play-status__item, .play-score__vals{ font-weight:500; }
 
 .wl--logo-in .wl__logo{ animation:wlFade .25s ease both; }
+
+/* ---- opening animation styles (chosen in Settings) ---- */
+.sp__sw{ position:absolute; inset:0; }
+.set-presets--wrap{ flex-wrap:wrap; }
+.sp:not(.sp--st-hop) .sp__d{ transform:scale(0); }
+@keyframes spPopIn{ to{ opacity:1; transform:scale(1); } }
+@keyframes spBump{ 50%{ transform:scale(1.03,.97); } }
+
+/* stitch: revealed from right to left by a golden spark, then the dots pop in */
+.sp--st-stitch{ --shd:3s; }
+.sp--st-stitch .sp__base{ opacity:1; transform:none; clip-path:inset(0 0 0 100%); }
+.sp.sp--st-stitch.go .sp__base{ animation:spWipe 1.7s .1s ease-in-out forwards; }
+.sp.sp--st-stitch.go .sp__d{ animation:spPopIn .5s cubic-bezier(.2,1.8,.4,1) forwards; }
+.sp.sp--st-stitch.go .sp__d--a{ animation-delay:1.8s; } .sp.sp--st-stitch.go .sp__d--b{ animation-delay:2.1s; } .sp.sp--st-stitch.go .sp__d--c{ animation-delay:2.4s; }
+.sp__spark{ position:absolute; top:48%; left:100%; width:14px; height:14px; margin:-7px; border-radius:50%; background:#fff; box-shadow:0 0 14px 6px #ffe08a; opacity:0; }
+.sp.sp--st-stitch.go .sp__spark{ animation:spSpark 1.7s .1s ease-in-out forwards; }
+@keyframes spWipe{ to{ clip-path:inset(0 0 0 0); } }
+@keyframes spSpark{ 0%{ opacity:1; left:100%; } 88%{ opacity:1; } 100%{ opacity:0; left:0; } }
+
+/* drop: the dots fall like yarn balls and squash the letters */
+.sp--st-drop{ --shd:2.8s; }
+.sp.sp--st-drop.go .sp__base{ animation:spIn .6s .1s cubic-bezier(.2,1.4,.4,1) forwards, spBump .25s 1.1s, spBump .25s 1.6s, spBump .25s 2.1s; }
+.sp.sp--st-drop.go .sp__d{ animation:spFall 1.1s cubic-bezier(.3,0,.8,.6) forwards; }
+.sp.sp--st-drop.go .sp__d--a{ animation-delay:.5s; } .sp.sp--st-drop.go .sp__d--b{ animation-delay:1s; } .sp.sp--st-drop.go .sp__d--c{ animation-delay:1.5s; }
+@keyframes spFall{ 0%{ opacity:1; transform:translateY(-420px) rotate(-90deg); } 55%{ opacity:1; transform:translateY(0) scale(1.15,.82); } 72%{ opacity:1; transform:translateY(-34px) scale(.95,1.06); } 88%{ opacity:1; transform:translateY(0) scale(1.06,.94); } 100%{ opacity:1; transform:none; } }
+
+/* swing: the logo hangs from a thread and swings to rest */
+.sp--st-swing{ --shd:3s; }
+.sp--st-swing .sp__base{ opacity:1; transform:none; }
+.sp--st-swing .sp__d{ opacity:1; transform:none; }
+.sp--st-swing .sp__sw{ transform-origin:195px 60px; transform:translateY(-420px); }
+.sp.sp--st-swing.go .sp__sw{ animation:spSwing 2.8s .2s cubic-bezier(.3,.6,.4,1) forwards; }
+.sp__thread{ position:absolute; left:0; top:0; overflow:visible; }
+.sp.sp--st-swing.go .sp__thread{ animation:spThreadOut .5s 3.3s forwards; }
+@keyframes spSwing{ 0%{ transform:translateY(-420px) rotate(18deg); } 28%{ transform:translateY(0) rotate(-14deg); } 48%{ transform:rotate(9deg); } 66%{ transform:rotate(-5deg); } 82%{ transform:rotate(2.5deg); } 100%{ transform:rotate(0); } }
+@keyframes spThreadOut{ to{ opacity:0; } }
+
+/* cards: three cards fly in, merge and burst into the logo */
+.sp--st-cards{ --shd:2.9s; }
+.sp--st-cards .sp__base{ opacity:0; transform:scale(.3); }
+.sp.sp--st-cards.go .sp__base{ animation:spBurst .7s 1.4s cubic-bezier(.2,1.5,.4,1) forwards; }
+.sp.sp--st-cards.go .sp__d{ animation:spPopIn .4s cubic-bezier(.2,1.8,.4,1) forwards; }
+.sp.sp--st-cards.go .sp__d--a{ animation-delay:2s; } .sp.sp--st-cards.go .sp__d--b{ animation-delay:2.15s; } .sp.sp--st-cards.go .sp__d--c{ animation-delay:2.3s; }
+@keyframes spBurst{ to{ opacity:1; transform:none; } }
+.sp__cards{ position:absolute; inset:0; }
+.sp__cd{ position:absolute; width:96px; top:330px; border-radius:10px; box-shadow:0 10px 16px rgba(0,0,0,.6); opacity:0; }
+.sp__cd--1{ left:62px; } .sp__cd--2{ left:147px; } .sp__cd--3{ left:232px; }
+.sp.sp--st-cards.go .sp__cd--1{ animation:spCf1 1.5s .1s ease-in-out forwards; }
+.sp.sp--st-cards.go .sp__cd--2{ animation:spCf2 1.5s .2s ease-in-out forwards; }
+.sp.sp--st-cards.go .sp__cd--3{ animation:spCf3 1.5s .3s ease-in-out forwards; }
+@keyframes spCf1{ 0%{ opacity:0; transform:translate(-120px,340px) rotate(-120deg); } 35%,70%{ opacity:1; transform:rotate(-14deg) translateY(14px); } 100%{ opacity:0; transform:scale(.2) translate(80px,-20px); } }
+@keyframes spCf2{ 0%{ opacity:0; transform:translate(0,400px) rotate(40deg); } 35%,70%{ opacity:1; transform:translateY(-6px); } 100%{ opacity:0; transform:scale(.2); } }
+@keyframes spCf3{ 0%{ opacity:0; transform:translate(120px,340px) rotate(120deg); } 35%,70%{ opacity:1; transform:rotate(14deg) translateY(14px); } 100%{ opacity:0; transform:scale(.2) translate(-80px,-20px); } }
+.sp__cf{ position:absolute; left:191px; top:390px; width:8px; height:12px; opacity:0; }
+.sp.sp--st-cards.go .sp__cf{ animation:spCfy 1.2s 1.5s ease-out forwards; }
+@keyframes spCfy{ 0%{ opacity:1; transform:translate(0,0); } 100%{ opacity:0; transform:translate(var(--x),var(--y)) rotate(500deg); } }
+
+/* zoom: the camera pulls back from the knitting */
+.sp--st-zoom{ --shd:3.5s; }
+.sp--st-zoom .sp__base{ opacity:1; transform:none; }
+.sp--st-zoom .sp__sw{ transform-origin:233px 373px; transform:scale(11); }
+.sp.sp--st-zoom.go .sp__sw{ animation:spZoom 2.4s .1s cubic-bezier(.5,0,.2,1) forwards; }
+.sp.sp--st-zoom.go .sp__d{ animation:spPopIn .45s cubic-bezier(.2,1.8,.4,1) forwards; }
+.sp.sp--st-zoom.go .sp__d--a{ animation-delay:2.5s; } .sp.sp--st-zoom.go .sp__d--b{ animation-delay:2.7s; } .sp.sp--st-zoom.go .sp__d--c{ animation-delay:2.9s; }
+@keyframes spZoom{ 0%{ transform:scale(11); filter:blur(5px); } 100%{ transform:scale(1); filter:blur(0); } }
+
+/* wave: six slices of the logo bounce in one after another */
+.sp--st-wave{ --shd:2.6s; }
+.sp--st-wave .sp__base{ display:none; }
+.sp__sl{ position:absolute; inset:0; opacity:0; }
+.sp__sl img{ width:100%; height:100%; display:block; }
+.sp.sp--st-wave.go .sp__sl{ animation:spWv .7s cubic-bezier(.2,1.6,.4,1) forwards; }
+.sp.sp--st-wave.go .sp__sl--5{ animation-delay:.1s; } .sp.sp--st-wave.go .sp__sl--4{ animation-delay:.22s; } .sp.sp--st-wave.go .sp__sl--3{ animation-delay:.34s; }
+.sp.sp--st-wave.go .sp__sl--2{ animation-delay:.46s; } .sp.sp--st-wave.go .sp__sl--1{ animation-delay:.58s; } .sp.sp--st-wave.go .sp__sl--0{ animation-delay:.7s; }
+.sp.sp--st-wave.go .sp__d{ animation:spPopIn .45s cubic-bezier(.2,1.8,.4,1) forwards; }
+.sp.sp--st-wave.go .sp__d--a{ animation-delay:1.7s; } .sp.sp--st-wave.go .sp__d--b{ animation-delay:1.9s; } .sp.sp--st-wave.go .sp__d--c{ animation-delay:2.1s; }
+@keyframes spWv{ 0%{ opacity:0; transform:translateY(120px) scaleY(.4); } 70%{ opacity:1; transform:translateY(-14px); } 100%{ opacity:1; transform:none; } }
+
+/* the finished pose, whatever the style (also used for the hand-off and for reduced motion) */
+.sp--over .sp__sw, .sp--over .sp__sw .sp__lg{ animation:none!important; filter:none; }
+.sp--over .sp__sw{ transform:none!important; }
+.sp--over .sp__base{ display:block!important; clip-path:none!important; }
+.sp--over .sp__d{ transform:none!important; }
+.sp--over .sp__cards, .sp--over .sp__cf, .sp--over .sp__thread, .sp--over .sp__spark, .sp--over .sp__sl{ display:none!important; }
+.sp--still .sp__sw{ transform:none; }
+.sp--still .sp__base{ display:block!important; clip-path:none!important; opacity:1!important; transform:none!important; }
+.sp--still .sp__d{ opacity:1!important; transform:none!important; }
+.sp--still .sp__cards, .sp--still .sp__cf, .sp--still .sp__thread, .sp--still .sp__spark, .sp--still .sp__sl{ display:none!important; }
