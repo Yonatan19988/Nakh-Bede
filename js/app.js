@@ -1015,7 +1015,7 @@ function stepHomeMap(dir){
 
 // ---------------- SPLASH: the logo shows, then the dots of ن and خ hop in from the left and land ----------------
 let splashEl = null, splashTimer = null, splashSfx = [];
-const SPLASH_MS = 4900;
+const SPLASH_MS = 10500;
 function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; }
 function splashDone(){
   splashStop();
@@ -1060,7 +1060,7 @@ function renderSplash(){
   const pc = (x, y, w, h) => `left:${x / 11.38}%;top:${y / 5.9}%;width:${w / 11.38}%;height:${h / 5.9}%`;
   const stars = [[40, 330, 30, 1.0], [330, 320, 26, 1.25], [90, 470, 22, 1.5], [300, 480, 34, 1.15], [190, 290, 24, 1.7], [20, 410, 18, 1.9], [360, 410, 20, 2.0], [140, 520, 26, 1.4], [250, 300, 18, 2.2], [210, 530, 22, 1.8]]
     .map(([x, y, z, d]) => `<i class="sp__star" style="left:${x}px;top:${y}px;--z:${z}px;--d:${d}s"></i>`).join('');
-  const rings = [1, 2, 3, 4].map(i => `<i class="sp__ring sp__ring--${i}"></i>`).join('');
+  const rings = [1, 2, 3, 4, 5, 6].map(i => `<i class="sp__ring sp__ring--${i}"></i>`).join('');
   const wrap = el(`<div class="sp sp--st-combo${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
     <div class="sp__stage">${stars}${rings}<div class="sp__sw"><div class="sp__lg">
       <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">
@@ -1086,15 +1086,26 @@ function renderSplash(){
 function splashSounds(){
   const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
   const pop = (f) => { playTone(f, .12, 'triangle', .16); playTone(f * 1.5, .16, 'sine', .1); };
-  [280, 390, 490, 580, 700, 850].forEach((t, i) => at(t, () => playTone(i % 2 ? 900 : 1400, .04, 'square', .05)));     // neon flicker
+  const whoosh = (ms) => [0, 1, 2, 3].forEach(i => at(ms + i * 50, () => playTone(520 - i * 70, .09, 'sine', .07)));
+  // 1 neon
+  [280, 390, 490, 580, 700, 850].forEach((t, i) => at(t, () => playTone(i % 2 ? 900 : 1400, .04, 'square', .05)));
   at(250, () => playTone(120, .8, 'sine', .06));
-  [1200, 1500].forEach(t => { at(t, () => playTone(110, .15, 'sine', .3)); at(t + 40, () => playTone(880, .25, 'sine', .05)); });   // heartbeat
-  for(let i = 0; i < 5; i++) at(800 + 300 * (i + 1) - 40, () => playTone(330 + i * 45, .09, 'sine', .13));            // hops of the first dot
-  for(let i = 0; i < 6; i++) at(1200 + 300 * (i + 1) - 40, () => playTone(300 + i * 50, .09, 'sine', .13));           // second
-  for(let i = 0; i < 7; i++) at(1600 + 300 * (i + 1) - 40, () => playTone(290 + i * 48, .09, 'sine', .13));           // third
-  [2300, 3000, 3700].forEach((t, i) => at(t, () => { playTone(110, .12, 'sine', .25); pop(784 + i * 100); }));      // landings with a soft beat
-  [1900, 2150, 2400, 2700, 3000, 3300, 3600, 3900].forEach((t, i) => at(t, () => playTone(1800 + (i % 4) * 250, .07, 'sine', .06)));  // twinkles
-  [1568, 1976, 2349, 3136].forEach((f, i) => at(3850 + i * 90, () => playTone(f, .18, 'sine', .07)));                  // shine
+  [1100, 1250, 1400].forEach((t, i) => at(t, () => playTone(1100 + i * 200, .05, 'square', .05)));
+  whoosh(2000);
+  // 2 heartbeat
+  [2800, 3100].forEach(t => { at(t, () => playTone(110, .15, 'sine', .3)); at(t + 40, () => playTone(880, .25, 'sine', .05)); });
+  at(3400, () => playTone(110, .15, 'sine', .3));
+  [3400, 3550, 3700].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
+  whoosh(4400);
+  // 3 stars
+  at(4700, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });
+  [5500, 5750, 5900, 6000, 6200, 6300, 6400, 6500, 6650, 6750].forEach((t, i) => at(t, () => playTone(1800 + (i % 4) * 250, .07, 'sine', .07)));
+  [6000, 6200, 6400].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
+  whoosh(7000);
+  // 4 hopping dots
+  [[7300, 3, 330, 45], [7500, 4, 300, 50], [7700, 5, 290, 48]].forEach(([t0, n, f0, df]) => { for(let i = 0; i < n; i++) at(t0 + 300 * (i + 1) - 40, () => playTone(f0 + i * df, .09, 'sine', .13)); });
+  [8200, 8700, 9200].forEach((t, i) => at(t, () => { playTone(110, .12, 'sine', .25); pop(784 + i * 100); }));
+  [1568, 1976, 2349, 3136].forEach((f, i) => at(9300 + i * 90, () => playTone(f, .18, 'sine', .07)));
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
