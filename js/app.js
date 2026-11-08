@@ -1015,37 +1015,13 @@ function stepHomeMap(dir){
 
 // ---------------- SPLASH: the logo shows, then the dots of ن and خ hop in from the left and land ----------------
 let splashEl = null, splashTimer = null, splashSfx = [];
-let splashPreviewStyle = null;             // set while the player is previewing a style from Settings
-const SPLASH_STYLES = [
-  ['combo', 'ترکیبی (جهش + نئون + ستاره + ضربان)'], ['hop', 'جهش نقطه‌ها'], ['stitch', 'دوختن'], ['drop', 'افتادن نقطه‌ها'], ['swing', 'تاب‌خوردن از نخ'],
-  ['cards', 'ترکیدن کارت‌ها'], ['zoom', 'زوم از بافت'], ['wave', 'موج حروف'],
-  ['ball', 'غلتیدن گلوله'], ['neon', 'نئون'], ['jelly', 'ژله‌ای'], ['flip', 'چرخش سه‌بعدی'], ['curtain', 'پرده‌ی تئاتر'],
-  ['stars', 'ستاره‌باران'], ['rain', 'بارش حروف'], ['spot', 'نورافکن'], ['bubble', 'حباب'], ['pulse', 'ضربان']
-];
-const SPLASH_MS = { combo: 4900, hop: 4900, stitch: 4000, drop: 3800, swing: 4100, cards: 3900, zoom: 4500, wave: 3600,
-  ball: 4000, neon: 3500, jelly: 3500, flip: 3600, curtain: 3900, stars: 3400, rain: 3900, spot: 4200, bubble: 4000, pulse: 3700 };
-function splashStyle(){
-  let id = '';
-  try{ id = new URLSearchParams(location.search).get('splash') || ''; }catch(e){}
-  if(!id) id = LS.get('splashStyle', 'combo');
-  if(id === 'random') id = SPLASH_STYLES[Math.floor(Math.random() * SPLASH_STYLES.length)][0];
-  return SPLASH_MS[id] ? id : 'combo';
-}
+const SPLASH_MS = 4900;
 function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; }
-function splashPreview(id){
-  splashStop();
-  splashEl = null;
-  if(id === 'random') id = SPLASH_STYLES[Math.floor(Math.random() * SPLASH_STYLES.length)][0];
-  splashPreviewStyle = id;
-  state.screen = 'splash';
-  render();
-}
 function splashDone(){
   splashStop();
   if(state.screen !== 'splash') return;
   splashEl = null;
-  if(splashPreviewStyle){ splashPreviewStyle = null; state.screen = 'settings'; }   // a preview goes back to Settings
-  else state.screen = 'welcome';
+  state.screen = 'welcome';
   render();
 }
 let welcomeIntro = false;
@@ -1080,33 +1056,18 @@ function splashHandoff(){
 function renderSplash(){
   if(splashEl) return splashEl;
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const style = splashPreviewStyle || splashStyle();
   // positions are the pieces' places inside the 1138 x 590 splash logo
   const pc = (x, y, w, h) => `left:${x / 11.38}%;top:${y / 5.9}%;width:${w / 11.38}%;height:${h / 5.9}%`;
-  const slices = (style === 'wave' || style === 'rain') ? [0, 1, 2, 3, 4, 5].map(i => `<div class="sp__sl sp__sl--${i}" style="clip-path:inset(0 ${100 - (i + 1) * 100 / 6}% 0 ${i * 100 / 6}%)"><img src="assets/splash-base.webp" alt=""></div>`).join('') : '';
-  const cards = style === 'cards' ? `<div class="sp__cards"><img class="sp__cd sp__cd--1" src="assets/card-action.webp" alt=""><img class="sp__cd sp__cd--2" src="assets/card-back.webp" alt=""><img class="sp__cd sp__cd--3" src="assets/card-word.webp" alt=""></div>
-    ${[['#F4C443', -90, -110], ['#C74A35', 0, -130], ['#0AA6A2', 90, -110], ['#fff', -50, 90], ['#F4C443', 60, 100]].map(([c, x, y]) => `<i class="sp__cf" style="--x:${x}px;--y:${y}px;background:${c}"></i>`).join('')}` : '';
-  const thread = style === 'swing' ? `<svg class="sp__thread" width="390" height="780" viewBox="0 0 390 780" aria-hidden="true"><path d="M195 -400 L195 313" stroke="#F4A81E" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round" fill="none"/><circle cx="195" cy="60" r="6" fill="#E8EEF2"/></svg>` : '';
-  const spark = style === 'stitch' ? '<i class="sp__spark"></i>' : '';
-  const starHtml = [[40, 330, 30, 1.0], [330, 320, 26, 1.25], [90, 470, 22, 1.5], [300, 480, 34, 1.15], [190, 290, 24, 1.7], [20, 410, 18, 1.9], [360, 410, 20, 2.0], [140, 520, 26, 1.4], [250, 300, 18, 2.2], [210, 530, 22, 1.8]]
+  const stars = [[40, 330, 30, 1.0], [330, 320, 26, 1.25], [90, 470, 22, 1.5], [300, 480, 34, 1.15], [190, 290, 24, 1.7], [20, 410, 18, 1.9], [360, 410, 20, 2.0], [140, 520, 26, 1.4], [250, 300, 18, 2.2], [210, 530, 22, 1.8]]
     .map(([x, y, z, d]) => `<i class="sp__star" style="left:${x}px;top:${y}px;--z:${z}px;--d:${d}s"></i>`).join('');
-  const stageX = {
-    combo: starHtml + '<i class="sp__ring sp__ring--1"></i><i class="sp__ring sp__ring--2"></i><i class="sp__ring sp__ring--3"></i><i class="sp__ring sp__ring--4"></i>',
-    ball: '<i class="sp__ball"></i>',
-    curtain: '<i class="sp__cur sp__cur--l"></i><i class="sp__cur sp__cur--r"></i>',
-    spot: '<i class="sp__cover"></i>',
-    bubble: '<i class="sp__bubble"></i>',
-    pulse: '<i class="sp__ring sp__ring--1"></i><i class="sp__ring sp__ring--2"></i><i class="sp__ring sp__ring--3"></i>',
-    stars: [[40, 330, 30, 1.0], [330, 320, 26, 1.25], [90, 470, 22, 1.5], [300, 480, 34, 1.15], [190, 290, 24, 1.7], [20, 410, 18, 1.9], [360, 410, 20, 2.0], [140, 520, 26, 1.4], [250, 300, 18, 2.2], [210, 530, 22, 1.8]]
-      .map(([x, y, z, d]) => `<i class="sp__star" style="left:${x}px;top:${y}px;--z:${z}px;--d:${d}s"></i>`).join('')
-  }[style] || '';
-  const wrap = el(`<div class="sp sp--st-${style}${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
-    <div class="sp__stage">${cards}<div class="sp__sw">${stageX}${thread}<div class="sp__lg">
-      <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">${slices}
+  const rings = [1, 2, 3, 4].map(i => `<i class="sp__ring sp__ring--${i}"></i>`).join('');
+  const wrap = el(`<div class="sp sp--st-combo${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
+    <div class="sp__stage">${stars}${rings}<div class="sp__sw"><div class="sp__lg">
+      <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">
       <div class="sp__d sp__d--a" style="${pc(691, 14, 136, 130)}"><img src="assets/splash-dot-2.webp" alt=""></div>
       <div class="sp__d sp__d--b" style="${pc(928, 47, 137, 131)}"><img src="assets/splash-dot-1.webp" alt=""></div>
       <div class="sp__d sp__d--c" style="${pc(392, 427, 124, 130)}"><img src="assets/splash-dot-3.webp" alt=""></div>
-      <div class="sp__shbox"><i class="sp__shine"></i></div>${spark}
+      <div class="sp__shbox"><i class="sp__shine"></i></div>
     </div></div></div></div>`);
   const fit = () => {
     const k = Math.min(window.innerWidth / 390, window.innerHeight / 780, 1.6);
@@ -1116,110 +1077,24 @@ function renderSplash(){
   window.addEventListener('resize', fit);
   splashEl = wrap;
   requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
-  // after the animation the logo zooms out to its place on the welcome screen (or back to Settings after a preview)
-  splashTimer = setTimeout(reduce ? splashDone : (splashPreviewStyle ? splashDone : splashHandoff), reduce ? 900 : SPLASH_MS[style]);
-  if(!reduce) splashSounds(style);
+  // after the animation the logo zooms out to its place on the welcome screen, whose parts then appear around it
+  splashTimer = setTimeout(reduce ? splashDone : splashHandoff, reduce ? 900 : SPLASH_MS);
+  if(!reduce) splashSounds();
   return wrap;
 }
-// sounds in step with each animation (silent until the browser allows audio, e.g. after a first tap)
-function splashSounds(style){
+// sounds in step with the animation (silent until the browser allows audio, e.g. after a first tap)
+function splashSounds(){
   const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
   const pop = (f) => { playTone(f, .12, 'triangle', .16); playTone(f * 1.5, .16, 'sine', .1); };
-  const shine = (ms) => [1568, 1976, 2349, 3136].forEach((f, i) => at(ms + i * 90, () => playTone(f, .18, 'sine', .07)));
-  if(style === 'combo'){
-    [280, 390, 490, 580, 700, 850].forEach((t, i) => at(t, () => playTone(i % 2 ? 900 : 1400, .04, 'square', .05)));     // neon flicker
-    at(250, () => playTone(120, .8, 'sine', .06));
-    [1200, 1500].forEach(t => { at(t, () => playTone(110, .15, 'sine', .3)); at(t + 40, () => playTone(880, .25, 'sine', .05)); });   // heartbeat
-    for(let i = 0; i < 5; i++) at(800 + 300 * (i + 1) - 40, () => playTone(330 + i * 45, .09, 'sine', .13));            // hops of the first dot
-    for(let i = 0; i < 6; i++) at(1200 + 300 * (i + 1) - 40, () => playTone(300 + i * 50, .09, 'sine', .13));           // second
-    for(let i = 0; i < 7; i++) at(1600 + 300 * (i + 1) - 40, () => playTone(290 + i * 48, .09, 'sine', .13));           // third
-    [2300, 3000, 3700].forEach((t, i) => at(t, () => { playTone(110, .12, 'sine', .25); pop(784 + i * 100); }));      // landings with a soft beat
-    [1900, 2150, 2400, 2700, 3000, 3300, 3600, 3900].forEach((t, i) => at(t, () => playTone(1800 + (i % 4) * 250, .07, 'sine', .06)));  // twinkles
-    shine(3850);
-  } else if(style === 'hop'){
-    at(150, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });
-    for(let i = 0; i < 5; i++) at(800 + 300 * (i + 1) - 40, () => playTone(330 + i * 45, .09, 'sine', .13));
-    at(2300, () => { playTone(784, .16, 'triangle', .16); playTone(1175, .2, 'sine', .1); });
-    for(let i = 0; i < 6; i++) at(1200 + 300 * (i + 1) - 40, () => playTone(300 + i * 50, .09, 'sine', .13));
-    at(3000, () => { playTone(988, .16, 'triangle', .16); playTone(1480, .24, 'sine', .1); });
-    for(let i = 0; i < 7; i++) at(1600 + 300 * (i + 1) - 40, () => playTone(290 + i * 48, .09, 'sine', .13));
-    at(3700, () => { playTone(880, .16, 'triangle', .16); playTone(1320, .24, 'sine', .1); });
-    shine(3850);
-  } else if(style === 'stitch'){
-    for(let i = 0; i < 14; i++) at(100 + i * 115, () => playTone(480 + i * 55, .07, 'sine', .08));
-    [1800, 2100, 2400].forEach((t, i) => at(t + 120, () => pop(620 + i * 130)));
-    shine(3000);
-  } else if(style === 'drop'){
-    at(150, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });
-    [1100, 1600, 2100].forEach((t, i) => at(t, () => { playTone(140, .2, 'sine', .25); pop(660 + i * 120); }));
-    shine(2800);
-  } else if(style === 'swing'){
-    for(let i = 0; i < 5; i++) at(200 + i * 60, () => playTone(420 - i * 50, .1, 'sine', .08));
-    [760, 1200, 1600, 1950].forEach((t, i) => at(t, () => playTone(240 - i * 20, .14, 'triangle', .1)));
-    at(3000, () => pop(880));
-    shine(3000);
-  } else if(style === 'cards'){
-    [100, 200, 300].forEach((t, i) => at(t, () => playTone(400 + i * 100, .12, 'sine', .1)));
-    at(1400, () => { playTone(110, .3, 'sine', .3); playTone(880, .22, 'triangle', .15); });
-    [2000, 2150, 2300].forEach((t, i) => at(t, () => pop(660 + i * 130)));
-    shine(2900);
-  } else if(style === 'zoom'){
-    for(let i = 0; i < 16; i++) at(100 + i * 145, () => playTone(200 + i * 70, .1, 'sine', .08));
-    at(2500, () => playTone(150, .25, 'sine', .2));
-    [2500, 2700, 2900].forEach((t, i) => at(t, () => pop(620 + i * 130)));
-    shine(3500);
-  } else if(style === 'wave'){
-    for(let i = 0; i < 6; i++) at(100 + i * 120, () => playTone(400 + i * 80, .12, 'triangle', .14));
-    [1700, 1900, 2100].forEach((t, i) => at(t, () => pop(660 + i * 130)));
-    shine(2600);
-  } else if(style === 'ball'){
-    for(let i = 0; i < 19; i++) at(200 + i * 90, () => playTone(180 + i * 9, .05, 'triangle', .08));
-    [2000, 2200, 2400].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(3000);
-  } else if(style === 'neon'){
-    [280, 390, 490, 580, 700, 850, 1020].forEach((t, i) => at(t, () => playTone(i % 2 ? 900 : 1400, .04, 'square', .05)));
-    at(250, () => playTone(120, .9, 'sine', .06));
-    [1400, 1600, 1800].forEach((t, i) => at(t, () => playTone(1100 + i * 200, .05, 'square', .05)));
-    [2000, 2150, 2300].forEach((t, i) => at(t, () => pop(620 + i * 130)));
-    shine(2600);
-  } else if(style === 'jelly'){
-    [[200, 320], [340, 230], [520, 300], [700, 260], [880, 285]].forEach(([t, f]) => at(t, () => { playTone(f, .12, 'sine', .16); playTone(f * 1.5, .1, 'sine', .06); }));
-    [1600, 1800, 2000].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(2500);
-  } else if(style === 'flip'){
-    for(let i = 0; i < 6; i++) at(200 + i * 70, () => playTone(700 - i * 90, .09, 'sine', .08));
-    at(1000, () => playTone(150, .18, 'sine', .25));
-    [1800, 2000, 2200].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(2700);
-  } else if(style === 'curtain'){
-    for(let i = 0; i < 9; i++) at(500 + i * 150, () => playTone(90 + (i % 3) * 14, .18, 'sawtooth', .04));
-    [2000, 2200, 2400].forEach((t, i) => at(t + 100, () => pop(523 + i * 136)));
-    shine(3000);
-  } else if(style === 'stars'){
-    at(200, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });
-    [1000, 1250, 1400, 1500, 1700, 1800, 1900, 2000, 2150, 2250].forEach((t, i) => at(t, () => playTone(1800 + (i % 4) * 250, .07, 'sine', .07)));
-    [1500, 1700, 1900].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(2400);
-  } else if(style === 'rain'){
-    [650, 800, 950, 1100, 1250, 1400].forEach(t => at(t, () => playTone(160, .12, 'sine', .22)));
-    [2000, 2200, 2400].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(3000);
-  } else if(style === 'spot'){
-    for(let i = 0; i < 12; i++) at(200 + i * 110, () => playTone(200 + i * 40, .1, 'sine', .08));
-    at(1700, () => { pop(523); pop(784); });
-    [2300, 2500, 2700].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(3200);
-  } else if(style === 'bubble'){
-    for(let i = 0; i < 10; i++) at(200 + i * 130, () => playTone(400 + i * 50 + (i % 2) * 60, .08, 'sine', .08));
-    at(1800, () => { playTone(1200, .05, 'square', .1); playTone(300, .1, 'sine', .15); });
-    [2100, 2300, 2500].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(3100);
-  } else if(style === 'pulse'){
-    [700, 1000, 1300].forEach(t => at(t, () => playTone(110, .15, 'sine', .3)));
-    [750, 1050, 1350].forEach(t => at(t, () => playTone(880, .25, 'sine', .05)));
-    [1900, 2100, 2300].forEach((t, i) => at(t + 100, () => pop(620 + i * 130)));
-    shine(2800);
-  }
+  [280, 390, 490, 580, 700, 850].forEach((t, i) => at(t, () => playTone(i % 2 ? 900 : 1400, .04, 'square', .05)));     // neon flicker
+  at(250, () => playTone(120, .8, 'sine', .06));
+  [1200, 1500].forEach(t => { at(t, () => playTone(110, .15, 'sine', .3)); at(t + 40, () => playTone(880, .25, 'sine', .05)); });   // heartbeat
+  for(let i = 0; i < 5; i++) at(800 + 300 * (i + 1) - 40, () => playTone(330 + i * 45, .09, 'sine', .13));            // hops of the first dot
+  for(let i = 0; i < 6; i++) at(1200 + 300 * (i + 1) - 40, () => playTone(300 + i * 50, .09, 'sine', .13));           // second
+  for(let i = 0; i < 7; i++) at(1600 + 300 * (i + 1) - 40, () => playTone(290 + i * 48, .09, 'sine', .13));           // third
+  [2300, 3000, 3700].forEach((t, i) => at(t, () => { playTone(110, .12, 'sine', .25); pop(784 + i * 100); }));      // landings with a soft beat
+  [1900, 2150, 2400, 2700, 3000, 3300, 3600, 3900].forEach((t, i) => at(t, () => playTone(1800 + (i % 4) * 250, .07, 'sine', .06)));  // twinkles
+  [1568, 1976, 2349, 3136].forEach((f, i) => at(3850 + i * 90, () => playTone(f, .18, 'sine', .07)));                  // shine
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
@@ -2596,20 +2471,6 @@ function renderSettings(){
     fbCard.appendChild(row);
   });
   wrap.appendChild(fbCard);
-
-  // ---- opening animation ----
-  const spCard = el(`<div class="team-card set-card"></div>`);
-  spCard.appendChild(el(`<h2 class="set-card__title">انیمیشن شروع</h2>`));
-  const spChips = el(`<div class="set-presets set-presets--wrap"></div>`);
-  const spNow = LS.get('splashStyle', 'combo');
-  [...SPLASH_STYLES, ['random', 'تصادفی']].forEach(([id, label]) => {
-    const chip = el(`<button class="set-chip ${spNow === id ? 'is-on' : ''}">${label}</button>`);
-    chip.addEventListener('click', () => { LS.set('splashStyle', id); splashPreview(id); });
-    spChips.appendChild(chip);
-  });
-  spCard.appendChild(spChips);
-  spCard.appendChild(el(`<small class="set-hint">با زدن هر مورد، همان‌جا نمونه‌اش پخش می‌شود و انتخاب می‌ماند.</small>`));
-  wrap.appendChild(spCard);
 
   // ---- about ----
   const aboutCard = el(`<div class="team-card set-card"><h2 class="set-card__title">درباره</h2></div>`);
