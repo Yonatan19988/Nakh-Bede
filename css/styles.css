@@ -2662,7 +2662,9 @@ body.pm-open{ overflow:hidden; }
 .hm2-top{ width:100%; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; flex:0 0 auto; }
 .hm2-top > :first-child{ justify-self:start; }
 .hm2-top > :last-child{ justify-self:end; }
-.hm2-logo{ height:54px; width:auto; min-width:0; max-width:100%; object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+.hm2-brand{ display:flex; align-items:flex-end; justify-content:center; gap:0; min-width:0; }
+.hm2-mascot{ height:62px; width:auto; margin-bottom:-4px; flex:0 0 auto; filter:drop-shadow(0 4px 5px rgba(0,0,0,.4)); }
+.hm2-logo{ height:46px; width:auto; min-width:0; max-width:100%; object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
 .hm2 .hm-prof{ padding:4px 10px 4px 5px; max-width:100%; min-width:0; gap:7px; }
 .hm2 .hm-prof__txt{ min-width:0; }
 .hm2 .hm-prof__txt b{ display:block; max-width:62px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2704,7 +2706,7 @@ body.pm-open{ overflow:hidden; }
 .hm2-sc__ico{ font-size:20px; line-height:1.1; }
 .hm2-sc__t{ font-family:'Lalezar','Vazirmatn',sans-serif; font-size:15px; line-height:1.25; color:#fff; white-space:nowrap; text-shadow:0 2px 0 rgba(0,0,0,.28); }
 @media (max-height:760px){
-  .hm2-logo{ height:46px; }
+  .hm2-logo{ height:40px; } .hm2-mascot{ height:54px; }
   .hm2-hero__blurb{ display:none; }
   .hm.hm2 .hm2-play{ height:60px; margin-top:-32px; }
   .hm2-sc__b{ height:56px; }
