@@ -1070,14 +1070,14 @@ function renderSplash(){
         <div class="sp__nd sp__nd--b" style="${pc(928, 47, 137, 131)}"><img src="assets/splash-dot-1.webp" alt=""></div>
         <div class="sp__nd sp__nd--c" style="${pc(392, 427, 124, 130)}"><img src="assets/splash-dot-3.webp" alt=""></div>
       </div></div>
-      <div class="sp__nk"><img src="assets/mascot.svg" alt="" decoding="async">
-        <svg viewBox="0 0 276 296" aria-hidden="true">
-          <g class="eyes"><ellipse cx="113" cy="85" rx="12" ry="17" fill="#fff"/><ellipse cx="163" cy="85" rx="12" ry="17" fill="#fff"/>
-            <g class="pup"><ellipse cx="113" cy="87" rx="8" ry="11" fill="#2a1306"/><ellipse cx="163" cy="87" rx="8" ry="11" fill="#2a1306"/><circle cx="110" cy="82" r="3" fill="#fff"/><circle cx="160" cy="82" r="3" fill="#fff"/></g></g>
-          <g class="happy" opacity="0"><ellipse cx="113" cy="85" rx="15" ry="19" fill="#F6AE24"/><ellipse cx="163" cy="85" rx="15" ry="19" fill="#F6AE24"/>
-            <path d="M99 88 Q113 70 127 88" fill="none" stroke="#3a1a08" stroke-width="5" stroke-linecap="round"/><path d="M149 88 Q163 70 177 88" fill="none" stroke="#3a1a08" stroke-width="5" stroke-linecap="round"/></g>
-          <g class="smile" opacity="0"><path d="M112 112 Q138 108 164 112 Q158 148 138 148 Q118 148 112 112Z" fill="#4a1f0a"/><ellipse cx="138" cy="139" rx="11" ry="6" fill="#e0556a"/></g>
-          <ellipse class="ch1" cx="86" cy="106" rx="12" ry="8" fill="#ff7d6a" opacity="0"/><ellipse class="ch2" cx="190" cy="106" rx="12" ry="8" fill="#ff7d6a" opacity="0"/>
+      <div class="sp__nk"><img src="assets/mascot.webp" alt="" decoding="async">
+        <svg viewBox="0 0 882 1167" aria-hidden="true">
+          <g class="eyes"><ellipse cx="328" cy="401" rx="46" ry="60" fill="#fff"/><ellipse cx="533" cy="380" rx="46" ry="60" fill="#fff"/>
+            <g class="pup"><ellipse cx="338" cy="412" rx="30" ry="38" fill="#2a1306"/><ellipse cx="543" cy="391" rx="30" ry="38" fill="#2a1306"/><circle cx="328" cy="396" r="10" fill="#fff"/><circle cx="533" cy="375" r="10" fill="#fff"/></g></g>
+          <g class="happy" opacity="0"><ellipse cx="328" cy="401" rx="60" ry="75" fill="#FDB41E"/><ellipse cx="533" cy="380" rx="60" ry="75" fill="#FDB41E"/>
+            <path d="M282 412 Q328 358 374 412" fill="none" stroke="#3a1a08" stroke-width="16" stroke-linecap="round"/><path d="M487 391 Q533 337 579 391" fill="none" stroke="#3a1a08" stroke-width="16" stroke-linecap="round"/></g>
+          <g class="smile" opacity="0"><path d="M338 490 Q443 478 548 490 Q540 590 443 596 Q346 590 338 490Z" fill="#5a1a08" stroke="#2a1006" stroke-width="9" stroke-linejoin="round"/><ellipse cx="443" cy="572" rx="42" ry="20" fill="#ff7a6a"/></g>
+          <ellipse class="ch1" cx="262" cy="492" rx="42" ry="26" fill="#ff6a4a" opacity="0"/><ellipse class="ch2" cx="612" cy="466" rx="42" ry="26" fill="#ff6a4a" opacity="0"/>
         </svg></div>
     </div></div>`);
   const q = (c) => wrap.querySelector(c);
@@ -1098,7 +1098,7 @@ function renderSplash(){
     img.style.transform = `translateY(${y}px) ${sc}`;
   }; };
   const dots = [dot('.sp__nd--a', 4.4, 1.5, 216), dot('.sp__nd--b', 4.8, 1.8, 266), dot('.sp__nd--c', 5.2, 2.1, 317)];
-  const BASE = 330, LX = 8, LW = 230, LY = 341;
+  const BASE = 315, LX = 8, LW = 230, LY = 350, NW = 117, NH = 155;
   const W0 = .3, W1 = 3.1, X0 = -170, X1 = 268, SP = .55;       // Nakhi walks in from the left, hauling the logo behind him
   const TS = 7.5, TL = 8.2;                                      // smile, lean
   // Nakhi's pose at time t
@@ -1117,21 +1117,21 @@ function renderSplash(){
     return { x, y, rot, sx, sy };
   };
   // the ball of Nakhi's hand (his left one, the one the thread hangs from)
-  const hand = (ps) => { const rad = ps.rot * Math.PI / 180, dx = 14 - 65, dy = 105 - 140;
-    return { x: ps.x + 65 + dx * Math.cos(rad) - dy * Math.sin(rad), y: BASE + ps.y + 140 + dx * Math.sin(rad) + dy * Math.cos(rad) }; };
+  const hand = (ps) => { const rad = ps.rot * Math.PI / 180, dx = 10.6 - NW / 2, dy = 109 - NH;
+    return { x: ps.x + NW / 2 + dx * Math.cos(rad) - dy * Math.sin(rad), y: BASE + ps.y + NH + dx * Math.sin(rad) + dy * Math.cos(rad) }; };
   const frame = (t) => {
     const ps = pose(t);
     nk.style.transform = `translate(${ps.x}px,${BASE + ps.y}px) rotate(${ps.rot}deg) scale(${ps.sx},${ps.sy})`;
     // the logo trails a moment behind his hand on the thread, bobbing as it is dragged
     const lag = pose(Math.max(0, t - .25)), hl = hand(lag);
     const settle = t < 3.3 ? 1 : 1 - ease((t - 3.3) / .5);
-    const tx = (hl.x - 44 - (LX + LW)) * settle;
+    const tx = (hl.x - 40 - (LX + LW)) * settle;
     const dragging = t < W1 + .3 ? clamp((t - W0) / .5) * (1 - ease((t - (W1 - .3)) / .6)) : 0;
     const ldy = -2.5 * Math.abs(Math.sin((t - .25) * Math.PI / SP)) * dragging, lrot = 1.6 * Math.sin((t - .25) * 2 * Math.PI / SP) * dragging;
     lgEl.style.transform = `translate(${tx}px, ${ldy}px) rotate(${lrot}deg)`;
     // eyes and mouth: ahead while hauling, then a glance at us, then at the hopping dots, then a smile
-    const look = t < 3.4 ? 4.5 : t < 3.8 ? 0 : t < TS ? -5.5 : 0;
-    pup.setAttribute('transform', `translate(${look},${t < W1 ? 1 : 0})`);
+    const look = t < 3.4 ? 14 : t < 3.8 ? 0 : t < TS ? -17 : 0;
+    pup.setAttribute('transform', `translate(${look},${t < W1 ? 3 : 0})`);
     const hp = t >= TS ? 1 : 0;
     happy.setAttribute('opacity', hp); eyes.setAttribute('opacity', 1 - hp); smile.setAttribute('opacity', hp);
     ch.forEach(c => c.setAttribute('opacity', hp ? .55 : 0));
@@ -1208,7 +1208,7 @@ function renderWelcome(){
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
   // the logo with the yarn mascot standing next to it
-  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in nk__in--wave"><img src="assets/mascot.svg" width="276" height="296" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
+  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in nk__in--wave"><img src="assets/mascot.webp" width="520" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
   const nk = brand.querySelector('.nk');
   const nkHop = () => { nk.classList.remove('nk--hop'); void nk.offsetWidth; nk.classList.add('nk--hop'); nk.querySelector('.nk__in').classList.remove('nk__in--wave'); haptic(8); playTone(520,0.07,'triangle',0.09); setTimeout(()=>playTone(780,0.1,'triangle',0.08),70); };
   nk.addEventListener('click', nkHop);
@@ -1265,7 +1265,7 @@ function renderHome(){
   profChip.querySelector('b').textContent = prof.name || 'بازیکن مهمان';
   profChip.addEventListener('click', () => { state.screen = 'profile'; render(); });
   top.appendChild(profChip);
-  top.appendChild(el(`<div class="hm2-brand"><img class="hm2-logo" src="${HOME_LOGO}" alt="نخ بده" /><img class="hm2-mascot" src="assets/mascot.svg" width="276" height="296" alt="" aria-hidden="true" /></div>`));
+  top.appendChild(el(`<div class="hm2-brand"><img class="hm2-logo" src="${HOME_LOGO}" alt="نخ بده" /><img class="hm2-mascot" src="assets/mascot.webp" width="520" height="688" alt="" aria-hidden="true" /></div>`));
   const gear = el(`<button class="hm-gear" aria-label="تنظیمات"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#EAF6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>`);
   gear.addEventListener('click', () => { state.screen = 'settings'; render(); });
   top.appendChild(gear);
