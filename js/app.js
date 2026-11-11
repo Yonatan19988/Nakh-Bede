@@ -1125,7 +1125,9 @@ function renderWelcome(){
     <img class="wl__card wl__card--a" src="assets/card-action.webp" alt="">
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
-  wrap.appendChild(el(`<div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div>`));
+  // the logo with the yarn mascot standing next to it
+  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><img class="wl__mascot" src="assets/mascot.svg" width="380" height="330" alt="" aria-hidden="true" decoding="async"></div>`);
+  wrap.appendChild(brand);
   wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns${IS_NATIVE ? '' : ' wl__btns--full'}"></div>`);
   const signedIn = !IS_NATIVE && accountIsGoogle();
