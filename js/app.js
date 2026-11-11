@@ -1045,7 +1045,7 @@ function splashHandoff(){
   requestAnimationFrame(() => {
     const a = lg.getBoundingClientRect(), b = dst ? dst.getBoundingClientRect() : null;
     if(b && a.width){
-      const k = a.width / 320;                // the stage is scaled, the move is in its units
+      const k = a.width / 230;                // the stage is scaled, the move is in its units
       const dx = ((b.left + b.width / 2) - (a.left + a.width / 2)) / k;
       const dy = ((b.top + b.height / 2) - (a.top + a.height / 2)) / k;
       lg.style.transform = `translate(${dx}px, ${dy}px) scale(${b.width / a.width})`;
@@ -1063,7 +1063,7 @@ function renderSplash(){
   const pc = (x, y, w, h) => `left:${x / 11.38}%;top:${y / 5.9}%;width:${w / 11.38}%;height:${h / 5.9}%`;
   const wrap = el(`<div class="sp sp--scene${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
     <div class="sp__stage">
-      <svg class="sp__thr" viewBox="0 0 390 780" aria-hidden="true"><path class="t1" fill="none" stroke="#7a4a07" stroke-width="7" stroke-linecap="round"/><path class="t2" fill="none" stroke="#F6B831" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 3"/></svg>
+      <svg class="sp__thr" viewBox="0 0 390 780" aria-hidden="true"><path class="t1" fill="none" stroke="#7a4a07" stroke-width="7" stroke-linecap="round"/><path class="t2" fill="none" stroke="#F6B831" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 3"/><g class="knot"><circle r="7" fill="#F6B831" stroke="#7a4a07" stroke-width="3"/><circle r="2.5" fill="#7a4a07"/></g></svg>
       <div class="sp__sw"><div class="sp__lg">
         <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">
         <div class="sp__nd sp__nd--a" style="${pc(691, 14, 136, 130)}"><img src="assets/splash-dot-2.webp" alt=""></div>
@@ -1082,7 +1082,7 @@ function renderSplash(){
     </div></div>`);
   const q = (c) => wrap.querySelector(c);
   const lgEl = q('.sp__lg'), nk = q('.sp__nk'), pup = q('.pup'), eyes = q('.eyes'), happy = q('.happy'), smile = q('.smile');
-  const ch = [q('.ch1'), q('.ch2')], t1 = q('.t1'), t2 = q('.t2');
+  const ch = [q('.ch1'), q('.ch2')], t1 = q('.t1'), t2 = q('.t2'), knot = q('.knot');
   const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
   const eo = (x) => 1 - Math.pow(1 - clamp(x), 3);
   const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
@@ -1094,24 +1094,24 @@ function renderSplash(){
     d.style.opacity = 1; d.style.transform = `translateX(${-dist * (1 - k)}px)`;
     d.style.scale = k >= 1 ? 1 + .28 * Math.sin(clamp((t - t0 - dur) / .35) * Math.PI) : 1;
     const ph = ((t - t0) / .3) % 1; let y = 0, sc = 'scale(1,1)';
-    if(k < 1){ if(ph < .12) sc = `scale(${1.12 - .12 * (ph / .12)},${.88 + .12 * (ph / .12)})`; else y = -62 * Math.sin(Math.min((ph - .12) / .88, 1) * Math.PI); }
+    if(k < 1){ if(ph < .12) sc = `scale(${1.12 - .12 * (ph / .12)},${.88 + .12 * (ph / .12)})`; else y = -45 * Math.sin(Math.min((ph - .12) / .88, 1) * Math.PI); }
     img.style.transform = `translateY(${y}px) ${sc}`;
   }; };
-  const dots = [dot('.sp__nd--a', 3.8, 1.5, 300), dot('.sp__nd--b', 4.2, 1.8, 370), dot('.sp__nd--c', 4.6, 2.1, 440)];
-  const BASE = 440;
+  const dots = [dot('.sp__nd--a', 3.8, 1.5, 216), dot('.sp__nd--b', 4.2, 1.8, 266), dot('.sp__nd--c', 4.6, 2.1, 317)];
+  const BASE = 330, LX = 8, LW = 230, LY = 341;
   const frame = (t) => {
     // the logo comes in from the left in three tugs
     const pr = t < .6 ? 0 : t < 2.5 ? (() => { const u = (t - .6) / 1.9 * 3, i = Math.min(2, Math.floor(u)); return (i + eo(u - i)) / 3; })() : 1;
     const over = t > 2.5 ? Math.sin(clamp((t - 2.5) / .5) * Math.PI) * -8 * (1 - clamp((t - 2.5) / .5)) : 0;
-    const tx = -440 * (1 - pr) + over;
+    const tx = -260 * (1 - pr) + over;
     lgEl.style.transform = `translateX(${tx}px)`;
     // Nakhi: pulls, steps in, watches the dots, hops when he smiles, leans on the word
-    let x = 335, rot = 0, y = 0;
-    if(t < 2.5){ const u = (t - .6) / 1.9 * 3, f = u - Math.floor(u); rot = t < .6 ? 4 : 7 + 5 * Math.sin(Math.min(1, f * 1.6) * Math.PI); x = 335 - (t < .6 ? 0 : 6 * Math.sin(Math.min(1, f * 1.6) * Math.PI)); }
-    else if(t < 3.1){ const k = ease((t - 2.5) / .6); x = mixv(335, 280, k); rot = mixv(6, 0, k); }
-    else { x = 280; rot = 0;
+    let x = 300, rot = 0, y = 0;
+    if(t < 2.5){ const u = (t - .6) / 1.9 * 3, f = u - Math.floor(u); rot = t < .6 ? 4 : 7 + 5 * Math.sin(Math.min(1, f * 1.6) * Math.PI); x = 300 - (t < .6 ? 0 : 5 * Math.sin(Math.min(1, f * 1.6) * Math.PI)); }
+    else if(t < 3.1){ const k = ease((t - 2.5) / .6); x = mixv(300, 262, k); rot = mixv(6, 0, k); }
+    else { x = 262; rot = 0;
       if(t >= 6.4 && t < 7.1) y = -22 * Math.sin(clamp((t - 6.4) / .6) * Math.PI);
-      if(t >= 7.1){ const k = ease((t - 7.1) / .7); x = mixv(280, 255, k); rot = mixv(0, -9, k); } }
+      if(t >= 7.1){ const k = ease((t - 7.1) / .7); x = mixv(262, 238, k); rot = mixv(0, -8, k); } }
     const bs = .015 * Math.sin(t * 2);
     nk.style.transform = `translate(${x}px,${BASE + y}px) rotate(${rot}deg) scale(${1 + bs},${1 - bs})`;
     // eyes and mouth
@@ -1120,12 +1120,14 @@ function renderSplash(){
     happy.setAttribute('opacity', hp); eyes.setAttribute('opacity', 1 - hp); smile.setAttribute('opacity', hp);
     ch.forEach(c => c.setAttribute('opacity', hp ? .55 : 0));
     dots.forEach(f => f(t));
-    // the thread from Nakhi's hand to the logo, tight while pulling, then slack, then gone
-    const rad = rot * Math.PI / 180, hx = x + 14 * Math.cos(rad) + 105 * Math.sin(rad), hy = BASE + 105 * Math.cos(rad) + 14 * -Math.sin(rad) * 0;
+    // the thread: from the ball of Nakhi's hand to a knot on the logo's right end; tight while pulling, then slack, then gone
+    const rad = rot * Math.PI / 180, dx0 = 14 - 65, dy0 = 105 - 140;
+    const hx = x + 65 + dx0 * Math.cos(rad) - dy0 * Math.sin(rad), hy = BASE + y + 140 + dx0 * Math.sin(rad) + dy0 * Math.cos(rad);
     const alpha = t < .2 ? 0 : t < 2.5 ? 1 : clamp(1 - (t - 2.5) / .5);
-    const rx = 355 + tx - 8, ry = 430, sag = t < 2.5 ? 10 : 60 * clamp((t - 2.5) / .5);
+    const rx = LX + LW + tx - 3, ry = LY + 62, sag = t < 2.5 ? 8 : 40 * clamp((t - 2.5) / .5);
     const d = `M${hx} ${hy} Q${(hx + rx) / 2} ${(hy + ry) / 2 + sag} ${rx} ${ry}`;
     t1.setAttribute('d', d); t2.setAttribute('d', d); t1.style.opacity = t2.style.opacity = alpha;
+    knot.setAttribute('transform', `translate(${rx} ${ry})`); knot.style.opacity = alpha;
     t2.setAttribute('stroke-dashoffset', -(t * 14) % 10);
   };
   wrap._frame = frame;

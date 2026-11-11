@@ -2749,7 +2749,7 @@ body.pm-open{ overflow:hidden; }
 .sp{ position:relative; width:100%; height:100%; min-height:100vh; overflow:hidden; }
 .sp::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 38%,#0b5b78,#022638 72%); transition:opacity .7s ease-in-out; }
 .sp__stage{ position:absolute; left:50%; top:50%; width:390px; height:780px; transform-origin:center; }
-.sp__lg{ position:absolute; left:35px; top:310px; width:320px; height:165.9px; }
+.sp__lg{ position:absolute; left:8px; top:341px; width:230px; height:119.2px; }
 .sp__base{ position:absolute; inset:0; width:100%; height:100%; opacity:0; transform:scale(.7); transform-origin:center; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
 .sp__d{ position:absolute; opacity:0; }
 .sp__d img{ position:absolute; inset:0; width:100%; height:100%; display:block; }
@@ -2774,7 +2774,7 @@ body.pm-open{ overflow:hidden; }
 .sp--still .sp__shine{ display:none; }
 
 /* the splash logo zooms out to the welcome logo's place; the welcome parts appear around it */
-.sp__lg{ transition:transform .9s cubic-bezier(.4,0,.2,1); }
+.sp--over .sp__lg{ transition:transform .9s cubic-bezier(.4,0,.2,1); }
 .sp--over{ min-height:0; }
 .sp.out::before{ opacity:0; }
 .wl--hold .wl__logo{ visibility:hidden; }
