@@ -1126,7 +1126,11 @@ function renderWelcome(){
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
   // the logo with the yarn mascot standing next to it
-  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><img class="wl__mascot" src="assets/mascot.svg" width="276" height="296" alt="" aria-hidden="true" decoding="async"></div>`);
+  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in nk__in--wave"><img src="assets/mascot.svg" width="276" height="296" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
+  const nk = brand.querySelector('.nk');
+  const nkHop = () => { nk.classList.remove('nk--hop'); void nk.offsetWidth; nk.classList.add('nk--hop'); nk.querySelector('.nk__in').classList.remove('nk__in--wave'); haptic(8); playTone(520,0.07,'triangle',0.09); setTimeout(()=>playTone(780,0.1,'triangle',0.08),70); };
+  nk.addEventListener('click', nkHop);
+  nk.addEventListener('keydown', e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); nkHop(); } });
   wrap.appendChild(brand);
   wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns${IS_NATIVE ? '' : ' wl__btns--full'}"></div>`);
