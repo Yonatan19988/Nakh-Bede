@@ -2868,3 +2868,9 @@ button{ font-size:inherit; }
 
 .wl--intro .wl__mascot{ animation:wlMascot .8s .9s cubic-bezier(.2,1.5,.4,1) both; }
 .wl--hold .wl__mascot{ visibility:hidden; }
+
+/* the real logo instead of the styled text in the headers */
+.brand-logo{ height:36px; width:auto; display:block; filter:drop-shadow(0 3px 4px rgba(0,0,0,.45)); }
+.setup-brand--logo, .play-brand--logo{ background:none!important; -webkit-text-fill-color:initial!important; filter:none!important; letter-spacing:normal; display:flex; align-items:center; }
+.play-brand--logo .brand-logo{ height:30px; }
+.brand-h1{ margin:0; display:flex; justify-content:center; }
