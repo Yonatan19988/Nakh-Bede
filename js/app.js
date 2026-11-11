@@ -1416,7 +1416,7 @@ function ensureOnlineTicker(){
 
 // ---------------- ONLINE ROOM SCREENS (choose / create / join) ----------------
 function roomHead(){
-  return el(`<div class="setup-head"><div class="setup-brand">نخ بده</div></div>`);
+  return el(`<div class="setup-head"><div class="setup-brand setup-brand--logo"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></div></div>`);
 }
 
 function roomField(id, label, opts){
@@ -1658,7 +1658,7 @@ function renderOnlineQuick(){
 
 function renderOnlineLobby(){
   const wrap = el(`<div class="setup-page lobby"></div>`);
-  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand">نخ بده</div></div>`));
+  wrap.appendChild(el(`<div class="setup-head"><div class="setup-brand setup-brand--logo"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></div></div>`));
   const room = online.room;
   if(!room){
     wrap.appendChild(el(`<div class="lobby-wait">در حال اتصال به اتاق…</div>`));
@@ -2325,7 +2325,7 @@ function renderOnlineBoard(){
 
   const header = el(`<div class="play-head"></div>`);
   header.appendChild(el(`<div class="play-turn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Zm7.5.5c-.7 0-1.4.1-2 .3 1.2 1 2 2.3 2 3.7V19H22v-1.8c0-2-2.4-3.7-5.5-3.7Z"/></svg><span>نوبت ${t.name}</span></div>`));
-  header.appendChild(el(`<div class="play-brand">نخ بده</div>`));
+  header.appendChild(el(`<div class="play-brand play-brand--logo"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(header);
 
   const status = el(`<div class="play-status"></div>`);
@@ -2998,7 +2998,7 @@ function renderBrand(){
   }
   const wrap = el(`<div class="brand"></div>`);
   wrap.appendChild(el(`<span class="dot"></span>`));
-  wrap.appendChild(el(`<h1>نخ بده</h1>`));
+  wrap.appendChild(el(`<h1 class="brand-h1"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></h1>`));
   return wrap;
 }
 
@@ -3009,7 +3009,7 @@ function renderSetup(){
 
   // ---- header ----
   const header = el(`<div class="setup-head"></div>`);
-  header.appendChild(el(`<div class="setup-brand">نخ بده</div>`));
+  header.appendChild(el(`<div class="setup-brand setup-brand--logo"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(header);
 
   // ---- team cards ----
@@ -3287,7 +3287,7 @@ function renderBoard(){
   // ---- compact header: back + brand + turn pill ----
   const header = el(`<div class="play-head"></div>`);
   header.appendChild(el(`<div class="play-turn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Zm7.5.5c-.7 0-1.4.1-2 .3 1.2 1 2 2.3 2 3.7V19H22v-1.8c0-2-2.4-3.7-5.5-3.7Z"/></svg><span>نوبت ${currentTeam().name}</span></div>`));
-  header.appendChild(el(`<div class="play-brand">نخ بده</div>`));
+  header.appendChild(el(`<div class="play-brand play-brand--logo"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(header);
 
   // ---- compact status row: cell | role | viewer select ----
