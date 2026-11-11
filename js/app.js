@@ -1015,8 +1015,8 @@ function stepHomeMap(dir){
 
 // ---------------- SPLASH: Nakhi pulls the logo in with a thread, watches the dots hop in, smiles and leans on the word ----------------
 let splashEl = null, splashTimer = null, splashSfx = [], splashRaf = 0;
-const SPLASH_END = 8;                         // seconds of the scene
-const SPLASH_MS = 8300;
+const SPLASH_END = 9;                         // seconds of the scene
+const SPLASH_MS = 9300;
 function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; cancelAnimationFrame(splashRaf); }
 function splashDone(){
   splashStop();
@@ -1097,35 +1097,49 @@ function renderSplash(){
     if(k < 1){ if(ph < .12) sc = `scale(${1.12 - .12 * (ph / .12)},${.88 + .12 * (ph / .12)})`; else y = -45 * Math.sin(Math.min((ph - .12) / .88, 1) * Math.PI); }
     img.style.transform = `translateY(${y}px) ${sc}`;
   }; };
-  const dots = [dot('.sp__nd--a', 3.8, 1.5, 216), dot('.sp__nd--b', 4.2, 1.8, 266), dot('.sp__nd--c', 4.6, 2.1, 317)];
+  const dots = [dot('.sp__nd--a', 4.4, 1.5, 216), dot('.sp__nd--b', 4.8, 1.8, 266), dot('.sp__nd--c', 5.2, 2.1, 317)];
   const BASE = 330, LX = 8, LW = 230, LY = 341;
+  const W0 = .3, W1 = 3.1, X0 = -170, X1 = 268, SP = .55;       // Nakhi walks in from the left, hauling the logo behind him
+  const TS = 7.5, TL = 8.2;                                      // smile, lean
+  // Nakhi's pose at time t
+  const pose = (t) => {
+    let x = X0, rot = 0, y = 0, sx = 1, sy = 1;
+    const walk = t < W0 || t > W1 + .3 ? 0 : ease((t - W0) / .5) * (1 - ease((t - (W1 - .3)) / .6));
+    if(t >= W0 && t < W1){ const u = (t - W0) / (W1 - W0); x = X0 + (X1 - X0) * (.5 * ease(u) + .5 * u); }
+    else if(t >= W1) x = X1;
+    const ph = t * 2 * Math.PI / SP;
+    rot = (13 + 2 * Math.sin(ph)) * walk;                      // leaning into the load
+    y = -4 * Math.abs(Math.sin(ph / 2)) * walk;                // a bob with every step
+    sx = 1 + .025 * Math.cos(ph) * walk; sy = 1 - .025 * Math.cos(ph) * walk;
+    if(t >= W1 + .3){ const br = .018 * Math.sin(t * 2.4) * (t < 4.2 ? 2 : 1); sx = 1 + br; sy = 1 - br; }
+    if(t >= TS && t < TS + .7) y = -22 * Math.sin(clamp((t - TS) / .6) * Math.PI);
+    if(t >= TL){ const k = ease((t - TL) / .7); x = mixv(X1, 238, k); rot = mixv(0, -8, k); }
+    return { x, y, rot, sx, sy };
+  };
+  // the ball of Nakhi's hand (his left one, the one the thread hangs from)
+  const hand = (ps) => { const rad = ps.rot * Math.PI / 180, dx = 14 - 65, dy = 105 - 140;
+    return { x: ps.x + 65 + dx * Math.cos(rad) - dy * Math.sin(rad), y: BASE + ps.y + 140 + dx * Math.sin(rad) + dy * Math.cos(rad) }; };
   const frame = (t) => {
-    // the logo comes in from the left in three tugs
-    const pr = t < .6 ? 0 : t < 2.5 ? (() => { const u = (t - .6) / 1.9 * 3, i = Math.min(2, Math.floor(u)); return (i + eo(u - i)) / 3; })() : 1;
-    const over = t > 2.5 ? Math.sin(clamp((t - 2.5) / .5) * Math.PI) * -8 * (1 - clamp((t - 2.5) / .5)) : 0;
-    const tx = -260 * (1 - pr) + over;
-    lgEl.style.transform = `translateX(${tx}px)`;
-    // Nakhi: pulls, steps in, watches the dots, hops when he smiles, leans on the word
-    let x = 300, rot = 0, y = 0;
-    if(t < 2.5){ const u = (t - .6) / 1.9 * 3, f = u - Math.floor(u); rot = t < .6 ? 4 : 7 + 5 * Math.sin(Math.min(1, f * 1.6) * Math.PI); x = 300 - (t < .6 ? 0 : 5 * Math.sin(Math.min(1, f * 1.6) * Math.PI)); }
-    else if(t < 3.1){ const k = ease((t - 2.5) / .6); x = mixv(300, 262, k); rot = mixv(6, 0, k); }
-    else { x = 262; rot = 0;
-      if(t >= 6.4 && t < 7.1) y = -22 * Math.sin(clamp((t - 6.4) / .6) * Math.PI);
-      if(t >= 7.1){ const k = ease((t - 7.1) / .7); x = mixv(262, 238, k); rot = mixv(0, -8, k); } }
-    const bs = .015 * Math.sin(t * 2);
-    nk.style.transform = `translate(${x}px,${BASE + y}px) rotate(${rot}deg) scale(${1 + bs},${1 - bs})`;
-    // eyes and mouth
-    pup.setAttribute('transform', `translate(${t < 6.4 ? -5.5 : 0},${t < 2.5 ? 1 : 0})`);
-    const hp = t >= 6.4 ? 1 : 0;
+    const ps = pose(t);
+    nk.style.transform = `translate(${ps.x}px,${BASE + ps.y}px) rotate(${ps.rot}deg) scale(${ps.sx},${ps.sy})`;
+    // the logo trails a moment behind his hand on the thread, bobbing as it is dragged
+    const lag = pose(Math.max(0, t - .25)), hl = hand(lag);
+    const settle = t < 3.3 ? 1 : 1 - ease((t - 3.3) / .5);
+    const tx = (hl.x - 44 - (LX + LW)) * settle;
+    const dragging = t < W1 + .3 ? clamp((t - W0) / .5) * (1 - ease((t - (W1 - .3)) / .6)) : 0;
+    const ldy = -2.5 * Math.abs(Math.sin((t - .25) * Math.PI / SP)) * dragging, lrot = 1.6 * Math.sin((t - .25) * 2 * Math.PI / SP) * dragging;
+    lgEl.style.transform = `translate(${tx}px, ${ldy}px) rotate(${lrot}deg)`;
+    // eyes and mouth: ahead while hauling, then a glance at us, then at the hopping dots, then a smile
+    const look = t < 3.4 ? 4.5 : t < 3.8 ? 0 : t < TS ? -5.5 : 0;
+    pup.setAttribute('transform', `translate(${look},${t < W1 ? 1 : 0})`);
+    const hp = t >= TS ? 1 : 0;
     happy.setAttribute('opacity', hp); eyes.setAttribute('opacity', 1 - hp); smile.setAttribute('opacity', hp);
     ch.forEach(c => c.setAttribute('opacity', hp ? .55 : 0));
     dots.forEach(f => f(t));
-    // the thread: from the ball of Nakhi's hand to a knot on the logo's right end; tight while pulling, then slack, then gone
-    const rad = rot * Math.PI / 180, dx0 = 14 - 65, dy0 = 105 - 140;
-    const hx = x + 65 + dx0 * Math.cos(rad) - dy0 * Math.sin(rad), hy = BASE + y + 140 + dx0 * Math.sin(rad) + dy0 * Math.cos(rad);
-    const alpha = t < .2 ? 0 : t < 2.5 ? 1 : clamp(1 - (t - 2.5) / .5);
-    const rx = LX + LW + tx - 3, ry = LY + 62, sag = t < 2.5 ? 8 : 40 * clamp((t - 2.5) / .5);
-    const d = `M${hx} ${hy} Q${(hx + rx) / 2} ${(hy + ry) / 2 + sag} ${rx} ${ry}`;
+    // the thread: from his hand to the knot on the logo's end; taut while hauling, slack once he stops, then gone
+    const h = hand(ps), alpha = t < .1 ? 0 : t < 3.5 ? 1 : clamp(1 - (t - 3.5) / .5);
+    const rx = LX + LW + tx - 3, ry = LY + 62 + ldy, sag = t < W1 ? 6 : 6 + 44 * clamp((t - W1) / .5);
+    const d = `M${h.x} ${h.y} Q${(h.x + rx) / 2} ${(h.y + ry) / 2 + sag} ${rx} ${ry}`;
     t1.setAttribute('d', d); t2.setAttribute('d', d); t1.style.opacity = t2.style.opacity = alpha;
     knot.setAttribute('transform', `translate(${rx} ${ry})`); knot.style.opacity = alpha;
     t2.setAttribute('stroke-dashoffset', -(t * 14) % 10);
@@ -1153,15 +1167,17 @@ function renderSplash(){
 function splashSounds(){
   const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
   const pop = (f) => { playTone(f, .12, 'triangle', .16); playTone(f * 1.5, .16, 'sine', .1); };
-  // three tugs on the thread
-  [650, 1280, 1920].forEach((t, i) => { at(t, () => { playTone(180 + i * 30, .22, 'sawtooth', .05); playTone(320 + i * 50, .18, 'triangle', .08); }); at(t + 330, () => playTone(240, .08, 'sine', .08)); });
-  at(2600, () => { playTone(420, .1, 'sine', .1); playTone(210, .25, 'sine', .08); });
+  // heavy footsteps while he hauls the logo, with the scrape of the drag
+  for(let k = 0; k < 6; k++) at(300 + k * 550 + 120, () => { playTone(95, .16, 'sine', .22); playTone(190, .06, 'triangle', .06); });
+  [500, 1000, 1500, 2000, 2500].forEach(t => at(t, () => playTone(150 + Math.random() * 40, .3, 'sawtooth', .025)));
+  // he stops and lets out a breath
+  at(3200, () => { playTone(420, .3, 'sine', .08); playTone(300, .35, 'sine', .07); });
   // the dots hop in
-  [[3800, 5, 330, 45], [4200, 6, 300, 50], [4600, 7, 290, 48]].forEach(([t0, n, f0, df]) => { for(let i = 0; i < n; i++) at(t0 + 300 * (i + 1) - 40, () => playTone(f0 + i * df, .09, 'sine', .13)); });
-  [5300, 6000, 6700].forEach((t, i) => at(t, () => pop(784 + i * 100)));
+  [[4400, 5, 330, 45], [4800, 6, 300, 50], [5200, 7, 290, 48]].forEach(([t0, n, f0, df]) => { for(let i = 0; i < n; i++) at(t0 + 300 * (i + 1) - 40, () => playTone(f0 + i * df, .09, 'sine', .13)); });
+  [5900, 6600, 7300].forEach((t, i) => at(t, () => pop(784 + i * 100)));
   // the smile and the lean
-  [6400, 6500, 6600].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));
-  at(7500, () => { playTone(150, .18, 'sine', .2); playTone(300, .1, 'triangle', .06); });
+  [7500, 7600, 7700].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));
+  at(8300, () => { playTone(150, .18, 'sine', .2); playTone(300, .1, 'triangle', .06); });
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
