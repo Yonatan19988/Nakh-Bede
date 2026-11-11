@@ -1013,10 +1013,11 @@ function stepHomeMap(dir){
   sfxTap(); render();
 }
 
-// ---------------- SPLASH: the logo shows, then the dots of ن and خ hop in from the left and land ----------------
-let splashEl = null, splashTimer = null, splashSfx = [];
-const SPLASH_MS = 5500;
-function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; }
+// ---------------- SPLASH: Nakhi pulls the logo in with a thread, watches the dots hop in, smiles and leans on the word ----------------
+let splashEl = null, splashTimer = null, splashSfx = [], splashRaf = 0;
+const SPLASH_END = 8;                         // seconds of the scene
+const SPLASH_MS = 8300;
+function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; cancelAnimationFrame(splashRaf); }
 function splashDone(){
   splashStop();
   if(state.screen !== 'splash') return;
@@ -1028,6 +1029,8 @@ let welcomeIntro = false;
 function splashHandoff(){
   const ov = splashEl;
   if(state.screen !== 'splash' || !ov || !ov.parentNode){ splashDone(); return; }
+  splashStop();
+  if(ov._frame) ov._frame(SPLASH_END);
   const r = ov.getBoundingClientRect();
   Object.assign(ov.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', zIndex: 60 });
   ov.classList.add('sp--over');
@@ -1058,44 +1061,105 @@ function renderSplash(){
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   // positions are the pieces' places inside the 1138 x 590 splash logo
   const pc = (x, y, w, h) => `left:${x / 11.38}%;top:${y / 5.9}%;width:${w / 11.38}%;height:${h / 5.9}%`;
-  const stars = [[40, 330, 30, 1.0], [330, 320, 26, 1.25], [90, 470, 22, 1.5], [300, 480, 34, 1.15], [190, 290, 24, 1.7], [20, 410, 18, 1.9], [360, 410, 20, 2.0], [140, 520, 26, 1.4], [250, 300, 18, 2.2], [210, 530, 22, 1.8]]
-    .map(([x, y, z, d]) => `<i class="sp__star" style="left:${x}px;top:${y}px;--z:${z}px;--d:${d}s"></i>`).join('');
-  const rings = [1, 2, 3, 4].map(i => `<i class="sp__ring sp__ring--${i}"></i>`).join('');
-  const wrap = el(`<div class="sp sp--st-combo${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
-    <div class="sp__stage">${stars}${rings}<div class="sp__sw"><div class="sp__lg">
-      <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">
-      <div class="sp__d sp__d--a" style="${pc(691, 14, 136, 130)}"><img src="assets/splash-dot-2.webp" alt=""></div>
-      <div class="sp__d sp__d--b" style="${pc(928, 47, 137, 131)}"><img src="assets/splash-dot-1.webp" alt=""></div>
-      <div class="sp__d sp__d--c" style="${pc(392, 427, 124, 130)}"><img src="assets/splash-dot-3.webp" alt=""></div>
-      <div class="sp__shbox"><i class="sp__shine"></i></div>
-    </div></div></div></div>`);
+  const wrap = el(`<div class="sp sp--scene${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
+    <div class="sp__stage">
+      <svg class="sp__thr" viewBox="0 0 390 780" aria-hidden="true"><path class="t1" fill="none" stroke="#7a4a07" stroke-width="7" stroke-linecap="round"/><path class="t2" fill="none" stroke="#F6B831" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 3"/></svg>
+      <div class="sp__sw"><div class="sp__lg">
+        <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">
+        <div class="sp__nd sp__nd--a" style="${pc(691, 14, 136, 130)}"><img src="assets/splash-dot-2.webp" alt=""></div>
+        <div class="sp__nd sp__nd--b" style="${pc(928, 47, 137, 131)}"><img src="assets/splash-dot-1.webp" alt=""></div>
+        <div class="sp__nd sp__nd--c" style="${pc(392, 427, 124, 130)}"><img src="assets/splash-dot-3.webp" alt=""></div>
+      </div></div>
+      <div class="sp__nk"><img src="assets/mascot.svg" alt="" decoding="async">
+        <svg viewBox="0 0 276 296" aria-hidden="true">
+          <g class="eyes"><ellipse cx="113" cy="85" rx="12" ry="17" fill="#fff"/><ellipse cx="163" cy="85" rx="12" ry="17" fill="#fff"/>
+            <g class="pup"><ellipse cx="113" cy="87" rx="8" ry="11" fill="#2a1306"/><ellipse cx="163" cy="87" rx="8" ry="11" fill="#2a1306"/><circle cx="110" cy="82" r="3" fill="#fff"/><circle cx="160" cy="82" r="3" fill="#fff"/></g></g>
+          <g class="happy" opacity="0"><ellipse cx="113" cy="85" rx="15" ry="19" fill="#F6AE24"/><ellipse cx="163" cy="85" rx="15" ry="19" fill="#F6AE24"/>
+            <path d="M99 88 Q113 70 127 88" fill="none" stroke="#3a1a08" stroke-width="5" stroke-linecap="round"/><path d="M149 88 Q163 70 177 88" fill="none" stroke="#3a1a08" stroke-width="5" stroke-linecap="round"/></g>
+          <g class="smile" opacity="0"><path d="M112 112 Q138 108 164 112 Q158 148 138 148 Q118 148 112 112Z" fill="#4a1f0a"/><ellipse cx="138" cy="139" rx="11" ry="6" fill="#e0556a"/></g>
+          <ellipse class="ch1" cx="86" cy="106" rx="12" ry="8" fill="#ff7d6a" opacity="0"/><ellipse class="ch2" cx="190" cy="106" rx="12" ry="8" fill="#ff7d6a" opacity="0"/>
+        </svg></div>
+    </div></div>`);
+  const q = (c) => wrap.querySelector(c);
+  const lgEl = q('.sp__lg'), nk = q('.sp__nk'), pup = q('.pup'), eyes = q('.eyes'), happy = q('.happy'), smile = q('.smile');
+  const ch = [q('.ch1'), q('.ch2')], t1 = q('.t1'), t2 = q('.t2');
+  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+  const eo = (x) => 1 - Math.pow(1 - clamp(x), 3);
+  const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+  const mixv = (a, b, k) => a + (b - a) * k;
+  // a dot hops in from the left and lands with a small pop
+  const dot = (cls, t0, dur, dist) => { const d = q(cls), img = d.firstElementChild; return (t) => {
+    if(t < t0){ d.style.opacity = 0; return; }
+    const k = clamp((t - t0) / dur);
+    d.style.opacity = 1; d.style.transform = `translateX(${-dist * (1 - k)}px)`;
+    d.style.scale = k >= 1 ? 1 + .28 * Math.sin(clamp((t - t0 - dur) / .35) * Math.PI) : 1;
+    const ph = ((t - t0) / .3) % 1; let y = 0, sc = 'scale(1,1)';
+    if(k < 1){ if(ph < .12) sc = `scale(${1.12 - .12 * (ph / .12)},${.88 + .12 * (ph / .12)})`; else y = -62 * Math.sin(Math.min((ph - .12) / .88, 1) * Math.PI); }
+    img.style.transform = `translateY(${y}px) ${sc}`;
+  }; };
+  const dots = [dot('.sp__nd--a', 3.8, 1.5, 300), dot('.sp__nd--b', 4.2, 1.8, 370), dot('.sp__nd--c', 4.6, 2.1, 440)];
+  const BASE = 440;
+  const frame = (t) => {
+    // the logo comes in from the left in three tugs
+    const pr = t < .6 ? 0 : t < 2.5 ? (() => { const u = (t - .6) / 1.9 * 3, i = Math.min(2, Math.floor(u)); return (i + eo(u - i)) / 3; })() : 1;
+    const over = t > 2.5 ? Math.sin(clamp((t - 2.5) / .5) * Math.PI) * -8 * (1 - clamp((t - 2.5) / .5)) : 0;
+    const tx = -440 * (1 - pr) + over;
+    lgEl.style.transform = `translateX(${tx}px)`;
+    // Nakhi: pulls, steps in, watches the dots, hops when he smiles, leans on the word
+    let x = 335, rot = 0, y = 0;
+    if(t < 2.5){ const u = (t - .6) / 1.9 * 3, f = u - Math.floor(u); rot = t < .6 ? 4 : 7 + 5 * Math.sin(Math.min(1, f * 1.6) * Math.PI); x = 335 - (t < .6 ? 0 : 6 * Math.sin(Math.min(1, f * 1.6) * Math.PI)); }
+    else if(t < 3.1){ const k = ease((t - 2.5) / .6); x = mixv(335, 280, k); rot = mixv(6, 0, k); }
+    else { x = 280; rot = 0;
+      if(t >= 6.4 && t < 7.1) y = -22 * Math.sin(clamp((t - 6.4) / .6) * Math.PI);
+      if(t >= 7.1){ const k = ease((t - 7.1) / .7); x = mixv(280, 255, k); rot = mixv(0, -9, k); } }
+    const bs = .015 * Math.sin(t * 2);
+    nk.style.transform = `translate(${x}px,${BASE + y}px) rotate(${rot}deg) scale(${1 + bs},${1 - bs})`;
+    // eyes and mouth
+    pup.setAttribute('transform', `translate(${t < 6.4 ? -5.5 : 0},${t < 2.5 ? 1 : 0})`);
+    const hp = t >= 6.4 ? 1 : 0;
+    happy.setAttribute('opacity', hp); eyes.setAttribute('opacity', 1 - hp); smile.setAttribute('opacity', hp);
+    ch.forEach(c => c.setAttribute('opacity', hp ? .55 : 0));
+    dots.forEach(f => f(t));
+    // the thread from Nakhi's hand to the logo, tight while pulling, then slack, then gone
+    const rad = rot * Math.PI / 180, hx = x + 14 * Math.cos(rad) + 105 * Math.sin(rad), hy = BASE + 105 * Math.cos(rad) + 14 * -Math.sin(rad) * 0;
+    const alpha = t < .2 ? 0 : t < 2.5 ? 1 : clamp(1 - (t - 2.5) / .5);
+    const rx = 355 + tx - 8, ry = 430, sag = t < 2.5 ? 10 : 60 * clamp((t - 2.5) / .5);
+    const d = `M${hx} ${hy} Q${(hx + rx) / 2} ${(hy + ry) / 2 + sag} ${rx} ${ry}`;
+    t1.setAttribute('d', d); t2.setAttribute('d', d); t1.style.opacity = t2.style.opacity = alpha;
+    t2.setAttribute('stroke-dashoffset', -(t * 14) % 10);
+  };
+  wrap._frame = frame;
   const fit = () => {
     const k = Math.min(window.innerWidth / 390, window.innerHeight / 780, 1.6);
-    wrap.querySelector('.sp__stage').style.transform = `translate(-50%,-50%) scale(${k})`;
+    q('.sp__stage').style.transform = `translate(-50%,-50%) scale(${k})`;
   };
   fit();
   window.addEventListener('resize', fit);
   splashEl = wrap;
-  requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('go')));
-  // after the animation the logo zooms out to its place on the welcome screen, whose parts then appear around it
+  frame(reduce ? SPLASH_END : 0);
+  if(!reduce){
+    const t0 = performance.now();
+    const loop = (now) => { frame(Math.min(SPLASH_END, (now - t0) / 1000)); splashRaf = requestAnimationFrame(loop); };
+    splashRaf = requestAnimationFrame(loop);
+  }
+  // after the scene the logo zooms out to its place on the welcome screen, whose parts then appear around it
   splashTimer = setTimeout(reduce ? splashDone : splashHandoff, reduce ? 900 : SPLASH_MS);
   if(!reduce) splashSounds();
   return wrap;
 }
-// sounds in step with the animation (silent until the browser allows audio, e.g. after a first tap)
+// sounds in step with the scene (silent until the browser allows audio, e.g. after a first tap)
 function splashSounds(){
   const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
   const pop = (f) => { playTone(f, .12, 'triangle', .16); playTone(f * 1.5, .16, 'sine', .1); };
-  // neon flicker and the logo spinning in, with the first twinkles
-  [280, 390, 490, 580, 700, 850].forEach((t, i) => at(t, () => playTone(i % 2 ? 900 : 1400, .04, 'square', .05)));
-  at(250, () => playTone(120, .8, 'sine', .06));
-  at(200, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });
-  [600, 750, 900, 1000, 1150, 1250, 1400, 1500, 1650, 1750, 2700, 2900, 3100, 3300, 3500, 3700].forEach((t, i) => at(t, () => playTone(1800 + (i % 4) * 250, .07, 'sine', .06)));
-  // heartbeat (lub-dub), while the dots hop
-  for(let k = 0; k < 4; k++){ at(1500 + k * 800 + 130, () => playTone(110, .15, 'sine', .3)); at(1500 + k * 800 + 330, () => playTone(100, .12, 'sine', .22)); }
-  [[1500, 5, 330, 45], [1800, 6, 300, 50], [2100, 7, 290, 48]].forEach(([t0, n, f0, df]) => { for(let i = 0; i < n; i++) at(t0 + 300 * (i + 1) - 40, () => playTone(f0 + i * df, .09, 'sine', .13)); });
-  [3000, 3600, 4200].forEach((t, i) => at(t, () => pop(784 + i * 100)));
-  [1568, 1976, 2349, 3136].forEach((f, i) => at(4400 + i * 90, () => playTone(f, .18, 'sine', .07)));
+  // three tugs on the thread
+  [650, 1280, 1920].forEach((t, i) => { at(t, () => { playTone(180 + i * 30, .22, 'sawtooth', .05); playTone(320 + i * 50, .18, 'triangle', .08); }); at(t + 330, () => playTone(240, .08, 'sine', .08)); });
+  at(2600, () => { playTone(420, .1, 'sine', .1); playTone(210, .25, 'sine', .08); });
+  // the dots hop in
+  [[3800, 5, 330, 45], [4200, 6, 300, 50], [4600, 7, 290, 48]].forEach(([t0, n, f0, df]) => { for(let i = 0; i < n; i++) at(t0 + 300 * (i + 1) - 40, () => playTone(f0 + i * df, .09, 'sine', .13)); });
+  [5300, 6000, 6700].forEach((t, i) => at(t, () => pop(784 + i * 100)));
+  // the smile and the lean
+  [6400, 6500, 6600].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));
+  at(7500, () => { playTone(150, .18, 'sine', .2); playTone(300, .1, 'triangle', .06); });
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------

@@ -2826,45 +2826,17 @@ button{ font-size:inherit; }
 
 .wl--logo-in .wl__logo{ animation:wlFade .25s ease both; }
 
-/* ---- opening animation: neon flicker-on, a heartbeat, hopping dots with a beat and a ring at each landing, twinkling stars ---- */
+/* ---- opening scene: Nakhi pulls the logo in, watches the dots hop, smiles and leans on the word (driven from js) ---- */
 .sp__sw{ position:absolute; inset:0; }
-.sp__d{ transform:scale(0); }
-.sp__ring, .sp__star{ position:absolute; display:block; }
-.sp--over .sp__sw, .sp--over .sp__sw .sp__lg{ animation:none!important; filter:none; }
-.sp--over .sp__sw{ transform:none!important; }
-.sp--over .sp__base{ display:block!important; opacity:1!important; transform:none!important; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
-.sp--over .sp__d{ opacity:1!important; transform:none!important; }
-.sp--over .sp__ring, .sp--over .sp__star, .sp--still .sp__ring, .sp--still .sp__star{ display:none!important; }
-.sp--still .sp__base{ opacity:1!important; transform:none!important; }
-.sp--still .sp__d{ opacity:1!important; transform:none!important; }
-.sp--still .sp__sw{ transform:none; }
-/* neon flicker-on and the stars at the same time; right after, a heartbeat while the three dots hop in */
-.sp--st-combo{ --shd:4.4s; }
-.sp--st-combo .sp__base{ opacity:0; transform:none; filter:drop-shadow(0 0 16px rgba(255,176,58,.7)) drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
-.sp.sp--st-combo.go .sp__base{ animation:spFlick 1.3s .2s steps(1,end) forwards, spSpinIn 1s .2s cubic-bezier(.2,1.4,.4,1) forwards, spLub .8s 1.5s 4; }
-@keyframes spFlick{ 0%{opacity:0} 8%{opacity:1} 12%{opacity:.1} 20%{opacity:1} 24%{opacity:.2} 30%{opacity:.9} 34%{opacity:.15} 45%,100%{opacity:1} }
-@keyframes spSpinIn{ 0%{transform:scale(0) rotate(-25deg)} 60%{transform:scale(1.15) rotate(6deg)} 100%{transform:scale(1) rotate(0)} }
-@keyframes spLub{ 0%{transform:scale(1)} 18%{transform:scale(1.12)} 32%{transform:scale(.97)} 46%{transform:scale(1.07)} 60%,100%{transform:scale(1)} }
-/* the dots hop in as before, while the heart beats */
-.sp.sp--st-combo.go .sp__d--a{ animation:spHopA 1.5s 1.5s linear both, spLand .35s 3s forwards; }
-.sp.sp--st-combo.go .sp__d--b{ animation:spHopB 1.8s 1.8s linear both, spLand .35s 3.6s forwards; }
-.sp.sp--st-combo.go .sp__d--c{ animation:spHopC 2.1s 2.1s linear both, spLand .35s 4.2s forwards; }
-.sp.sp--st-combo.go .sp__d--a img{ animation:spDy .3s 1.5s 5 both; }
-.sp.sp--st-combo.go .sp__d--b img{ animation:spDy .3s 1.8s 6 both; }
-.sp.sp--st-combo.go .sp__d--c img{ animation:spDy .3s 2.1s 7 both; }
-@keyframes spHopA{ 0%{opacity:0;transform:translateX(-300px)} 1%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
-@keyframes spHopB{ 0%{opacity:0;transform:translateX(-370px)} 1%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
-@keyframes spHopC{ 0%{opacity:0;transform:translateX(-440px)} 1%{opacity:1} 100%{opacity:1;transform:translateX(0)} }
-/* stars twinkle during the flicker and again during the heartbeat; a ring leaves the logo on every beat */
-.sp__star{ width:var(--z); height:var(--z); margin:calc(var(--z) / -2); background:#ffe9a8; clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%); opacity:0; }
-.sp.sp--st-combo.go .sp__star{ animation:spTwinkle .9s calc(var(--d) - .5s) ease-out forwards, spTwinkle .9s calc(var(--d) + 1.6s) ease-out forwards; }
-@keyframes spTwinkle{ 0%{opacity:0;transform:scale(0) rotate(0)} 40%{opacity:1;transform:scale(1.4) rotate(45deg)} 100%{opacity:0;transform:scale(0) rotate(90deg)} }
-.sp__ring{ left:135px; top:333px; width:120px; height:120px; border-radius:50%; border:3px solid rgba(244,196,67,.8); opacity:0; }
-.sp.sp--st-combo.go .sp__ring--1{ animation:spRing 1.2s 1.65s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--2{ animation:spRing 1.2s 2.45s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--3{ animation:spRing 1.2s 3.25s ease-out forwards; }
-.sp.sp--st-combo.go .sp__ring--4{ animation:spRing 1.2s 4.05s ease-out forwards; }
-@keyframes spRing{ 0%{opacity:.9;transform:scale(.4)} 100%{opacity:0;transform:scale(4.2)} }
+.sp--scene .sp__base{ opacity:1; transform:none; }
+.sp__nd{ position:absolute; opacity:0; }
+.sp__nd img{ position:absolute; inset:0; width:100%; height:100%; display:block; transform-origin:50% 100%; }
+.sp__nk{ position:absolute; left:0; top:0; width:130px; height:140px; transform-origin:50% 100%; filter:drop-shadow(0 8px 10px rgba(0,0,0,.45)); }
+.sp__nk > img, .sp__nk > svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+.sp__thr{ position:absolute; inset:0; width:390px; height:780px; pointer-events:none; }
+.sp--over .sp__nk, .sp--over .sp__thr{ transition:opacity .3s ease; opacity:0; }
+.sp--over .sp__nd{ opacity:1!important; transform:none!important; scale:1!important; }
+.sp--over .sp__nd img{ transform:none!important; }
 
 .wl--intro .wl__mascot{ animation:wlMascot .8s .9s cubic-bezier(.2,1.5,.4,1) both; }
 .wl--hold .wl__mascot{ visibility:hidden; }
