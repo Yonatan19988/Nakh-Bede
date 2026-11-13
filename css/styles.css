@@ -2893,3 +2893,7 @@ button{ font-size:inherit; }
 /* general-list words: one line, one size for all, sized so the longest («ماشین لباسشویی») fits the card */
 .play-card.is-gen{ container-type:inline-size; }
 .play-card.is-gen .play-card__word{ white-space:nowrap; font-size:min(80px, calc((100vw - 52px) * .122)); font-size:min(80px, 11.6cqi); }
+
+/* proverbs: one size for all of them, at most three balanced lines (sized for the longest) */
+.play-card.is-prov{ container-type:inline-size; }
+.play-card.is-prov .play-card__word{ font-size:min(64px, calc((100vw - 52px) * .106)); font-size:min(64px, 10cqi); line-height:1.45; text-wrap:balance; }
