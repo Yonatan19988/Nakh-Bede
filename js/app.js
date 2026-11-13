@@ -1070,19 +1070,16 @@ function renderSplash(){
         <div class="sp__nd sp__nd--b" style="${pc(928, 47, 137, 131)}"><img src="assets/splash-dot-1.webp" alt=""></div>
         <div class="sp__nd sp__nd--c" style="${pc(392, 427, 124, 130)}"><img src="assets/splash-dot-3.webp" alt=""></div>
       </div></div>
-      <div class="sp__nk"><img src="assets/mascot.webp" alt="" decoding="async">
+      <div class="sp__nk"><img class="sp__nk1" src="assets/mascot.webp" alt="" decoding="async"><img class="sp__nk2" src="assets/mascot-laugh.webp" alt="" decoding="async" style="left:6.8px;top:-0.1px;width:102.4px;height:155.1px;opacity:0">
         <svg viewBox="0 0 882 1167" aria-hidden="true">
           <g class="eyes"><ellipse cx="328" cy="401" rx="46" ry="60" fill="#fff"/><ellipse cx="533" cy="380" rx="46" ry="60" fill="#fff"/>
             <g class="pup"><ellipse cx="338" cy="412" rx="30" ry="38" fill="#2a1306"/><ellipse cx="543" cy="391" rx="30" ry="38" fill="#2a1306"/><circle cx="328" cy="396" r="10" fill="#fff"/><circle cx="533" cy="375" r="10" fill="#fff"/></g></g>
-          <g class="happy" opacity="0"><ellipse cx="328" cy="401" rx="60" ry="75" fill="#FDB41E"/><ellipse cx="533" cy="380" rx="60" ry="75" fill="#FDB41E"/>
-            <path d="M282 412 Q328 358 374 412" fill="none" stroke="#3a1a08" stroke-width="16" stroke-linecap="round"/><path d="M487 391 Q533 337 579 391" fill="none" stroke="#3a1a08" stroke-width="16" stroke-linecap="round"/></g>
-          <g class="smile" opacity="0"><path d="M338 490 Q443 478 548 490 Q540 590 443 596 Q346 590 338 490Z" fill="#5a1a08" stroke="#2a1006" stroke-width="9" stroke-linejoin="round"/><ellipse cx="443" cy="572" rx="42" ry="20" fill="#ff7a6a"/></g>
-          <ellipse class="ch1" cx="262" cy="492" rx="42" ry="26" fill="#ff6a4a" opacity="0"/><ellipse class="ch2" cx="612" cy="466" rx="42" ry="26" fill="#ff6a4a" opacity="0"/>
         </svg></div>
     </div></div>`);
   const q = (c) => wrap.querySelector(c);
-  const lgEl = q('.sp__lg'), nk = q('.sp__nk'), pup = q('.pup'), eyes = q('.eyes'), happy = q('.happy'), smile = q('.smile');
-  const ch = [q('.ch1'), q('.ch2')], t1 = q('.t1'), t2 = q('.t2'), knot = q('.knot');
+  const nk1 = q('.sp__nk1'), nk2 = q('.sp__nk2'), nkSvg = q('.sp__nk > svg');
+  const lgEl = q('.sp__lg'), nk = q('.sp__nk'), pup = q('.pup');
+  const t1 = q('.t1'), t2 = q('.t2'), knot = q('.knot');
   const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
   const eo = (x) => 1 - Math.pow(1 - clamp(x), 3);
   const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
@@ -1133,8 +1130,8 @@ function renderSplash(){
     const look = t < 3.4 ? 14 : t < 3.8 ? 0 : t < TS ? -17 : 0;
     pup.setAttribute('transform', `translate(${look},${t < W1 ? 3 : 0})`);
     const hp = t >= TS ? 1 : 0;
-    happy.setAttribute('opacity', hp); eyes.setAttribute('opacity', 1 - hp); smile.setAttribute('opacity', hp);
-    ch.forEach(c => c.setAttribute('opacity', hp ? .55 : 0));
+    // the last part: the laughing drawing of Nakhi, eyes closed and arms open
+    nk2.style.opacity = hp; nk1.style.opacity = nkSvg.style.opacity = 1 - hp;
     dots.forEach(f => f(t));
     // the thread: from his hand to the knot on the logo's end; taut while hauling, slack once he stops, then gone
     const h = hand(ps), alpha = t < .1 ? 0 : t < 3.5 ? 1 : clamp(1 - (t - 3.5) / .5);
