@@ -2664,7 +2664,7 @@ body.pm-open{ overflow:hidden; }
 .hm2-top > :last-child{ justify-self:end; }
 .hm2-brand{ display:flex; align-items:center; justify-content:center; gap:0; min-width:0; }
 .hm2-mascot{ height:var(--hm2-brand-h); width:auto; margin-bottom:0; flex:0 0 auto; filter:drop-shadow(0 4px 5px rgba(0,0,0,.4)); }
-.hm2-logo{ height:calc(var(--hm2-brand-h) * .66); width:auto; min-width:0; max-width:100%; object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+.hm2-logo{ height:calc(var(--hm2-brand-h) * .8); width:auto; min-width:0; max-width:100%; object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
 .hm2 .hm-prof{ padding:4px 10px 4px 5px; max-width:100%; min-width:0; gap:7px; }
 .hm2 .hm-prof__txt{ min-width:0; }
 .hm2 .hm-prof__txt b{ display:block; max-width:62px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
