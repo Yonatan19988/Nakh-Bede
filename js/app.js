@@ -4003,7 +4003,7 @@ function renderCardView(isDescriber, isTurnTeam){
   wordEl.textContent = word;
   card.appendChild(wordEl);
   // a word of the general list always stays on one line, at one size for all of them (sized for the longest)
-  // a proverb: one size for all proverbs, at most two balanced lines
+  // a proverb: one size for all proverbs, at most two balanced lines (same card as the others)
   const prov = (WORD_PACKS.find(x => x.id === 'proverbs') || {}).words || [];
   if(prov.includes(word)){
     card.classList.add('is-prov');
@@ -4011,6 +4011,11 @@ function renderCardView(isDescriber, isTurnTeam){
       let fs = parseFloat(getComputedStyle(wordEl).fontSize), n = 0;
       while((wordEl.scrollWidth > wordEl.clientWidth + 1 || card.scrollHeight > card.clientHeight + 2) && fs > 16 && n++ < 30){ fs -= 2; wordEl.style.fontSize = fs + 'px'; }
     });
+  } else if(packOfWord(word)){
+    // the other packs: one size per pack, on one line when the pack's longest entry fits, otherwise at most two lines
+    const pack = packOfWord(word);
+    card.classList.add('is-pack');
+    requestAnimationFrame(() => fitPackWord(card, wordEl, pack));
   } else if(WORD_LIST.includes(word)){
     card.classList.add('is-gen');
     // safety net for an unusual screen: shrink this one word until it fits
@@ -4020,6 +4025,42 @@ function renderCardView(isDescriber, isTurnTeam){
     });
   }
   return card;
+}
+
+function packOfWord(word){
+  return WORD_PACKS.find(x => x.id !== 'proverbs' && Array.isArray(x.words) && x.words.includes(word)) || null;
+}
+const packFitCache = {};
+function fitPackWord(card, wordEl, pack){
+  const cs = getComputedStyle(card);
+  const inner = card.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const avail = inner * .88;                         // the word keeps 6% clear on each side
+  const key = pack.id + ':' + Math.round(inner);
+  let fit = packFitCache[key];
+  if(!fit){
+    const ctx = (fitPackWord.cv || (fitPackWord.cv = document.createElement('canvas'))).getContext('2d');
+    ctx.font = `400 100px ${getComputedStyle(wordEl).fontFamily}`;
+    let longest = 0, longestPart = 0;
+    pack.words.forEach(w => {
+      longest = Math.max(longest, ctx.measureText(w).width);
+      w.split(/\s+/).forEach(part => { longestPart = Math.max(longestPart, ctx.measureText(part).width); });
+    });
+    const gen = Math.min(80, inner * .116);           // the size the general list uses on this card
+    const one = avail / longest * 100 * .96;
+    fit = one >= gen * .72
+      ? { lines: 1, size: Math.min(gen, one) }
+      : { lines: 2, size: Math.min(gen * .9, avail / (longest * .56) * 100, avail / longestPart * 100 * .96) };
+    packFitCache[key] = fit;
+  }
+  card.classList.toggle('is-one', fit.lines === 1);
+  let fs = fit.size, n = 0;
+  wordEl.style.fontSize = fs + 'px';
+  const lh = () => parseFloat(getComputedStyle(wordEl).lineHeight) || fs * 1.5;
+  // safety net: a word that still does not fit makes the whole pack a little smaller
+  while((wordEl.scrollWidth > wordEl.clientWidth + 1 || Math.round(wordEl.getBoundingClientRect().height / lh()) > fit.lines || card.scrollHeight > card.clientHeight + 2) && fs > 16 && n++ < 30){
+    fs -= 1.5; wordEl.style.fontSize = fs + 'px';
+  }
+  if(fs < fit.size) fit.size = fs;
 }
 
 function buildRoundResult(onNext, label){

@@ -2894,7 +2894,10 @@ button{ font-size:inherit; }
 .play-card.is-gen{ container-type:inline-size; }
 .play-card.is-gen .play-card__word{ white-space:nowrap; font-size:min(80px, calc((100vw - 52px) * .122)); font-size:min(80px, 11.6cqi); }
 
-/* proverbs: one size for all of them, at most two balanced lines (sized for the longest), in a taller card */
+/* proverbs: one size for all of them, at most two balanced lines (sized for the longest) */
 .play-card.is-prov{ container-type:inline-size; }
-.play-card.is-prov{ min-height:230px; }
 .play-card.is-prov .play-card__word{ font-size:min(52px, calc((100vw - 52px) * .085)); font-size:min(52px, 8cqi); line-height:1.6; text-wrap:balance; padding:0 5%; }
+
+/* the other packs: sized per pack in js (one line, or at most two balanced lines) */
+.play-card.is-pack .play-card__word{ line-height:1.5; text-wrap:balance; padding:0 6%; }
+.play-card.is-pack.is-one .play-card__word{ white-space:nowrap; }
