@@ -1320,50 +1320,76 @@ function renderHome(){
     wrap.appendChild(row);
   }
 
-  // ---- the arena: the three game cards, the board in use, one big play button and three shortcuts ----
-  const maps = ownedMaps(), cur = curMap();
-  const hero = el(`<div class="hm2-cards" aria-hidden="true">
-    <img class="hm2-card hm2-card--a" src="assets/card-action.webp" alt="" decoding="async">
-    <img class="hm2-card hm2-card--c" src="assets/card-word.webp" alt="" decoding="async">
-    <img class="hm2-card hm2-card--b" src="assets/card-back.webp" alt="" decoding="async"></div>`);
-  wrap.appendChild(hero);
-  // the board in use: a small picker above the play button
-  // right-to-left: "previous" is on the right (arrow points right), "next" on the left (arrow points left)
-  const picker = el(`<div class="hm2-mapbar">
-    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی قبلی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 L16 12 L10 18"/></svg></button>
-    <span class="hm2-mapbar__name"></span>
-    <button type="button" class="hm2-mapbar__nav" aria-label="نقشه‌ی بعدی"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6 L8 12 L14 18"/></svg></button></div>`);
-  picker.querySelector('.hm2-mapbar__name').textContent = '🗺️ ' + cur.name;
-  const navs = picker.querySelectorAll('.hm2-mapbar__nav');
-  navs[0].addEventListener('click', () => stepHomeMap(-1));
-  navs[1].addEventListener('click', () => stepHomeMap(1));
-  if(maps.length < 2) navs.forEach(n => { n.style.visibility = 'hidden'; });
-  if(maps.length < MAPS.length){
-    const more = el(`<button type="button" class="hm2-mapbar__more">نقشه‌های بیشتر ←</button>`);
-    more.addEventListener('click', () => { shopTab = 'map'; state.screen = 'shop'; render(); });
-    picker.appendChild(more);
-  }
-  wrap.appendChild(picker);
+  // ---- the arena: the game modes as cards to swipe through, one big play button for the chosen one ----
+  const dst = dailyStreak();
+  const dailyDone = dailyLoad().done;
+  const MODE_ICONS = {
+    local: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+    online: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><path d="M15.5 14.3c2.4.1 4.4 1.6 5 4.2"/></svg>',
+    quick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3Z"/></svg>',
+    daily: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M12 13.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 15.3l2-.3Z" fill="currentColor"/></svg>'
+  };
+  const MODES = [
+    { id:'local',  title:'روی همین گوشی',   text:'دور هم بشینید، تیم بچینید و گوشی رو دست‌به‌دست کنید.', go: () => { state.screen = 'setup'; render(); } },
+    { id:'online', title:'آنلاین با دوستان', text:'اتاق بساز، لینکش رو بفرست و هر کی هر جا هست بیاد.', go: () => { state.screen = 'online-create'; render(); } },
+    { id:'quick',  title:'بازی سریع',        text:'با فارسی‌زبان‌هایی که همین الان آنلاین‌اند بازی کن.', go: openQuick },
+    { id:'daily',  title:'کلمه‌ی امروز',     text: dst.n ? `${faNum(dst.n)} روز پشت هم! چالش امروز رو از دست نده.` : (dailyDone ? 'چالش امروز رو انجام دادی؛ فردا یکی تازه میاد.' : 'هر روز یک کلمه‌ی تازه؛ ببین چقدر سریع حدسش می‌زنی.'), go: openDaily }
+  ];
+  let modeIdx = Math.max(0, MODES.findIndex(m => m.id === LS.get('homeMode', 'local')));
+  const arena = el(`<div class="hm2-modes" role="listbox" aria-label="حالت بازی"><div class="hm2-modes__track"></div></div>`);
+  const track = arena.querySelector('.hm2-modes__track');
+  const cards = MODES.map((m, i) => {
+    const c = el(`<button type="button" class="hm2-mode hm2-mode--${m.id}" role="option"><span class="hm2-mode__ill">${MODE_ICONS[m.id]}</span><span class="hm2-mode__t"></span><span class="hm2-mode__d"></span>${m.id === 'daily' && dst.n ? `<span class="hm2-mode__badge">🔥 ${faNum(dst.n)}</span>` : ''}</button>`);
+    c.querySelector('.hm2-mode__t').textContent = m.title;
+    c.querySelector('.hm2-mode__d').textContent = m.text;
+    // a side card comes to the middle; the middle one starts its game
+    c.addEventListener('click', () => { if(i === modeIdx) m.go(); else centre(i, true); });
+    track.prepend(c);                                  // the track scrolls left-to-right: the first mode sits on the right
+    return c;
+  });
+  wrap.appendChild(arena);
+  const dots = el(`<div class="hm2-dots" aria-hidden="true">${MODES.map(() => '<i></i>').join('')}</div>`);
+  wrap.appendChild(dots);
+  // the cards lean back and fade as they leave the middle
+  const paint = () => {
+    const r = track.getBoundingClientRect(), mid = r.left + r.width / 2;
+    let best = 0, bestD = 1e9;
+    cards.forEach((c, i) => {
+      const cr = c.getBoundingClientRect(), d = (cr.left + cr.width / 2 - mid) / cr.width;
+      const k = Math.min(1, Math.abs(d));
+      c.style.transform = `scale(${1 - .16 * k}) rotate(${Math.max(-1, Math.min(1, d)) * 6}deg)`;
+      c.style.opacity = String(1 - .35 * k);
+      if(Math.abs(d) < bestD){ bestD = Math.abs(d); best = i; }
+    });
+    if(best !== modeIdx){ modeIdx = best; LS.set('homeMode', MODES[best].id); }
+    cards.forEach((c, i) => { c.classList.toggle('is-on', i === modeIdx); c.setAttribute('aria-selected', String(i === modeIdx)); });
+    dots.querySelectorAll('i').forEach((d, i) => d.classList.toggle('is-on', i === modeIdx));
+  };
+  const centre = (i, smooth) => {
+    const c = cards[i];
+    track.scrollTo({ left: track.scrollLeft + (c.getBoundingClientRect().left + c.offsetWidth / 2) - (track.getBoundingClientRect().left + track.clientWidth / 2), behavior: smooth ? 'smooth' : 'auto' });
+  };
+  let raf = 0;
+  track.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(paint); }, { passive: true });
+  requestAnimationFrame(() => { centre(modeIdx, false); paint(); });
 
   const play = el(`<button class="hm-btn hm-btn--gold hm2-play">
     <span class="hm-btn__gloss"></span>
     <span class="hm2-play__ico"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg></span>
     <span class="hm2-play__txt hm-out hm-out--gold" data-text="بازی کن">بازی کن</span></button>`);
-  play.addEventListener('click', () => { state.homeSheet = 'new'; render(); });
+  play.addEventListener('click', () => MODES[modeIdx].go());
   wrap.appendChild(play);
 
-  const dst = dailyStreak();
-  const dailyDone = dailyLoad().done;
-  const shortcuts = el(`<div class="hm2-sc"></div>`);
-  const sc = (cls, ico, label, fn) => {
-    const b = el(`<button type="button" class="hm-btn ${cls} hm2-sc__b"><span class="hm-btn__gloss"></span><span class="hm2-sc__ico"></span><span class="hm2-sc__t"></span></button>`);
-    b.querySelector('.hm2-sc__ico').textContent = ico; b.querySelector('.hm2-sc__t').textContent = label;
-    b.addEventListener('click', fn); shortcuts.appendChild(b);
-  };
-  sc('hm-btn--teal', '🌐', 'بازی سریع', openQuick);
-  sc('hm-btn--teal', '🔑', 'ورود با کد', () => { state.homeSheet = 'join'; render(); });
-  sc('hm-btn--red', '🔥', 'کلمه‌ی امروز' + (dst.n ? ' · ' + faNum(dst.n) : (dailyDone ? ' ✓' : '')), openDaily);
-  wrap.appendChild(shortcuts);
+  const extra = el(`<div class="hm2-extra"></div>`);
+  if(hasSavedGame()){
+    const cont = el(`<button type="button" class="hm2-extra__b">⏯ ادامه‌ی بازی قبلی</button>`);
+    cont.addEventListener('click', resumeLocalGame);
+    extra.appendChild(cont);
+  }
+  const code = el(`<button type="button" class="hm2-extra__b">🔑 ورود با کد</button>`);
+  code.addEventListener('click', () => { state.homeSheet = 'join'; render(); });
+  extra.appendChild(code);
+  wrap.appendChild(extra);
 
   if(SHOW_BOTTOM_NAV){
     const ico = {
