@@ -1193,15 +1193,18 @@ async function welcomeGoogle(kind){
   if(accountIsGoogle()) welcomeEnter();
   else { LS.set('welcomed', false); render(); }
 }
+let welcomeShown = false;
 function renderWelcome(){
   const intro = welcomeIntro; welcomeIntro = false;
-  const wrap = el(`<div class="wl${intro ? ' wl--intro wl--hold' : ''}"></div>`);
+  // the screen is drawn again when the account is ready or after the opening scene: no second entrance animation then
+  const again = welcomeShown && !intro; welcomeShown = true;
+  const wrap = el(`<div class="wl${intro ? ' wl--intro wl--hold' : ''}${again ? ' wl--static' : ''}"></div>`);
   wrap.appendChild(el(`<div class="wl__cards" aria-hidden="true">
     <img class="wl__card wl__card--a" src="assets/card-action.webp" alt="">
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
   // the logo with the yarn mascot standing next to it
-  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in${intro ? '' : ' nk__in--wave'}"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
+  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in${intro || again ? '' : ' nk__in--wave'}"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
   const nk = brand.querySelector('.nk');
   const nkHop = () => { nk.classList.remove('nk--hop'); void nk.offsetWidth; nk.classList.add('nk--hop'); nk.querySelector('.nk__in').classList.remove('nk__in--wave'); haptic(8); playTone(520,0.07,'triangle',0.09); setTimeout(()=>playTone(780,0.1,'triangle',0.08),70); };
   nk.addEventListener('click', nkHop);
@@ -1210,7 +1213,9 @@ function renderWelcome(){
   wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
   const box = el(`<div class="wl__btns${IS_NATIVE ? '' : ' wl__btns--full'}"></div>`);
   const signedIn = !IS_NATIVE && accountIsGoogle();
-  if(!IS_NATIVE && !signedIn){
+  // the buttons are always laid out, so the logo never moves when the account turns out to be signed in;
+  // a signed-in player sees them hidden, with only the thin progress bar
+  if(!IS_NATIVE){
     const g = el(`<button type="button" class="wl__google"><span class="acc__g"><svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.300-8.300 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg></span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
     g.disabled = acc.busy || !accountReady();
     g.addEventListener('click', () => welcomeGoogle());
@@ -1222,7 +1227,7 @@ function renderWelcome(){
       box.appendChild(ap);
     }
   }
-  if(!signedIn){
+  {
   const guest = el(`<button type="button" class="wl__guest"><span>${IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان'}</span></button>`);
     guest.disabled = acc.busy;
     guest.addEventListener('click', welcomeEnter);
@@ -1236,12 +1241,13 @@ function renderWelcome(){
   if(signedIn){
     // already signed in: nothing to read or press, only a thin bar right under the tagline while the game opens by itself
     wrap.classList.add('wl--auto');
+    box.querySelectorAll('button').forEach(b => { b.disabled = true; b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); });
     welcomeAutoStart();
     const elapsed = Math.max(0, Date.now() - welcomeAutoAt);
     box.appendChild(el(`<div class="wl__auto" aria-hidden="true"><i style="animation-delay:${-Math.min(elapsed, 2000)}ms"></i></div>`));
   }
   if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; wrap.appendChild(e); }
-  if(!signedIn) wrap.appendChild(el(`<small class="wl__note">${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
+  wrap.appendChild(el(`<small class="wl__note"${signedIn ? ' aria-hidden="true"' : ''}>${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
   return wrap;
 }
 
