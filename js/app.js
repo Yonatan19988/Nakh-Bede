@@ -935,7 +935,23 @@ function buildPackCarousel(selected, onToggle){
   const chips = chosen.querySelector('.pkc__chips');
   WORD_PACKS.filter(p => selected.includes(p.id)).forEach(p => { const c = el(`<i></i>`); c.textContent = p.icon + ' ' + p.name; chips.appendChild(c); });
   box.appendChild(chosen);
-  if(WORD_PACKS.some(p => !packOwned(p.id))) box.appendChild(buildMoreBtn('+ مودهای بیشتر', 'pack'));
+  // a random pick of one or two of the player's modes, or the shop for more
+  const acts = el(`<div class="pkc__acts"></div>`);
+  if(packs.length > 1){
+    const rnd = el(`<button type="button" class="pk-more pkc__rnd">🎲 تصادفی</button>`);
+    rnd.addEventListener('click', () => {
+      let ids;
+      do {
+        const pool = packs.map(p => p.id).sort(() => Math.random() - .5);
+        ids = pool.slice(0, Math.random() < .5 || pool.length < 2 ? 1 : 2);
+      } while(ids.length === selected.length && ids.every(x => selected.includes(x)));
+      LS.set('packs', ids); LS.set('pkcAt', ids[0]); sfxSelect();
+      onToggle(ids);
+    });
+    acts.appendChild(rnd);
+  }
+  if(WORD_PACKS.some(p => !packOwned(p.id))) acts.appendChild(buildMoreBtn('+ مودهای بیشتر', 'pack'));
+  if(acts.children.length) box.appendChild(acts);
   return box;
 }
 // the map as one big picture with the route; arrows page through the maps the player owns; Nakhi stands at the start

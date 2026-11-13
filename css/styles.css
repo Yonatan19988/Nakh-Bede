@@ -3007,3 +3007,6 @@ button{ font-size:inherit; }
 .mpv__arr--r{ right:8px; } .mpv__arr--l{ left:8px; }
 .mpv .hm2-dots{ margin-top:10px; }
 .vs-grid .vs-team .team-card__x:disabled{ display:none; }
+.pkc__acts{ display:flex; gap:10px; margin-top:10px; }
+.pkc__acts .pk-more{ flex:1 1 0; margin-top:0; }
+.pkc__rnd{ border-style:solid; background:rgba(47,179,138,.14); border-color:#2fb38a; color:#8fe3c4; }
