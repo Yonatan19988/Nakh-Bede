@@ -4003,7 +4003,7 @@ function renderCardView(isDescriber, isTurnTeam){
   wordEl.textContent = word;
   card.appendChild(wordEl);
   // a word of the general list always stays on one line, at one size for all of them (sized for the longest)
-  // a proverb: one size for all proverbs, at most three balanced lines
+  // a proverb: one size for all proverbs, at most two balanced lines
   const prov = (WORD_PACKS.find(x => x.id === 'proverbs') || {}).words || [];
   if(prov.includes(word)){
     card.classList.add('is-prov');
