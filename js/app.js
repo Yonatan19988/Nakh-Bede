@@ -1241,9 +1241,7 @@ function renderHome(){
   const prof = loadProfile();
   const profChip = el(`<button class="hm-prof" aria-label="پروفایل">
     <span class="hm-prof__av" style="${frameStyle(prof).replace(/box-shadow:[^;]*;/,'')}">${avatarMarkup(prof)}</span>
-    <span class="hm-prof__txt"><b></b><i>🪙 ${faNum(prof.coins)}</i></span>
   </button>`);
-  profChip.querySelector('b').textContent = prof.name || 'بازیکن مهمان';
   profChip.addEventListener('click', () => { state.screen = 'profile'; render(); });
   top.appendChild(profChip);
   top.appendChild(el(`<div class="hm2-brand"><img class="hm2-logo" src="${HOME_LOGO}" alt="نخ بده" /><img class="hm2-mascot" src="assets/mascot.webp" width="455" height="688" alt="" aria-hidden="true" /></div>`));
@@ -1274,8 +1272,7 @@ function renderHome(){
 
   // ---- friends ----
   const friends = loadFriends();
-  const fr = el(`<section class="hm2-fr"><div class="hm2-sec"><h3>دوستان</h3><button type="button" class="hm2-link">همه ←</button></div><div class="hm2-frow"></div></section>`);
-  fr.querySelector('.hm2-link').addEventListener('click', () => { state.screen = 'friends'; render(); });
+  const fr = el(`<section class="hm2-fr"><div class="hm2-sec"><h3>دوستان</h3></div><div class="hm2-frow"></div></section>`);
   const frow = fr.querySelector('.hm2-frow');
   const invite = el(`<button type="button" class="hm2-fr__item hm2-fr__add"><span class="hm2-fr__av">+</span><small>دعوت</small></button>`);
   invite.addEventListener('click', shareGameLink);
