@@ -973,6 +973,7 @@ function buildPackCarousel(selected, onToggle){
 // the maps: a random card first, then the player's maps (picture, name, route), then «more maps» last
 function buildMapViewer(selectedId, onPick){
   const box = el(`<div class="pkc mpc"></div>`);
+  box.appendChild(buildNakhiAsk('سفر به کدوم شهر؟'));
   const maps = MAPS.filter(m => mapOwned(m.id));
   const cards = [];
   const pick = (id) => { LS.set('mapId', id); setActiveMap(id); sfxSelect(); onPick(id); };
@@ -3373,7 +3374,7 @@ function renderSetup(){
   const header = el(`<div class="setup-head"></div>`);
   header.appendChild(el(`<div class="setup-brand setup-brand--logo"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(header);
-  const STEP_HEAD = [['تیم‌ها و بازیکن‌ها', 'تیم‌ها رو بچین و اسم بازیکن‌ها رو بنویس.'], null, ['سفر به کدوم شهر؟', 'مسیر بازی روی این نقشه است.']][step - 1];
+  const STEP_HEAD = [['تیم‌ها و بازیکن‌ها', 'تیم‌ها رو بچین و اسم بازیکن‌ها رو بنویس.'], null, null][step - 1];
   if(STEP_HEAD) wrap.appendChild(el(`<div class="stp-head"><h2>${STEP_HEAD[0]}</h2><p>${STEP_HEAD[1]}</p></div>`));
 
   if(step === 1){
