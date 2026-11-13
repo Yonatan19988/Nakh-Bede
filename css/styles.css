@@ -2958,3 +2958,52 @@ button{ font-size:inherit; }
 /* pickers: a way to the shop for the packs / maps not bought yet */
 .pk-more{ width:100%; height:46px; margin-top:10px; border-radius:16px; border:1.5px dashed rgba(243,211,122,.6); background:rgba(243,211,122,.08); color:#F3D37A; font-family:inherit; font-weight:800; font-size:14.5px; cursor:pointer; }
 .shop-empty{ grid-column:1 / -1; text-align:center; padding:28px 8px; color:var(--text-dim,#a9c7d0); font-size:14px; }
+
+/* ---- setup, design «رو در رو»: teams side by side with the VS badge, modes carousel, big map ---- */
+.vs-grid{ position:relative; width:100%; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:84px; }
+.vs-grid .vs-team{ margin:0; padding:10px 8px 10px; border:none; border-radius:20px; background:linear-gradient(180deg, color-mix(in srgb, var(--tc) 85%, #fff 0%), color-mix(in srgb, var(--tc) 55%, #021c28)); box-shadow:0 8px 18px rgba(0,0,0,.35); min-width:0; }
+.vs-grid .vs-team .team-card__head{ flex-wrap:wrap; gap:6px; }
+.vs-grid .vs-team .team-card__name{ width:100%; text-align:center; font-family:'Lalezar','Vazirmatn',sans-serif; font-size:20px; background:rgba(0,0,0,.18); border-color:transparent; }
+.vs-grid .vs-team .team-card__color{ display:none; }
+.vs-grid .vs-team .team-card__x{ position:absolute; top:-10px; left:-6px; z-index:3; }
+.vs-grid .vs-team .team-card__players{ grid-template-columns:1fr; }
+.vs-grid .vs-team .player-cell__input{ background:rgba(0,0,0,.22); border-color:transparent; color:#fff; border-radius:999px; text-align:center; }
+.vs-grid .vs-team .team-card__add{ background:rgba(0,0,0,.18); border:1.5px dashed rgba(255,255,255,.5); color:#fff; }
+.vs-grid .vs-team .frn-pick{ font-size:11px; }
+.vs-grid .lobby-team__head{ justify-content:center; text-align:center; flex-direction:column; gap:2px; }
+.vs-grid .lobby-team__name{ font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400; font-size:20px; }
+.vs-grid .lobby-chips{ flex-direction:column; align-items:stretch; }
+.vs-badge{ position:absolute; top:-84px; left:50%; transform:translateX(-50%); z-index:4; width:62px; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+.vs-badge__nk{ width:46px; height:auto; margin-bottom:-12px; position:relative; z-index:1; filter:drop-shadow(0 3px 4px rgba(0,0,0,.45)); }
+.vs-badge__vs{ width:54px; height:54px; border-radius:50%; background:#022638; border:4px solid #F3D37A; display:flex; align-items:center; justify-content:center; font-family:'Lalezar','Vazirmatn',sans-serif; font-size:22px; color:#F3D37A; box-shadow:0 6px 14px rgba(0,0,0,.5); }
+
+.pkc{ width:100%; }
+.pkc__track{ display:flex; align-items:center; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; padding:12px calc(50% - min(31vw, 115px)) 18px; direction:ltr; margin:0 -16px; width:calc(100% + 32px); }
+.pkc__track::-webkit-scrollbar{ display:none; }
+.pkc__card{ direction:rtl; flex:0 0 min(62vw, 230px); height:270px; scroll-snap-align:center; border-radius:24px; padding:16px 14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center;
+  background:linear-gradient(180deg,#1a8592,#0b4a5a); border:3px solid rgba(243,211,122,.45); box-shadow:0 12px 24px rgba(0,0,0,.45); cursor:pointer; }
+.pkc__card.is-in{ border-color:#F3D37A; background:linear-gradient(180deg,#2a9aa6,#0d5a6a); }
+.pkc__ico{ font-size:48px; line-height:1.1; }
+.pkc__t{ font-family:'Lalezar','Vazirmatn',sans-serif; font-size:22px; line-height:1.3; color:#fff; }
+.pkc__n{ font-size:12px; color:#cfe8ee; }
+.pkc__ex{ font-size:11.5px; color:#F3D37A; line-height:1.6; min-height:2.4em; }
+.pkc__tg{ margin-top:6px; min-width:140px; height:40px; border-radius:999px; border:2px solid #F3D37A; background:transparent; color:#F3D37A; font-family:inherit; font-weight:800; font-size:13.5px; cursor:pointer; }
+.pkc__card.is-in .pkc__tg{ background:#2fb38a; border-color:#2fb38a; color:#fff; }
+.pkc__sel{ display:flex; align-items:flex-end; gap:8px; margin-top:12px; }
+.pkc__nk{ width:58px; height:auto; flex:none; filter:drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
+.pkc__bub{ flex:1; position:relative; background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.14); border-radius:16px 16px 16px 4px; padding:8px 10px; }
+.pkc__bub b{ display:block; font-size:13px; color:#F3D37A; margin-bottom:4px; }
+.pkc__chips{ display:flex; flex-wrap:wrap; gap:4px; }
+.pkc__chips i{ font-style:normal; font-size:12px; background:rgba(255,255,255,.12); border-radius:999px; padding:2px 9px; }
+
+.mpv{ width:100%; }
+.mpv__pic{ position:relative; width:100%; aspect-ratio:720 / 440; border-radius:22px; overflow:hidden; border:3px solid #F3D37A; box-shadow:0 12px 26px rgba(0,0,0,.45); background:#0b3a4b; }
+.mpv__img{ width:100%; height:100%; object-fit:cover; display:block; }
+.mpv__nk{ position:absolute; bottom:12px; left:12px; width:56px; height:auto; filter:drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
+.mpv__cap{ position:absolute; left:0; right:0; bottom:0; padding:10px 14px 10px; background:linear-gradient(transparent, rgba(0,0,0,.75)); text-align:right; }
+.mpv__cap b{ display:block; font-family:'Lalezar','Vazirmatn',sans-serif; font-weight:400; font-size:24px; color:#fff; }
+.mpv__cap small{ font-size:12px; color:#e6f3f8; }
+.mpv__arr{ position:absolute; top:42%; width:40px; height:40px; border-radius:50%; border:none; background:rgba(0,0,0,.55); color:#fff; font-size:24px; line-height:1; cursor:pointer; }
+.mpv__arr--r{ right:8px; } .mpv__arr--l{ left:8px; }
+.mpv .hm2-dots{ margin-top:10px; }
+.vs-grid .vs-team .team-card__x:disabled{ display:none; }
