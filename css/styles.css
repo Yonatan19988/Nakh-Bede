@@ -3029,3 +3029,24 @@ button{ font-size:inherit; }
 .nk-ask__nk{ width:64px; height:auto; flex:none; filter:drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
 .nk-ask__bub{ flex:1; position:relative; background:#fff; color:#123043; border-radius:18px 18px 18px 4px; padding:10px 14px; font-family:'Lalezar','Vazirmatn',sans-serif; font-size:20px; line-height:1.4; box-shadow:0 6px 14px rgba(0,0,0,.3); margin-bottom:18px; }
 .nk-ask__bub::after{ content:''; position:absolute; right:-7px; bottom:6px; width:14px; height:14px; background:#fff; transform:rotate(45deg); border-radius:2px; }
+
+/* setup design «همه با هم»: modes and maps as tiles in two columns */
+.tg-box{ width:100%; }
+.tg-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
+.tg-tile, .tg-card{ position:relative; border-radius:18px; border:2px solid rgba(255,255,255,.14); cursor:pointer; font-family:inherit; color:#fff; -webkit-tap-highlight-color:transparent; transition:transform .12s; }
+.tg-tile:active, .tg-card:active{ transform:scale(.97); }
+.tg-tile{ min-height:118px; padding:12px 8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; background:linear-gradient(180deg,#1a8592,#0b4a5a); }
+.tg-tile__ico{ font-size:34px; line-height:1.1; }
+.tg-tile__t{ font-weight:800; font-size:14.5px; line-height:1.4; }
+.tg-tile small{ font-size:11.5px; color:#cfe8ee; }
+.tg-tile.is-on, .tg-card.is-on{ border-color:#F3D37A; box-shadow:0 0 0 2px rgba(243,211,122,.35); }
+.tg-tile.is-on{ background:linear-gradient(180deg,#2a9aa6,#0d5a6a); }
+.tg-tile.is-on::after, .tg-card.is-on::after{ content:'✓'; position:absolute; top:-8px; left:-8px; width:26px; height:26px; border-radius:50%; background:#2fb38a; border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; color:#fff; }
+.tg-tile--rnd{ background:linear-gradient(180deg,#2fb38a,#126b55); }
+.tg-tile--more{ background:rgba(0,0,0,.28); border-style:dashed; border-color:rgba(243,211,122,.6); color:#F3D37A; }
+.tg-tile--more .tg-tile__t{ color:#F3D37A; }
+.tg-grid--maps .tg-tile, .tg-card{ min-height:150px; }
+.tg-card{ padding:0; overflow:hidden; background:#0b3a4b; }
+.tg-card img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.tg-card__t{ position:absolute; left:0; right:0; bottom:0; padding:16px 10px 8px; text-align:right; background:linear-gradient(transparent, rgba(0,0,0,.8)); font-family:'Lalezar','Vazirmatn',sans-serif; font-size:18px; }
+.tg-card.is-on::after{ top:6px; left:6px; z-index:2; }
