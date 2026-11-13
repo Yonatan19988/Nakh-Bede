@@ -966,12 +966,24 @@ function buildMapViewer(selectedId, onPick){
   if(maps.length > 1){
     const go = (d) => { const n = maps[(i + d + maps.length) % maps.length]; LS.set('mapId', n.id); setActiveMap(n.id); sfxTap(); onPick(n.id); };
     // right-to-left: the previous map is on the right, the next on the left
-    const prev = el(`<button type="button" class="mpv__arr mpv__arr--r" aria-label="نقشه‌ی قبلی">›</button>`), next = el(`<button type="button" class="mpv__arr mpv__arr--l" aria-label="نقشه‌ی بعدی">‹</button>`);
+    const chev = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+    const prev = el(`<button type="button" class="mpv__arr mpv__arr--r" aria-label="نقشه‌ی قبلی">${chev('M10 6 L16 12 L10 18')}</button>`), next = el(`<button type="button" class="mpv__arr mpv__arr--l" aria-label="نقشه‌ی بعدی">${chev('M14 6 L8 12 L14 18')}</button>`);
     prev.addEventListener('click', () => go(-1)); next.addEventListener('click', () => go(1));
     box.querySelector('.mpv__pic').append(prev, next);
     box.appendChild(el(`<div class="hm2-dots" aria-hidden="true">${maps.map((x, k) => `<i class="${k === i ? 'is-on' : ''}"></i>`).join('')}</div>`));
   }
-  if(MAPS.some(x => !mapOwned(x.id))) box.appendChild(buildMoreBtn('+ نقشه‌های بیشتر', 'map'));
+  // a random one of the player's maps, or the shop for more
+  const acts = el(`<div class="pkc__acts"></div>`);
+  if(maps.length > 1){
+    const rnd = el(`<button type="button" class="pk-more pkc__rnd">🎲 تصادفی</button>`);
+    rnd.addEventListener('click', () => {
+      const others = maps.filter(x => x.id !== m.id), n = others[Math.floor(Math.random() * others.length)];
+      LS.set('mapId', n.id); setActiveMap(n.id); sfxSelect(); onPick(n.id);
+    });
+    acts.appendChild(rnd);
+  }
+  if(MAPS.some(x => !mapOwned(x.id))) acts.appendChild(buildMoreBtn('+ نقشه‌های بیشتر', 'map'));
+  if(acts.children.length) box.appendChild(acts);
   return box;
 }
 // A row of pack chips. selected = ids; onToggle(newIds). Locked packs send the player to the shop.
