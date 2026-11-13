@@ -994,10 +994,6 @@ function resumeBanner(){
 }
 
 function homeBanner(){
-  if(!LS.get('seenTutorial', false)){
-    return { kind:'learn', icon:'🎓', text:'اولین بازی‌ته؟ قانون‌ها رو تو یک دقیقه یاد بگیر.', cta:'آموزش',
-      go(){ state.screen = 'tutorial'; render(); }, close(){ LS.set('seenTutorial', true); } };
-  }
   if(!isStandalone() && !LS.get('installDismissed', false)){
     if(deferredInstall){
       return { kind:'install', icon:'📲', text:'بازی رو روی گوشی نصب کن تا مثل یک اپ باز بشه.', cta:'نصب',
