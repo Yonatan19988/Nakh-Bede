@@ -1062,21 +1062,33 @@ function splashHandoff(){
   welcomeIntro = true;
   lastRenderedScreen = 'welcome';           // no page-entrance animation: it would move the logo while it is measured
   render();
-  const lg = ov.querySelector('.sp__lg');
-  const dst = document.querySelector('.wl__logo img');
+  const lg = ov.querySelector('.sp__lg'), nk = ov.querySelector('.sp__nk');
+  const dst = document.querySelector('.wl__logo img'), nkDst = document.querySelector('.wl__mascot img');
+  // Nakhi goes back to his open-eyed drawing, the one on the welcome screen
+  ov.querySelectorAll('.sp__nk > img').forEach(i => { i.style.transition = 'opacity .5s ease'; });
+  const n1 = ov.querySelector('.sp__nk1'), n2 = ov.querySelector('.sp__nk2');
+  if(n1 && n2){ n1.style.opacity = 1; n2.style.opacity = 0; }
   requestAnimationFrame(() => {
     const a = lg.getBoundingClientRect(), b = dst ? dst.getBoundingClientRect() : null;
+    const k = a.width / 230;                  // the stage is scaled, the moves are in its units
     if(b && a.width){
-      const k = a.width / 230;                // the stage is scaled, the move is in its units
       const dx = ((b.left + b.width / 2) - (a.left + a.width / 2)) / k;
       const dy = ((b.top + b.height / 2) - (a.top + a.height / 2)) / k;
       lg.style.transform = `translate(${dx}px, ${dy}px) scale(${b.width / a.width})`;
     }
+    const c = nk ? nk.getBoundingClientRect() : null, d = nkDst ? nkDst.getBoundingClientRect() : null;
+    if(c && d && c.height && a.width){
+      // Nakhi scales about his feet: move the middle of his feet onto the welcome Nakhi's feet
+      const dx = ((d.left + d.width / 2) - (c.left + c.width / 2)) / k, dy = (d.bottom - c.bottom) / k;
+      const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(nk.style.transform || '') || [0, 0, 0];
+      nk.style.transition = 'transform .9s cubic-bezier(.4,0,.2,1)';
+      nk.style.transform = `translate(${(+m[1]) + dx}px,${(+m[2]) + dy}px) scale(${d.height / c.height})`;
+    }
     ov.classList.add('out');
   });
-  // the splash logo and the welcome logo are different drawings: cross-fade them
-  setTimeout(() => { ov.style.transition = 'opacity .25s ease'; ov.style.opacity = '0'; const w = document.querySelector('.wl'); if(w){ w.classList.remove('wl--hold'); w.classList.add('wl--logo-in'); } }, 850);
-  setTimeout(() => { ov.remove(); if(accountIsGoogle()) render(); }, 1150);
+  // the welcome logo and Nakhi take over under the overlay, which then fades away
+  setTimeout(() => { ov.style.transition = 'opacity .35s ease'; ov.style.opacity = '0'; const w = document.querySelector('.wl'); if(w){ w.classList.remove('wl--hold'); w.classList.add('wl--logo-in'); } }, 950);
+  setTimeout(() => { ov.remove(); if(accountIsGoogle()) render(); }, 1350);
 }
 function renderSplash(){
   if(splashEl) return splashEl;
@@ -1189,7 +1201,7 @@ function renderWelcome(){
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
   // the logo with the yarn mascot standing next to it
-  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in nk__in--wave"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
+  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in${intro ? '' : ' nk__in--wave'}"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
   const nk = brand.querySelector('.nk');
   const nkHop = () => { nk.classList.remove('nk--hop'); void nk.offsetWidth; nk.classList.add('nk--hop'); nk.querySelector('.nk__in').classList.remove('nk__in--wave'); haptic(8); playTone(520,0.07,'triangle',0.09); setTimeout(()=>playTone(780,0.1,'triangle',0.08),70); };
   nk.addEventListener('click', nkHop);
@@ -1272,7 +1284,7 @@ function renderHome(){
 
   // ---- friends ----
   const friends = loadFriends();
-  const fr = el(`<section class="hm2-fr"><div class="hm2-sec"><h3>دوستان</h3></div><div class="hm2-frow"></div></section>`);
+  const fr = el(`<section class="hm2-fr"><div class="hm2-frow"></div></section>`);
   const frow = fr.querySelector('.hm2-frow');
   const invite = el(`<button type="button" class="hm2-fr__item hm2-fr__add"><span class="hm2-fr__av">+</span><small>دعوت</small></button>`);
   invite.addEventListener('click', shareGameLink);
