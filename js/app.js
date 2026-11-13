@@ -845,22 +845,34 @@ function selectedMapId(){
 // chips for choosing a board; locked ones send the player to the shop
 function buildMapPicker(selectedId, onPick, opts){
   opts = opts || {};
+  const box = el(`<div class="pk-pick"></div>`);
   const grid = el(`<div class="pk-grid mp-grid"></div>`);
-  MAPS.forEach(m => {
-    const owned = mapOwned(m.id), on = selectedId === m.id;
+  MAPS.filter(m => mapOwned(m.id)).forEach(m => {
+    const owned = true, on = selectedId === m.id;
     const b = el(`<button type="button" class="pk-chip mp-chip ${on ? 'is-on' : ''} ${owned ? '' : 'is-locked'}" aria-pressed="${on}"><span class="pk-chip__ico" aria-hidden="true"></span><span class="pk-chip__name"></span><small></small></button>`);
     b.querySelector('.pk-chip__ico').textContent = owned ? '🗺️' : '🔒';
     b.querySelector('.pk-chip__name').textContent = m.name;
     b.querySelector('small').textContent = owned ? m.blurb : `${faNum(m.price)} سکه`;
     b.addEventListener('click', () => {
       if(opts.readOnly) return;
-      if(!owned){ shopTab = 'map'; state.screen = 'shop'; render(); return; }
       LS.set('mapId', m.id); setActiveMap(m.id);
       onPick(m.id);
     });
     grid.appendChild(b);
   });
-  return grid;
+  box.appendChild(grid);
+  if(!opts.readOnly && MAPS.some(m => !mapOwned(m.id))) box.appendChild(buildMoreBtn('+ نقشه‌های بیشتر', 'map'));
+  return box;
+}
+// a button from a picker to the shop tab with the items not bought yet; back from the shop returns here
+function buildMoreBtn(label, tab){
+  const b = el(`<button type="button" class="pk-more"></button>`);
+  b.textContent = label;
+  b.addEventListener('click', () => openShopFrom(tab));
+  return b;
+}
+function openShopFrom(tab){
+  state.shopReturn = state.screen; shopTab = tab; state.screen = 'shop'; render();
 }
 function packWordCount(p){ return (p.words || WORD_LIST).length; }
 // A row of pack chips. selected = ids; onToggle(newIds). Locked packs send the player to the shop.
@@ -869,15 +881,14 @@ function buildPackPicker(selected, onToggle, opts){
   const box = el(`<div class="pk-pick"></div>`);
   const total = wordsForPacks(selected).length;
   const grid = el(`<div class="pk-grid"></div>`);
-  WORD_PACKS.forEach(p => {
-    const owned = packOwned(p.id), on = selected.includes(p.id);
+  WORD_PACKS.filter(p => packOwned(p.id)).forEach(p => {
+    const owned = true, on = selected.includes(p.id);
     const b = el(`<button type="button" class="pk-chip ${on ? 'is-on' : ''} ${owned ? '' : 'is-locked'}" aria-pressed="${on}"><span class="pk-chip__ico" aria-hidden="true"></span><span class="pk-chip__name"></span><small></small>${packIsFresh(p) ? '<i class="pk-new">تازه</i>' : ''}</button>`);
     b.querySelector('.pk-chip__ico').textContent = owned ? p.icon : '🔒';
     b.querySelector('.pk-chip__name').textContent = p.name;
     b.querySelector('small').textContent = owned ? `${faNum(packWordCount(p))} کلمه` : `${faNum(p.price)} سکه`;
     b.addEventListener('click', () => {
       if(opts.readOnly) return;
-      if(!owned){ shopTab = 'pack'; state.screen = 'shop'; render(); return; }
       let ids = on ? selected.filter(x => x !== p.id) : selected.concat(p.id);
       if(!ids.length){ toastHome('حداقل یک پک باید انتخاب باشد'); return; }
       LS.set('packs', ids);
@@ -887,6 +898,7 @@ function buildPackPicker(selected, onToggle, opts){
   });
   box.appendChild(grid);
   box.appendChild(el(`<small class="pk-total">${faNum(total)} کلمه در بازی</small>`));
+  if(!opts.readOnly && WORD_PACKS.some(p => !packOwned(p.id))) box.appendChild(buildMoreBtn('+ مودهای بیشتر', 'pack'));
   return box;
 }
 function coinsForRound(correct, moved, newCity){
@@ -1413,7 +1425,7 @@ function renderHome(){
       const item = el(`<button class="hm-nav__item ${isHome ? 'is-home' : ''}">
         <span class="hm-nav__ico">${ico[key]}</span><span class="hm-nav__lbl">${label}</span></button>`);
       if(key === 'profile') item.addEventListener('click', () => { state.screen = 'profile'; render(); });
-      else if(key === 'shop' || key === 'friends' || key === 'cards') item.addEventListener('click', () => { state.screen = key; render(); });
+      else if(key === 'shop' || key === 'friends' || key === 'cards') item.addEventListener('click', () => { state.shopReturn = null; state.screen = key; render(); });
       else if(!isHome) item.addEventListener('click', () => toastHome(label + ' به زودی'));
       nav.appendChild(item);
     });
@@ -1913,7 +1925,7 @@ function renderOnlineLobby(){
       wrap.appendChild(lk);
     }
     if(show(2)){
-      const packCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">پک کلمه‌ها</h2></div>`);
+      const packCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">مودهای بازی</h2></div>`);
       packCard.appendChild(buildPackPicker(roomPacks, ids => { window.FB.update(fbRoomRef(), { packs: ids }); }));
       wrap.appendChild(packCard);
       wrap.appendChild(buildPlayModeCard());
@@ -1944,7 +1956,7 @@ function renderOnlineLobby(){
     if(show(2)){
       if(Array.isArray(room.packs) && room.packs.length){
         const names = WORD_PACKS.filter(p => room.packs.includes(p.id)).map(p => p.icon + ' ' + p.name).join('، ');
-        const info = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">پک کلمه‌ها</h2><p class="lobby-packs__list"></p></div>`);
+        const info = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">مودهای بازی</h2><p class="lobby-packs__list"></p></div>`);
         info.querySelector('.lobby-packs__list').textContent = names;
         wrap.appendChild(info);
       }
@@ -2704,7 +2716,10 @@ function renderShop(){
   wrap.appendChild(tabs);
 
   const grid = el(`<div class="shop-grid"></div>`);
-  SHOP_ITEMS.filter(i => i.kind === shopTab && (!i.free || i.kind === 'scene' || i.kind === 'pack' || i.kind === 'wheel' || i.kind === 'map')).forEach(it => {
+  const ownedPackOrMap = (i) => (i.kind === 'pack' || i.kind === 'map') && (i.free || p.owned.includes(i.id));
+  const shown = SHOP_ITEMS.filter(i => i.kind === shopTab && (!i.free || i.kind === 'scene' || i.kind === 'pack' || i.kind === 'wheel' || i.kind === 'map') && !ownedPackOrMap(i));
+  if(!shown.length && (shopTab === 'pack' || shopTab === 'map')) grid.appendChild(el(`<p class="shop-empty">${shopTab === 'pack' ? 'همه‌ی مودها رو داری! 🎉' : 'همه‌ی نقشه‌ها رو داری! 🎉'}</p>`));
+  shown.forEach(it => {
     const owned = it.free || p.owned.includes(it.id);
     const equipped = (it.kind === 'avatar' && p.avatar === it.value) || (it.kind === 'frame' && p.frame === it.id) || (it.kind === 'confetti' && p.confetti === it.id) || (it.kind === 'scene' && p.scene === it.id) || (it.kind === 'wheel' && p.wheel === it.id) || (it.kind === 'map' && selectedMapId() === it.value);
     let preview = '';
@@ -3146,6 +3161,9 @@ function goBack(){
   if(s === 'online-create' || s === 'online-join'){
     state.screen = 'online-home';
     render();
+  } else if(s === 'shop' && state.shopReturn){
+    state.screen = state.shopReturn; state.shopReturn = null;
+    render();
   } else if(s === 'settings' || s === 'profile' || s === 'shop' || s === 'friends' || s === 'cards' || s === 'setup' || s === 'online-home' || s === 'tutorial'){
     state.screen = 'home';
     render();
@@ -3308,7 +3326,7 @@ function renderSetup(){
 
   // ---- board ----
   if(step === 3){
-    const mapCard = el(`<div class="deck-card"><h2 class="deck-card__title">نقشه‌ی بازی</h2><p class="deck-card__sub">روی کدام نقشه بازی کنید؟ نقشه‌های قفل‌دار را از فروشگاه می‌خری.</p></div>`);
+    const mapCard = el(`<div class="deck-card"><h2 class="deck-card__title">نقشه‌ی بازی</h2><p class="deck-card__sub">روی کدام نقشه بازی کنید؟</p></div>`);
     mapCard.appendChild(buildMapPicker(selectedMapId(), () => render()));
     wrap.appendChild(mapCard);
     wrap.appendChild(buildSetupNav({ onPrev: () => setupGoStep(2), label: 'شروع بازی', start: true, onNext: startGame }));
@@ -3317,7 +3335,7 @@ function renderSetup(){
 
   if(step === 2){
   // ---- word packs ----
-  const packCard = el(`<div class="deck-card"><h2 class="deck-card__title">پک کلمه‌ها</h2><p class="deck-card__sub">یک یا چند پک را انتخاب کن. پک‌های قفل‌دار را از فروشگاه می‌خری.</p></div>`);
+  const packCard = el(`<div class="deck-card"><h2 class="deck-card__title">مودهای بازی</h2><p class="deck-card__sub">یک یا چند مود را انتخاب کن.</p></div>`);
   packCard.appendChild(buildPackPicker(selectedPacks(), () => render()));
   wrap.appendChild(packCard);
 
