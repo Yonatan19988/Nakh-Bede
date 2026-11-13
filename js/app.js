@@ -4003,7 +4003,15 @@ function renderCardView(isDescriber, isTurnTeam){
   wordEl.textContent = word;
   card.appendChild(wordEl);
   // a word of the general list always stays on one line, at one size for all of them (sized for the longest)
-  if(WORD_LIST.includes(word)){
+  // a proverb: one size for all proverbs, at most three balanced lines
+  const prov = (WORD_PACKS.find(x => x.id === 'proverbs') || {}).words || [];
+  if(prov.includes(word)){
+    card.classList.add('is-prov');
+    requestAnimationFrame(() => {
+      let fs = parseFloat(getComputedStyle(wordEl).fontSize), n = 0;
+      while((wordEl.scrollWidth > wordEl.clientWidth + 1 || card.scrollHeight > card.clientHeight + 2) && fs > 16 && n++ < 30){ fs -= 2; wordEl.style.fontSize = fs + 'px'; }
+    });
+  } else if(WORD_LIST.includes(word)){
     card.classList.add('is-gen');
     // safety net for an unusual screen: shrink this one word until it fits
     requestAnimationFrame(() => {
