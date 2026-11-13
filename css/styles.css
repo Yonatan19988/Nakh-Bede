@@ -2813,7 +2813,8 @@ body.pm-open{ overflow:hidden; }
 
 
 .wl__btns{ position:relative; }
-.wl--auto .wl__btns{ margin-top:-4px; }
+.wl--auto .wl__btns > :not(.wl__auto), .wl--auto .wl__note{ visibility:hidden; }
+.wl--auto .wl__auto{ position:absolute; top:6px; left:50%; transform:translateX(-50%); }
 
 /* bigger touch areas for the small text links (the visible size stays the same) */
 .hm2-link, .hm2-mapbar__more{ min-height:44px; padding:0 10px; margin:-12px -10px; display:inline-flex; align-items:center; }
@@ -2880,3 +2881,6 @@ button{ font-size:inherit; }
 .hm2 .hm-gear{ border-radius:50%; background:rgba(0,0,0,.32); box-shadow:none; }
 .hm2 .hm-gear:active{ transform:scale(.95); box-shadow:none; }
 .hm2 .hm-gear svg{ width:26px; height:26px; }
+
+/* the welcome screen drawn a second time: everything is already in place */
+.wl--static .wl__cards, .wl--static .wl__logo, .wl--static .wl__mascot, .wl--static .wl__tag, .wl--static .wl__btns, .wl--static .wl__note{ animation:none; }
