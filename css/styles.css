@@ -3011,3 +3011,21 @@ button{ font-size:inherit; }
 .pkc__acts .pk-more{ flex:1 1 0; margin-top:0; }
 .pkc__rnd{ border-style:solid; background:rgba(47,179,138,.14); border-color:#2fb38a; color:#8fe3c4; }
 .mpv__arr{ display:flex; align-items:center; justify-content:center; }
+
+/* setup carousels: the random card first, «more» last; the map cards; Nakhi asking the question */
+.pkc__card--rnd{ background:linear-gradient(180deg,#2fb38a,#126b55); }
+.pkc__card--rnd .pkc__ico{ color:#fff; }
+.pkc__card--rnd .pkc__tg{ border-color:#fff; color:#fff; }
+.pkc__card--more{ background:rgba(0,0,0,.28); border-style:dashed; }
+.pkc__card--more .pkc__tg{ background:#F3D37A; color:#3a2608; }
+.mpc .pkc__card{ height:300px; padding:10px 10px 14px; justify-content:flex-start; }
+.mpc .pkc__card--rnd, .mpc .pkc__card--more{ justify-content:center; }
+.mpc__pic{ position:relative; width:100%; aspect-ratio:720 / 440; border-radius:16px; overflow:hidden; flex:none; margin-bottom:4px; }
+.mpc__pic img{ width:100%; height:100%; object-fit:cover; display:block; }
+.mpc__pic .mpc__nk{ position:absolute; left:6px; bottom:4px; width:44px; height:auto; object-fit:contain; filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.pkc__sum{ margin-top:12px; background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.14); border-radius:16px; padding:8px 10px; }
+.pkc__sum b{ display:block; font-size:13px; color:#F3D37A; margin-bottom:4px; }
+.nk-ask{ display:flex; align-items:flex-end; gap:8px; margin:0 0 4px; }
+.nk-ask__nk{ width:64px; height:auto; flex:none; filter:drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
+.nk-ask__bub{ flex:1; position:relative; background:#fff; color:#123043; border-radius:18px 18px 18px 4px; padding:10px 14px; font-family:'Lalezar','Vazirmatn',sans-serif; font-size:20px; line-height:1.4; box-shadow:0 6px 14px rgba(0,0,0,.3); margin-bottom:18px; }
+.nk-ask__bub::after{ content:''; position:absolute; right:-7px; bottom:6px; width:14px; height:14px; background:#fff; transform:rotate(45deg); border-radius:2px; }
