@@ -899,6 +899,7 @@ function loadProfile(){
   return {
     name: typeof p.name === 'string' ? p.name.slice(0, 14) : '',
     avatar: (AVATARS.includes(p.avatar) || SHOP_ITEMS.some(i => i.kind === 'avatar' && i.value === p.avatar)) ? p.avatar : '',
+    photo: validPhoto(p.photo) ? p.photo : '',
     coins: p.coins === undefined ? 50 : Math.max(0, p.coins|0),       // a welcome gift of 50 for new players
     owned: Array.isArray(p.owned) ? p.owned.filter(id => SHOP_ITEMS.some(i => i.id === id)) : [],
     frame: typeof p.frame === 'string' ? p.frame : '',
@@ -929,7 +930,28 @@ function ringColor(p){
   const it = SHOP_ITEMS.find(i => i.id === p.frame && p.owned.includes(i.id));
   return it ? it.value : NBAvatar.RING[p.ring][0];
 }
-function avatarMarkup(p){ return p.avatar ? `<span class="av-emoji">${p.avatar}</span>` : NBAvatar.svg(p.look); }
+// the player's own photo: a small square JPEG kept in the profile (on this phone and in their own account only)
+const PHOTO_MAX = 60000;
+function validPhoto(v){ return typeof v === 'string' && v.length < PHOTO_MAX && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v); }
+function photoFromFile(file){
+  return new Promise((resolve, reject) => {
+    if(!file || !/^image\//.test(file.type)){ reject(new Error('type')); return; }
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      // centre square crop, 192 x 192
+      const n = Math.min(img.naturalWidth, img.naturalHeight), S = 192, c = document.createElement('canvas');
+      c.width = c.height = S;
+      c.getContext('2d').drawImage(img, (img.naturalWidth - n) / 2, (img.naturalHeight - n) / 2, n, n, 0, 0, S, S);
+      URL.revokeObjectURL(url);
+      let q = .85, out = c.toDataURL('image/jpeg', q);
+      while(out.length >= PHOTO_MAX && q > .4){ q -= .1; out = c.toDataURL('image/jpeg', q); }
+      validPhoto(out) ? resolve(out) : reject(new Error('size'));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load')); };
+    img.src = url;
+  });
+}
+function avatarMarkup(p){ if(p.photo) return `<img class="av-photo" src="${p.photo}" alt="">`; return p.avatar ? `<span class="av-emoji">${p.avatar}</span>` : NBAvatar.svg(p.look); }
 function sceneIdOf(p){
   const it = SHOP_ITEMS.find(i => i.kind === 'scene' && i.id === p.scene);
   const owned = Array.isArray(p.owned) && it && p.owned.includes(it.id);
@@ -2639,7 +2661,7 @@ function renderShop(){
 
 // ---------------- PROFILE EDITOR (avatar builder + banner) ----------------
 let profTab = 'face';
-const PROF_TABS = [['face','چهره'],['hair','مو و ریش'],['acc','عینک و کلاه'],['look','لباس و پس‌زمینه'],['cover','کاور و قاب'],['emoji','شکلک']];
+const PROF_TABS = [['photo','عکس من'],['face','چهره'],['hair','مو و ریش'],['acc','عینک و کلاه'],['look','لباس و پس‌زمینه'],['cover','کاور و قاب'],['emoji','شکلک']];
 // The avatar editor edits a working copy (work.p); the caller stores it only on «ثبت تغییرات».
 function buildAvatarEditor(work){
   const A = NBAvatar;
@@ -2665,7 +2687,7 @@ function buildAvatarEditor(work){
       if(!confirm(`این گزینه را با ${pr} سکه می‌خری؟`)) return false;
       q.coins -= pr; q.parts.push(kind + ':' + i); sfxWin();
     } else sfxTap();
-    if(kind === 'cover' || kind === 'ring') q[kind] = i; else q.look[kind] = i;
+    if(kind === 'cover' || kind === 'ring') q[kind] = i; else { q.look[kind] = i; q.photo = ''; }
     q.avatar = '';
     return true;
   }
@@ -2702,7 +2724,22 @@ function buildAvatarEditor(work){
   function panel(){
     const p = work.p, box = card.querySelector('.pe-panel');
     box.textContent = '';
-    if(profTab === 'face'){
+    if(profTab === 'photo'){
+      const row = el(`<div class="pe-row pe-photo"><h3>عکس خودت</h3>
+        <p class="pe-photo__hint">یک عکس از گالری یا دوربین انتخاب کن؛ وسطش به شکل دایره روی پروفایلت می‌نشیند. این عکس فقط روی گوشی خودت و در حساب خودت می‌ماند و بازیکنان دیگر آواتار ساخته‌شده‌ات را می‌بینند.</p>
+        <div class="pe-photo__acts"><label class="pe-btn pe-btn--save pe-photo__pick">📷 انتخاب عکس<input type="file" accept="image/*" hidden></label>${p.photo ? '<button type="button" class="pe-btn" data-a="nophoto">حذف عکس</button>' : ''}</div>
+        <div class="prof-err" role="alert" hidden></div></div>`);
+      const err = row.querySelector('.prof-err');
+      row.querySelector('input').addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0]; e.target.value = '';
+        if(!f) return;
+        photoFromFile(f).then((ph) => { const q = work.p; q.photo = ph; q.avatar = ''; sfxSelect(); refresh(); })
+          .catch(() => { err.textContent = 'این عکس باز نشد. یک عکس دیگر امتحان کن.'; err.hidden = false; });
+      });
+      const rm = row.querySelector('[data-a="nophoto"]');
+      if(rm) rm.addEventListener('click', () => { work.p.photo = ''; sfxTap(); refresh(); });
+      box.appendChild(row);
+    } else if(profTab === 'face'){
       box.appendChild(sw('رنگ پوست', 'skin', A.SKIN));
       box.appendChild(grid('شکل صورت', 'head', A.HEAD, (i, q) => variant(q, 'head', i)));
       box.appendChild(grid('چشم', 'eyes', A.EYES, (i, q) => variant(q, 'eyes', i)));
@@ -2724,13 +2761,13 @@ function buildAvatarEditor(work){
       const row = el(`<div class="pe-row"><h3>شکلک به جای چهره</h3><div class="prof-avs" role="radiogroup" aria-label="شکلک"></div></div>`);
       const g = row.querySelector('.prof-avs');
       const mine = el(`<button type="button" class="prof-avs__btn ${p.avatar ? '' : 'is-on'}" aria-label="چهره‌ی ساخته‌شده" style="padding:2px">${zoom(A.svg(p.look))}</button>`);
-      mine.addEventListener('click', () => { const q = work.p; q.avatar = ''; sfxTap(); refresh(); });
+      mine.addEventListener('click', () => { const q = work.p; q.avatar = ''; q.photo = ''; sfxTap(); refresh(); });
       g.appendChild(mine);
       const ownedAv = SHOP_ITEMS.filter(i => i.kind === 'avatar' && (i.free || p.owned.includes(i.id))).map(i => i.value);
       [...new Set([...AVATARS, ...ownedAv])].forEach(av => {
         const b = el(`<button type="button" class="prof-avs__btn ${av === p.avatar ? 'is-on' : ''}" aria-label="شکلک"></button>`);
         b.textContent = av;
-        b.addEventListener('click', () => { const q = work.p; q.avatar = av; sfxTap(); refresh(); });
+        b.addEventListener('click', () => { const q = work.p; q.avatar = av; q.photo = ''; sfxTap(); refresh(); });
         g.appendChild(b);
       });
       box.appendChild(row);
@@ -2758,12 +2795,12 @@ function buildAvatarEditor(work){
     // only pieces that are free or already bought
     const free = (kind, n) => { for(let t = 0; t < 12; t++){ const v = r(n); if(!lockedLabel(kind, v, q)) return v; } return 0; };
     Object.keys(A.DEFAULT_LOOK).forEach(k => { q.look[k] = free(k, L[k].length); });
-    q.cover = free('cover', L.cover.length); q.avatar = '';
+    q.cover = free('cover', L.cover.length); q.avatar = ''; q.photo = '';
     sfxTap(); refresh();
   });
   card.querySelector('[data-a="rst"]').addEventListener('click', () => {
     if(!confirm('چهره به حالت اول برگردد؟ چیزهایی که خریده‌ای می‌ماند.')) return;
-    const q = work.p; q.look = Object.assign({}, A.DEFAULT_LOOK); q.avatar = ''; sfxTap(); refresh();
+    const q = work.p; q.look = Object.assign({}, A.DEFAULT_LOOK); q.avatar = ''; q.photo = ''; sfxTap(); refresh();
   });
   tabs(); refresh();
   return card;
