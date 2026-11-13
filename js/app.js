@@ -1374,8 +1374,7 @@ function renderHome(){
       shop:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5.6 8h12.8l-1 11.2a1.6 1.6 0 0 1-1.6 1.4H8.2a1.6 1.6 0 0 1-1.6-1.4Z"/><path d="M9 8V6.4a3 3 0 0 1 6 0V8"/></svg>`,
     };
     const nav = el(`<nav class="hm-nav"></nav>`);
-    [['پروفایل','profile',0], ['دوستان','friends',0], ['خانه','home',1],
-     ['کارت‌ها','cards',0], ['فروشگاه','shop',0]].forEach(([label, key, isHome]) => {
+    [['دوستان','friends',0], ['خانه','home',1], ['فروشگاه','shop',0]].forEach(([label, key, isHome]) => {
       const item = el(`<button class="hm-nav__item ${isHome ? 'is-home' : ''}">
         <span class="hm-nav__ico">${ico[key]}</span><span class="hm-nav__lbl">${label}</span></button>`);
       if(key === 'profile') item.addEventListener('click', () => { state.screen = 'profile'; render(); });
