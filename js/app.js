@@ -875,6 +875,89 @@ function openShopFrom(tab){
   state.shopReturn = state.screen; shopTab = tab; state.screen = 'shop'; render();
 }
 function packWordCount(p){ return (p.words || WORD_LIST).length; }
+
+// ---- design 2 («رو در رو») builders for the setup steps ----
+// the VS badge with Nakhi as the referee, between the first two teams
+function buildVsBadge(){
+  return el(`<div class="vs-badge" aria-hidden="true"><img class="vs-badge__nk" src="assets/mascot.webp" alt="" decoding="async"><span class="vs-badge__vs">VS</span></div>`);
+}
+// the modes as swipeable cards, each with an in/out toggle; the chosen ones are listed below with Nakhi
+function buildPackCarousel(selected, onToggle){
+  const box = el(`<div class="pkc"></div>`);
+  const packs = WORD_PACKS.filter(p => packOwned(p.id));
+  const track = el(`<div class="pkc__track"></div>`);
+  let idx = Math.max(0, packs.findIndex(p => p.id === (LS.get('pkcAt', '') || selected[0])));
+  const cards = packs.map((p, i) => {
+    const on = selected.includes(p.id);
+    const c = el(`<div class="pkc__card ${on ? 'is-in' : ''}" role="group"><span class="pkc__ico" aria-hidden="true"></span><span class="pkc__t"></span><small class="pkc__n"></small><small class="pkc__ex"></small><button type="button" class="pkc__tg" aria-pressed="${on}"></button></div>`);
+    c.querySelector('.pkc__ico').textContent = p.icon;
+    c.querySelector('.pkc__t').textContent = p.name;
+    c.querySelector('.pkc__n').textContent = `${faNum(packWordCount(p))} ${p.id === 'proverbs' ? 'ضرب‌المثل' : 'کلمه'}`;
+    const words = p.words || WORD_LIST;
+    c.querySelector('.pkc__ex').textContent = 'مثلاً: ' + [0, 7, 19].map(k => words[k % words.length]).join('، ');
+    const tg = c.querySelector('.pkc__tg');
+    tg.textContent = on ? '✓ در بازی' : '+ اضافه به بازی';
+    tg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ids = on ? selected.filter(x => x !== p.id) : selected.concat(p.id);
+      if(!ids.length){ toastHome('حداقل یک مود باید انتخاب باشد'); return; }
+      LS.set('packs', ids); LS.set('pkcAt', p.id); sfxSelect();
+      onToggle(ids);
+    });
+    c.addEventListener('click', () => { if(i !== idx) centre(i, true); });
+    track.prepend(c);                    // the track runs left-to-right: the first card sits on the right
+    return c;
+  });
+  box.appendChild(track);
+  const dots = el(`<div class="hm2-dots" aria-hidden="true">${packs.map(() => '<i></i>').join('')}</div>`);
+  box.appendChild(dots);
+  const paint = () => {
+    const r = track.getBoundingClientRect(), mid = r.left + r.width / 2;
+    let best = 0, bestD = 1e9;
+    cards.forEach((c, i) => {
+      const cr = c.getBoundingClientRect(), d = (cr.left + cr.width / 2 - mid) / cr.width, k = Math.min(1, Math.abs(d));
+      c.style.transform = `scale(${1 - .16 * k}) rotate(${Math.max(-1, Math.min(1, d)) * 6}deg)`;
+      c.style.opacity = String(1 - .35 * k);
+      if(Math.abs(d) < bestD){ bestD = Math.abs(d); best = i; }
+    });
+    idx = best; LS.set('pkcAt', packs[best].id);
+    dots.querySelectorAll('i').forEach((d, i) => d.classList.toggle('is-on', i === idx));
+  };
+  const centre = (i, smooth) => {
+    const c = cards[i];
+    track.scrollTo({ left: track.scrollLeft + (c.getBoundingClientRect().left + c.offsetWidth / 2) - (track.getBoundingClientRect().left + track.clientWidth / 2), behavior: smooth ? 'smooth' : 'auto' });
+  };
+  let raf = 0;
+  track.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(paint); }, { passive: true });
+  requestAnimationFrame(() => { centre(idx, false); paint(); });
+  // the chosen modes, with Nakhi pointing at them
+  const chosen = el(`<div class="pkc__sel"><img class="pkc__nk" src="assets/mascot.webp" alt="" aria-hidden="true" decoding="async"><div class="pkc__bub"><b>${faNum(wordsForPacks(selected).length)} کلمه در بازی</b><span class="pkc__chips"></span></div></div>`);
+  const chips = chosen.querySelector('.pkc__chips');
+  WORD_PACKS.filter(p => selected.includes(p.id)).forEach(p => { const c = el(`<i></i>`); c.textContent = p.icon + ' ' + p.name; chips.appendChild(c); });
+  box.appendChild(chosen);
+  if(WORD_PACKS.some(p => !packOwned(p.id))) box.appendChild(buildMoreBtn('+ مودهای بیشتر', 'pack'));
+  return box;
+}
+// the map as one big picture with the route; arrows page through the maps the player owns; Nakhi stands at the start
+function buildMapViewer(selectedId, onPick){
+  const maps = MAPS.filter(m => mapOwned(m.id));
+  let i = Math.max(0, maps.findIndex(m => m.id === selectedId));
+  const m = maps[i];
+  const box = el(`<div class="mpv"><div class="mpv__pic"><img class="mpv__img" alt="" decoding="async"><img class="mpv__nk" src="assets/mascot.webp" alt="" aria-hidden="true" decoding="async"><div class="mpv__cap"><b></b><small></small></div></div></div>`);
+  box.querySelector('.mpv__img').src = m.hero || m.preview || m.lite;
+  box.querySelector('.mpv__cap b').textContent = m.name;
+  box.querySelector('.mpv__cap small').textContent = `${m.blurb} · ${faNum(60)} خانه`;
+  if(maps.length > 1){
+    const go = (d) => { const n = maps[(i + d + maps.length) % maps.length]; LS.set('mapId', n.id); setActiveMap(n.id); sfxTap(); onPick(n.id); };
+    // right-to-left: the previous map is on the right, the next on the left
+    const prev = el(`<button type="button" class="mpv__arr mpv__arr--r" aria-label="نقشه‌ی قبلی">›</button>`), next = el(`<button type="button" class="mpv__arr mpv__arr--l" aria-label="نقشه‌ی بعدی">‹</button>`);
+    prev.addEventListener('click', () => go(-1)); next.addEventListener('click', () => go(1));
+    box.querySelector('.mpv__pic').append(prev, next);
+    box.appendChild(el(`<div class="hm2-dots" aria-hidden="true">${maps.map((x, k) => `<i class="${k === i ? 'is-on' : ''}"></i>`).join('')}</div>`));
+  }
+  if(MAPS.some(x => !mapOwned(x.id))) box.appendChild(buildMoreBtn('+ نقشه‌های بیشتر', 'map'));
+  return box;
+}
 // A row of pack chips. selected = ids; onToggle(newIds). Locked packs send the player to the shop.
 function buildPackPicker(selected, onToggle, opts){
   opts = opts || {};
@@ -1847,13 +1930,15 @@ function renderOnlineLobby(){
   const myTeam = room.players[online.playerId] ? room.players[online.playerId].teamId : null;
   const unassigned = Object.keys(room.players || {}).filter(pid => !room.players[pid].teamId);
 
+  let teamHost = wrap;
+  if(show(1) && wiz && teams.length){ teamHost = el(`<div class="vs-grid"></div>`); teamHost.appendChild(buildVsBadge()); wrap.appendChild(teamHost); }
   if(show(1)){
   if(!teams.length){
     wrap.appendChild(el(`<div class="lobby-wait">${online.isHost ? 'اول چند تا تیم بساز تا بقیه بتونن بپیوندن.' : 'میزبان هنوز تیمی نساخته.'}</div>`));
   }
   teams.forEach(t => {
     const mine = myTeam === t.id;
-    const block = el(`<div class="team-card lobby-team ${mine ? 'is-mine' : ''}"></div>`);
+    const block = el(`<div class="team-card lobby-team ${wiz ? 'vs-team' : ''} ${mine ? 'is-mine' : ''}" style="--tc:${t.color}"></div>`);
     block.appendChild(el(`<div class="team-card__head lobby-team__head">
       <span class="team-card__swatch" style="background:${t.color}"></span>
       <b class="lobby-team__name">${t.name}</b>
@@ -1879,7 +1964,7 @@ function renderOnlineLobby(){
       });
       block.appendChild(joinBtn);
     }
-    wrap.appendChild(block);
+    teamHost.appendChild(block);
   });
 
   if(unassigned.length){
@@ -1925,15 +2010,21 @@ function renderOnlineLobby(){
       wrap.appendChild(lk);
     }
     if(show(2)){
-      const packCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">مودهای بازی</h2></div>`);
-      packCard.appendChild(buildPackPicker(roomPacks, ids => { window.FB.update(fbRoomRef(), { packs: ids }); }));
-      wrap.appendChild(packCard);
+      if(wiz) wrap.appendChild(buildPackCarousel(roomPacks, ids => { window.FB.update(fbRoomRef(), { packs: ids }); }));
+      else {
+        const packCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">مودهای بازی</h2></div>`);
+        packCard.appendChild(buildPackPicker(roomPacks, ids => { window.FB.update(fbRoomRef(), { packs: ids }); }));
+        wrap.appendChild(packCard);
+      }
       wrap.appendChild(buildPlayModeCard());
     }
     if(show(3) && (wiz || MAPS.length > 1)){
-      const mapCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2></div>`);
-      mapCard.appendChild(buildMapPicker(room.mapId || selectedMapId(), id => { window.FB.update(fbRoomRef(), { mapId: id }); }));
-      wrap.appendChild(mapCard);
+      if(wiz) wrap.appendChild(buildMapViewer(mapOwned(room.mapId) ? room.mapId : selectedMapId(), id => { window.FB.update(fbRoomRef(), { mapId: id }); }));
+      else {
+        const mapCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2></div>`);
+        mapCard.appendChild(buildMapPicker(room.mapId || selectedMapId(), id => { window.FB.update(fbRoomRef(), { mapId: id }); }));
+        wrap.appendChild(mapCard);
+      }
     }
     if(wiz){
       const go = (n, extra) => window.FB.update(fbRoomRef(), Object.assign({ lobbyStep: n }, extra || {}));
@@ -3243,9 +3334,12 @@ function renderSetup(){
   wrap.appendChild(el(`<div class="stp-head"><h2>${STEP_HEAD[0]}</h2><p>${STEP_HEAD[1]}</p></div>`));
 
   if(step === 1){
-  // ---- team cards ----
+  // ---- team cards: side by side, the first two face each other ----
+  const vsGrid = el(`<div class="vs-grid"></div>`);
+  vsGrid.appendChild(buildVsBadge());
+  wrap.appendChild(vsGrid);
   state.teams.forEach((team, ti) => {
-    const block = el(`<div class="team-card"></div>`);
+    const block = el(`<div class="team-card vs-team" style="--tc:${team.color}"></div>`);
 
     const head = el(`<div class="team-card__head"></div>`);
     const nameInput = el(`<input class="team-card__name" type="text" value="${team.name}" />`);
@@ -3305,7 +3399,7 @@ function renderSetup(){
       });
       block.appendChild(addMember);
     }
-    wrap.appendChild(block);
+    vsGrid.appendChild(block);
   });
 
   // ---- add team ----
@@ -3326,18 +3420,14 @@ function renderSetup(){
 
   // ---- board ----
   if(step === 3){
-    const mapCard = el(`<div class="deck-card"><h2 class="deck-card__title">نقشه‌ی بازی</h2><p class="deck-card__sub">روی کدام نقشه بازی کنید؟</p></div>`);
-    mapCard.appendChild(buildMapPicker(selectedMapId(), () => render()));
-    wrap.appendChild(mapCard);
+    wrap.appendChild(buildMapViewer(selectedMapId(), () => render()));
     wrap.appendChild(buildSetupNav({ onPrev: () => setupGoStep(2), label: 'شروع بازی', start: true, onNext: startGame }));
     wrap.appendChild(el(`<div class="setup-note">بعد از شروع بازی، از منوی «دیدن به‌عنوان» می‌تونی چیزی که هر بازیکن می‌بینه رو ببینی.</div>`));
   }
 
   if(step === 2){
   // ---- word packs ----
-  const packCard = el(`<div class="deck-card"><h2 class="deck-card__title">مودهای بازی</h2><p class="deck-card__sub">یک یا چند مود را انتخاب کن.</p></div>`);
-  packCard.appendChild(buildPackPicker(selectedPacks(), () => render()));
-  wrap.appendChild(packCard);
+  wrap.appendChild(buildPackCarousel(selectedPacks(), () => render()));
 
   // ---- custom word cards ----
   const deckCard = el(`<div class="deck-card">
