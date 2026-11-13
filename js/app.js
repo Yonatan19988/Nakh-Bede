@@ -4002,6 +4002,15 @@ function renderCardView(isDescriber, isTurnTeam){
   const wordEl = el(`<div class="play-card__word"></div>`);
   wordEl.textContent = word;
   card.appendChild(wordEl);
+  // a word of the general list always stays on one line, at one size for all of them (sized for the longest)
+  if(WORD_LIST.includes(word)){
+    card.classList.add('is-gen');
+    // safety net for an unusual screen: shrink this one word until it fits
+    requestAnimationFrame(() => {
+      let fs = parseFloat(getComputedStyle(wordEl).fontSize), n = 0;
+      while(wordEl.scrollWidth > wordEl.clientWidth + 1 && fs > 18 && n++ < 30){ fs -= 2; wordEl.style.fontSize = fs + 'px'; }
+    });
+  }
   return card;
 }
 
