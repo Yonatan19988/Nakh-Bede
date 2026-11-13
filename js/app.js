@@ -573,6 +573,10 @@ function el(html){
 }
 
 function render(){
+  try {
+    if(state.screen === 'home') sessionStorage.setItem('nbIntro', 'home');
+    else if(state.screen === 'welcome' && sessionStorage.getItem('nbIntro') !== 'home') sessionStorage.setItem('nbIntro', 'welcome');
+  } catch(e){}
   if(window.__needsReload && state.screen === 'home'){ window.__needsReload = false; location.reload(); return; }
   // the wheel owns the screen for the length of its spin — but never block
   // a navigation away from the board, or the UI would freeze for 4s
@@ -4603,6 +4607,11 @@ try {
     if(state.screen === 'splash' || state.screen === 'welcome') state.screen = 'home';   // an invite link goes straight to joining
     history.replaceState(null, '', location.pathname);
   }
+} catch(e){}
+// a reload within the same session (a new version, signing in) does not replay the opening scene
+try {
+  const seen = sessionStorage.getItem('nbIntro');
+  if(state.screen === 'splash' && seen) state.screen = seen === 'home' ? 'home' : 'welcome';
 } catch(e){}
 window.addEventListener('fb-ready', () => { if(state.screen === 'welcome' && !document.querySelector('.sp--over')) render(); });
 

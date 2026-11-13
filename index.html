@@ -20,19 +20,24 @@
 <body>
 <div class="wrap" id="app"></div>
 
+  <script src="js/version.js"></script>
   <script>
     // the installed app (Capacitor) carries every file itself, so no service worker there
     if('serviceWorker' in navigator && !window.Capacitor){
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
           .then((reg) => reg.update().catch(() => {})).catch(() => {});
-        // a new version took over: reload on the home screen right away; during a
-        // game wait until the player is back home so nothing is lost
+        // a new version took over: reload when the player is next on the home screen,
+        // so nothing in a game is lost
         const had = !!navigator.serviceWorker.controller;
+        // the page's code is fetched network-first, so it is usually the new version already:
+        // reload only when the worker that took over is newer than the code running here
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if(!had) return;
-          window.__needsReload = true;
-          if(window.state && state.screen === 'home') location.reload();
+          const c = navigator.serviceWorker.controller;
+          if(!had || !c) return;
+          const ch = new MessageChannel();
+          ch.port1.onmessage = (e) => { if(e.data && e.data !== window.NB_VERSION) window.__needsReload = true; };
+          c.postMessage('version', [ch.port2]);
         });
       });
     }

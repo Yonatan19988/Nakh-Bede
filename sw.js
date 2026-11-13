@@ -1,5 +1,6 @@
 // نخ بده — offline support
-const CACHE = 'nakh-bede-v155';
+importScripts('./js/version.js');
+const CACHE = 'nakh-bede-' + self.NB_VERSION;
 // The board image is large; it is fetched after install, in the background, so it
 // never competes with the first screen. (It is also cached the first time it is used.)
 // The board image is fetched by the page itself (it picks the full or the lite size)
@@ -9,7 +10,7 @@ const FONT_CACHE = 'nakh-bede-fonts-v1';
 const CORE = [
   './', './index.html',
   './css/styles.css',
-  './js/data.js', './js/packs.js', './js/maps.js', './js/avatar.js', './js/wheel.js', './js/mapfx.js', './js/safety.js', './js/dailywords.js', './js/daily.js', './js/account.js', './js/app.js', './js/firebase.js', './js/firebase-sdk.js',
+  './js/version.js', './js/data.js', './js/packs.js', './js/maps.js', './js/avatar.js', './js/wheel.js', './js/mapfx.js', './js/safety.js', './js/dailywords.js', './js/daily.js', './js/account.js', './js/app.js', './js/firebase.js', './js/firebase-sdk.js',
   './assets/logo.webp', './assets/mascot.webp', './assets/mascot-laugh.webp', './assets/splash-base.webp', './assets/splash-full.webp', './assets/splash-dot-1.webp', './assets/splash-dot-2.webp', './assets/splash-dot-3.webp',
   './assets/fonts/vazirmatn-arabic.woff2', './assets/fonts/vazirmatn-latin.woff2',
   './assets/fonts/lalezar-arabic.woff2', './assets/fonts/kufam-arabic.woff2', './assets/fonts/lalezar-latin.woff2',
@@ -30,6 +31,11 @@ self.addEventListener('install', (e) => {
         return self.skipWaiting();
       })
   );
+});
+
+// the page asks which version took over, to know whether it must reload
+self.addEventListener('message', (e) => {
+  if (e.data === 'version' && e.ports && e.ports[0]) e.ports[0].postMessage(self.NB_VERSION);
 });
 
 self.addEventListener('activate', (e) => {
