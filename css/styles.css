@@ -3010,3 +3010,4 @@ button{ font-size:inherit; }
 .pkc__acts{ display:flex; gap:10px; margin-top:10px; }
 .pkc__acts .pk-more{ flex:1 1 0; margin-top:0; }
 .pkc__rnd{ border-style:solid; background:rgba(47,179,138,.14); border-color:#2fb38a; color:#8fe3c4; }
+.mpv__arr{ display:flex; align-items:center; justify-content:center; }
