@@ -48,13 +48,16 @@
         },
         "players": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && root.child('rooms').child($code).child('hostId').exists()",
+            ".write": "auth != null && auth.uid === $uid && root.child('rooms').child($code).child('hostId').exists() && (data.exists() || root.child('rooms').child($code).child('locked').val() !== true || root.child('rooms').child($code).child('allowed').child($uid).val() === true)",
             ".validate": "newData.hasChildren(['name'])",
             "name": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
             },
             "teamId": {
               ".validate": "(newData.val() == null || newData.isString() && newData.val().length <= 4)"
+            },
+            "ready": {
+              ".validate": "newData.isBoolean()"
             },
             "av": {
               ".validate": "newData.hasChildren()",
@@ -255,6 +258,20 @@
         "winnerTeamId": {
           ".write": "root.child('rooms').child($code).child('players').child(auth.uid).exists()",
           ".validate": "(newData.val() == null || newData.isString() && newData.val().length <= 4)"
+        },
+        "lobbyStep": {
+          ".write": "root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3"
+        },
+        "locked": {
+          ".write": "root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          ".validate": "newData.isBoolean()"
+        },
+        "allowed": {
+          ".write": "root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          "$uid": {
+            ".validate": "newData.isBoolean() && $uid.length <= 40"
+          }
         },
         "$other": {
           ".validate": false

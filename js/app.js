@@ -252,6 +252,14 @@ function smallestTeamId(rv){
 
 // resolves true when we are in the room. opts.silent: no alerts (used while searching),
 // opts.requireLobby / opts.maxPlayers: skip rooms that already started or are full.
+// the host's room lock: only the players in the room when it was locked may come back in
+function roomLockPayload(on){
+  const r = online.room || {}, allowed = {};
+  Object.keys(r.players || {}).forEach(pid => { allowed[pid] = true; });
+  return on ? { locked: true, allowed } : { locked: false, allowed: null };
+}
+function setRoomLock(on){ if(online.isHost) window.FB.update(fbRoomRef(), roomLockPayload(on)); }
+
 function onlineJoinRoom(code, playerName, restoreTeamId, opts){
   opts = opts || {};
   if(!fbReadyOrWarn()) return Promise.resolve(false);
@@ -264,6 +272,7 @@ function onlineJoinRoom(code, playerName, restoreTeamId, opts){
     if(opts.requireLobby && rv.phase !== 'lobby') return false;
     if(opts.maxPlayers && Object.keys(rv.players || {}).length >= opts.maxPlayers) return false;
     const playerId = window.FB.uid;
+    if(rv.locked && !(rv.allowed && rv.allowed[playerId])){ if(!opts.silent) alert('این اتاق قفل شده و بازیکن جدید نمی‌پذیره'); return false; }
     const teamId = restoreTeamId || (rv.public ? smallestTeamId(rv) : null);
     online.lastTeamId = teamId || null;
     online.roomCode = code;
@@ -1330,7 +1339,7 @@ function renderHome(){
     daily: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M12 13.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 15.3l2-.3Z" fill="currentColor"/></svg>'
   };
   const MODES = [
-    { id:'local',  title:'روی همین گوشی',   text:'دور هم بشینید، تیم بچینید و گوشی رو دست‌به‌دست کنید.', go: () => { state.screen = 'setup'; render(); } },
+    { id:'local',  title:'روی همین گوشی',   text:'دور هم بشینید، تیم بچینید و گوشی رو دست‌به‌دست کنید.', go: () => { state.setupStep = 0; state.screen = 'setup'; render(); } },
     { id:'online', title:'آنلاین با دوستان', text:'اتاق بساز، لینکش رو بفرست و هر کی هر جا هست بیاد.', go: () => { state.screen = 'online-create'; render(); } },
     { id:'quick',  title:'بازی سریع',        text:'با فارسی‌زبان‌هایی که همین الان آنلاین‌اند بازی کن.', go: openQuick },
     { id:'daily',  title:'کلمه‌ی امروز',     text: dst.n ? `${faNum(dst.n)} روز پشت هم! چالش امروز رو از دست نده.` : (dailyDone ? 'چالش امروز رو انجام دادی؛ فردا یکی تازه میاد.' : 'هر روز یک کلمه‌ی تازه؛ ببین چقدر سریع حدسش می‌زنی.'), go: openDaily }
@@ -1773,6 +1782,13 @@ function renderOnlineLobby(){
   }
 
   ensureOnlineTicker();
+  // a friends' room goes through three steps (teams, words, map); a public room stays on one page
+  const wiz = !room.public, step = wiz ? Math.min(3, Math.max(1, (room.lobbyStep | 0) || 1)) : 0;
+  const show = (n) => !wiz || step === n;
+  if(wiz){
+    wrap.appendChild(buildSetupStepper(step));
+    if(room.locked) wrap.appendChild(el(`<div class="lobby-locked">🔒 اتاق قفله؛ کس دیگه‌ای نمی‌تونه وارد بشه</div>`));
+  }
   if(room.public){
     const left = room.autoStartAt ? Math.max(0, Math.ceil((room.autoStartAt - srvNow()) / 1000)) : 0;
     wrap.appendChild(el(`<div class="lobby-public">🌐 اتاق عمومی — ${room.autoStartAt
@@ -1809,14 +1825,17 @@ function renderOnlineLobby(){
   codeActions.appendChild(copyBtn);
   codeActions.appendChild(shareBtn);
   codeCard.insertBefore(codeActions, codeCard.querySelector('.lobby-code__hint'));
-  wrap.appendChild(codeCard);
-  wrap.appendChild(buildCallCard());
+  if(show(1)){
+    wrap.appendChild(codeCard);
+    wrap.appendChild(buildCallCard());
+  }
 
   // ---- teams ----
   const teams = onlineTeamsArray();
   const myTeam = room.players[online.playerId] ? room.players[online.playerId].teamId : null;
   const unassigned = Object.keys(room.players || {}).filter(pid => !room.players[pid].teamId);
 
+  if(show(1)){
   if(!teams.length){
     wrap.appendChild(el(`<div class="lobby-wait">${online.isHost ? 'اول چند تا تیم بساز تا بقیه بتونن بپیوندن.' : 'میزبان هنوز تیمی نساخته.'}</div>`));
   }
@@ -1832,7 +1851,8 @@ function renderOnlineLobby(){
     if(t.memberIds.length){
       t.memberIds.forEach((pid, k) => {
         const me = pid === online.playerId;
-        chips.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''}">${avatarHtmlFor(t.memberAv[k], t.memberNames[k])}<span class="lobby-chip__n">${escHtml(t.memberNames[k])}${me ? ' (تو)' : ''}</span></span>`));
+        const rd = wiz && room.players[pid] && room.players[pid].ready;
+        chips.appendChild(el(`<span class="lobby-chip ${me ? 'is-me' : ''} ${rd ? 'is-ready' : ''}">${avatarHtmlFor(t.memberAv[k], t.memberNames[k])}<span class="lobby-chip__n">${rd ? '✓ ' : ''}${escHtml(t.memberNames[k])}${me ? ' (تو)' : ''}</span></span>`));
       });
     } else {
       chips.appendChild(el(`<span class="lobby-empty">هنوز کسی نیست</span>`));
@@ -1858,10 +1878,26 @@ function renderOnlineLobby(){
     });
     wrap.appendChild(un);
   }
+  }
+
+  // ---- ready (step 1 of a friends' room) ----
+  const readyTeams = teams.filter(t => t.memberIds.length > 0);
+  if(wiz && step === 1){
+    const inTeams = Object.keys(room.players || {}).filter(pid => room.players[pid].teamId);
+    const nReady = inTeams.filter(pid => room.players[pid].ready).length;
+    const meP = room.players[online.playerId];
+    if(meP && meP.teamId){
+      const rb = el(`<button type="button" class="lobby-ready ${meP.ready ? 'is-on' : ''}" aria-pressed="${!!meP.ready}">${meP.ready ? '✓ آماده‌ام' : 'آماده‌ام'}</button>`);
+      rb.addEventListener('click', () => { window.FB.update(fbRoomRef(`players/${online.playerId}`), { ready: !meP.ready }); });
+      wrap.appendChild(rb);
+    }
+    if(inTeams.length) wrap.appendChild(el(`<div class="setup-note">${faNum(nReady)} از ${faNum(inTeams.length)} نفر آماده‌اند</div>`));
+  }
 
   // ---- host / guest actions ----
+  const roomPacks = Array.isArray(room.packs) && room.packs.length ? room.packs : selectedPacks();
   if(online.isHost){
-    if(teams.length < 10){
+    if(show(1) && teams.length < 10){
       const addTeamBtn = el(`<button class="setup-addteam">+ افزودن تیم</button>`);
       addTeamBtn.addEventListener('click', () => {
         const n = teams.length;
@@ -1871,34 +1907,51 @@ function renderOnlineLobby(){
       });
       wrap.appendChild(addTeamBtn);
     }
-    const roomPacks = Array.isArray(room.packs) && room.packs.length ? room.packs : selectedPacks();
-    const packCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">پک کلمه‌ها</h2></div>`);
-    packCard.appendChild(buildPackPicker(roomPacks, ids => { window.FB.update(fbRoomRef(), { packs: ids }); }));
-    wrap.appendChild(packCard);
-    if(MAPS.length > 1){
+    if(wiz && step === 1){
+      const lk = el(`<button type="button" class="lobby-lock ${room.locked ? 'is-on' : ''}" role="switch" aria-checked="${!!room.locked}"><span>🔒 قفل اتاق<small>${room.locked ? 'کس دیگه‌ای نمی‌تونه وارد بشه' : 'هنوز هر کسی با کد می‌تونه بیاد'}</small></span><i aria-hidden="true"></i></button>`);
+      lk.addEventListener('click', () => setRoomLock(!room.locked));
+      wrap.appendChild(lk);
+    }
+    if(show(2)){
+      const packCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">پک کلمه‌ها</h2></div>`);
+      packCard.appendChild(buildPackPicker(roomPacks, ids => { window.FB.update(fbRoomRef(), { packs: ids }); }));
+      wrap.appendChild(packCard);
+      wrap.appendChild(buildPlayModeCard());
+    }
+    if(show(3) && (wiz || MAPS.length > 1)){
       const mapCard = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2></div>`);
       mapCard.appendChild(buildMapPicker(room.mapId || selectedMapId(), id => { window.FB.update(fbRoomRef(), { mapId: id }); }));
       wrap.appendChild(mapCard);
     }
-    wrap.appendChild(buildPlayModeCard());
-    const readyTeams = teams.filter(t => t.memberIds.length > 0);
-    const startBtn = el(`<button class="setup-start"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی برای همه</span></button>`);
-    startBtn.disabled = readyTeams.length < 2;
-    startBtn.addEventListener('click', () => { startOnlineGame(); });
-    wrap.appendChild(startBtn);
-    if(readyTeams.length < 2){
-      wrap.appendChild(el(`<div class="setup-note">حداقل ۲ تیم با عضو لازمه</div>`));
+    if(wiz){
+      const go = (n, extra) => window.FB.update(fbRoomRef(), Object.assign({ lobbyStep: n }, extra || {}));
+      if(step === 1){
+        wrap.appendChild(buildSetupNav({ label: 'تایید و ادامه', disabled: readyTeams.length < 2, onNext: () => go(2, roomLockPayload(true)) }));
+        if(readyTeams.length < 2) wrap.appendChild(el(`<div class="setup-note">حداقل ۲ تیم با عضو لازمه</div>`));
+      } else if(step === 2){
+        wrap.appendChild(buildSetupNav({ onPrev: () => go(1), label: 'ادامه', onNext: () => go(3) }));
+      } else {
+        wrap.appendChild(buildSetupNav({ onPrev: () => go(2), label: 'شروع بازی برای همه', start: true, disabled: readyTeams.length < 2, onNext: () => startOnlineGame() }));
+      }
+    } else {
+      const startBtn = el(`<button class="setup-start"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی برای همه</span></button>`);
+      startBtn.disabled = readyTeams.length < 2;
+      startBtn.addEventListener('click', () => { startOnlineGame(); });
+      wrap.appendChild(startBtn);
+      if(readyTeams.length < 2) wrap.appendChild(el(`<div class="setup-note">حداقل ۲ تیم با عضو لازمه</div>`));
     }
   } else {
-    if(Array.isArray(room.packs) && room.packs.length){
-      const names = WORD_PACKS.filter(p => room.packs.includes(p.id)).map(p => p.icon + ' ' + p.name).join('، ');
-      const info = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">پک کلمه‌ها</h2><p class="lobby-packs__list"></p></div>`);
-      info.querySelector('.lobby-packs__list').textContent = names;
-      wrap.appendChild(info);
+    if(show(2)){
+      if(Array.isArray(room.packs) && room.packs.length){
+        const names = WORD_PACKS.filter(p => room.packs.includes(p.id)).map(p => p.icon + ' ' + p.name).join('، ');
+        const info = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">پک کلمه‌ها</h2><p class="lobby-packs__list"></p></div>`);
+        info.querySelector('.lobby-packs__list').textContent = names;
+        wrap.appendChild(info);
+      }
+      wrap.appendChild(buildPlayModeCard());
     }
-    if(MAPS.length > 1 && room.mapId){ const mm = MAPS.find(x => x.id === room.mapId); if(mm){ const mi = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2><p class="lobby-packs__list"></p></div>`); mi.querySelector('.lobby-packs__list').textContent = '🗺️ ' + mm.name; wrap.appendChild(mi); } }
-    wrap.appendChild(buildPlayModeCard());
-    wrap.appendChild(el(`<div class="lobby-wait">منتظر شروع بازی از طرف میزبان…</div>`));
+    if(show(3) && room.mapId){ const mm = MAPS.find(x => x.id === room.mapId); if(mm){ const mi = el(`<div class="team-card lobby-packs"><h2 class="set-card__title">نقشه‌ی بازی</h2><p class="lobby-packs__list"></p></div>`); mi.querySelector('.lobby-packs__list').textContent = '🗺️ ' + mm.name; wrap.appendChild(mi); } }
+    wrap.appendChild(el(`<div class="lobby-wait">${wiz ? `میزبان داره ${['', 'تیم‌ها', 'کلمه‌ها', 'نقشه'][step]} رو آماده می‌کنه…` : 'منتظر شروع بازی از طرف میزبان…'}</div>`));
   }
 
   const leaveBtn = el(`<button class="play-leave">خروج از اتاق</button>`);
@@ -1911,6 +1964,7 @@ function startOnlineGame(){
   const teams = onlineTeamsArray().filter(t => t.memberIds.length > 0);
   if(teams.length < 2) return;
   const updates = {
+    lobbyStep: 1,
     phase: 'playing',
     currentTeamId: teams[0].id,
     currentCardIdx: 0,
@@ -3125,15 +3179,52 @@ function renderBrand(){
 }
 
 // ---------------- SETUP SCREEN ----------------
+// ---- the three steps before a game: teams, words, map ----
+const SETUP_STEPS = ['تیم‌ها', 'کلمه‌ها', 'نقشه'];
+function buildSetupStepper(step){
+  const box = el(`<ol class="stp" aria-label="مراحل آماده‌سازی"></ol>`);
+  SETUP_STEPS.forEach((name, i) => {
+    const n = i + 1, cls = n < step ? 'is-done' : (n === step ? 'is-on' : '');
+    if(i) box.appendChild(el(`<li class="stp__ln ${n <= step ? 'is-done' : ''}" aria-hidden="true"></li>`));
+    box.appendChild(el(`<li class="stp__st ${cls}" ${n === step ? 'aria-current="step"' : ''}><i>${n < step ? '✓' : faNum(n)}</i><span>${name}</span></li>`));
+  });
+  return box;
+}
+// back / next (or start) at the bottom of a step
+function buildSetupNav(o){
+  const nav = el(`<div class="stp-nav"></div>`);
+  if(o.onPrev){
+    const b = el(`<button type="button" class="stp-nav__prev">‹ قبلی</button>`);
+    b.addEventListener('click', o.onPrev); nav.appendChild(b);
+  }
+  if(o.onNext){
+    const b = el(`<button type="button" class="stp-nav__next ${o.start ? 'is-start' : ''}"></button>`);
+    b.innerHTML = o.start ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>${o.label}</span>` : `<span>${o.label}</span><span aria-hidden="true">←</span>`;
+    b.disabled = !!o.disabled;
+    b.addEventListener('click', o.onNext); nav.appendChild(b);
+  }
+  return nav;
+}
+function setupGoStep(n){
+  state.setupStep = n; render();
+  try{ (document.scrollingElement || document.documentElement).scrollTop = 0; const a = document.getElementById('app'); if(a) a.scrollTop = 0; }catch(e){}
+}
+
 function renderSetup(){
-  state.customDeck = false;   // the custom-words box starts empty on every build of this screen
-  const wrap = el(`<div class="setup-page"></div>`);
+  // a fresh setup starts at step 1 with the custom-words box empty
+  if(!state.setupStep){ state.setupStep = 1; state.customDeck = false; state.customText = ''; }
+  const step = state.setupStep;
+  const wrap = el(`<div class="setup-page setup-page--step"></div>`);
 
   // ---- header ----
   const header = el(`<div class="setup-head"></div>`);
   header.appendChild(el(`<div class="setup-brand setup-brand--logo"><img class="brand-logo" src="assets/logo.webp" alt="نخ بده" decoding="async"></div>`));
   wrap.appendChild(header);
+  wrap.appendChild(buildSetupStepper(step));
+  const STEP_HEAD = [['تیم‌ها و بازیکن‌ها', 'تیم‌ها رو بچین و اسم بازیکن‌ها رو بنویس.'], ['با چه کلمه‌هایی بازی کنیم؟', 'یک یا چند بسته رو انتخاب کن.'], ['سفر به کدوم شهر؟', 'مسیر بازی روی این نقشه است.']][step - 1];
+  wrap.appendChild(el(`<div class="stp-head"><h2>${STEP_HEAD[0]}</h2><p>${STEP_HEAD[1]}</p></div>`));
 
+  if(step === 1){
   // ---- team cards ----
   state.teams.forEach((team, ti) => {
     const block = el(`<div class="team-card"></div>`);
@@ -3212,14 +3303,19 @@ function renderSetup(){
     });
     wrap.appendChild(addTeam);
   }
+  wrap.appendChild(buildSetupNav({ label: 'تایید و ادامه', onNext: () => setupGoStep(2) }));
+  }
 
   // ---- board ----
-  if(MAPS.length > 1){
+  if(step === 3){
     const mapCard = el(`<div class="deck-card"><h2 class="deck-card__title">نقشه‌ی بازی</h2><p class="deck-card__sub">روی کدام نقشه بازی کنید؟ نقشه‌های قفل‌دار را از فروشگاه می‌خری.</p></div>`);
     mapCard.appendChild(buildMapPicker(selectedMapId(), () => render()));
     wrap.appendChild(mapCard);
+    wrap.appendChild(buildSetupNav({ onPrev: () => setupGoStep(2), label: 'شروع بازی', start: true, onNext: startGame }));
+    wrap.appendChild(el(`<div class="setup-note">بعد از شروع بازی، از منوی «دیدن به‌عنوان» می‌تونی چیزی که هر بازیکن می‌بینه رو ببینی.</div>`));
   }
 
+  if(step === 2){
   // ---- word packs ----
   const packCard = el(`<div class="deck-card"><h2 class="deck-card__title">پک کلمه‌ها</h2><p class="deck-card__sub">یک یا چند پک را انتخاب کن. پک‌های قفل‌دار را از فروشگاه می‌خری.</p></div>`);
   packCard.appendChild(buildPackPicker(selectedPacks(), () => render()));
@@ -3234,7 +3330,8 @@ function renderSetup(){
   </div>`);
   const ta = deckCard.querySelector('#deckInput');
   const count = deckCard.querySelector('#deckCount');
-  ta.value = '';
+  ta.value = state.customText || '';
+  ta.addEventListener('input', e => { state.customText = e.target.value; });
   ta.addEventListener('change', e => {
     const words = e.target.value.split(/[\n,،]+/).map(w => w.trim()).filter(Boolean);
     if(words.length >= 10){
@@ -3246,12 +3343,9 @@ function renderSetup(){
     }
   });
   wrap.appendChild(deckCard);
-
-  const startBtn = el(`<button class="setup-start"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5.5 19 12 8 18.5 Z"/></svg><span>شروع بازی و رفتن به تخته</span></button>`);
-  startBtn.addEventListener('click', startGame);
-  wrap.appendChild(startBtn);
-
-  wrap.appendChild(el(`<div class="setup-note">بعد از شروع بازی، از منوی «دیدن به‌عنوان» می‌تونی چیزی که هر بازیکن می‌بینه رو ببینی.</div>`));
+  if(ta.value) ta.dispatchEvent(new Event('change'));
+  wrap.appendChild(buildSetupNav({ onPrev: () => setupGoStep(1), label: 'ادامه', onNext: () => setupGoStep(3) }));
+  }
 
   return wrap;
 }
@@ -3260,6 +3354,7 @@ function syncScoreLabelsOnly(){ /* names update live via re-render on other acti
 
 // ---------------- GAME START ----------------
 function startGame(){
+  state.setupStep = 0;
   setActiveMap(selectedMapId());
   state.deck = [];
   if(!state.customDeck) state.wordSource = wordsForPacks(selectedPacks());
