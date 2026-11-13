@@ -963,11 +963,6 @@ function buildPackCarousel(selected, onToggle){
   box.appendChild(dots);
   const at = packs.findIndex(p => p.id === (LS.get('pkcAt', '') || selected[0]));
   snapCarousel(track, cards, at >= 0 ? first + at : first, dots, (i) => { const p = packs[i - first]; if(p) LS.set('pkcAt', p.id); });
-  // what is in the game now
-  const chosen = el(`<div class="pkc__sum"><b>${faNum(wordsForPacks(selected).length)} کلمه در بازی</b><span class="pkc__chips"></span></div>`);
-  const chips = chosen.querySelector('.pkc__chips');
-  WORD_PACKS.filter(p => selected.includes(p.id)).forEach(p => { const c = el(`<i></i>`); c.textContent = p.icon + ' ' + p.name; chips.appendChild(c); });
-  box.appendChild(chosen);
   return box;
 }
 // the maps: a random card first, then the player's maps (picture, name, route), then «more maps» last
@@ -3473,29 +3468,7 @@ function renderSetup(){
   // ---- word packs ----
   wrap.appendChild(buildPackCarousel(selectedPacks(), () => render()));
 
-  // ---- custom word cards ----
-  const deckCard = el(`<div class="deck-card">
-    <h2 class="deck-card__title">کلمه‌های بازی</h2>
-    <p class="deck-card__sub">با پک‌های بالا بازی کلمه‌ی آماده داره. اگه خواستی خودت کلمه‌ها رو جایگزین کنی، اینجا بنویس (هر خط یک کلمه، حداقل ۱۰ تا).</p>
-    <textarea class="deck-card__area" id="deckInput" aria-label="کلمه‌های دلخواه" placeholder="برای جایگزینی، کلمه‌های خودت رو اینجا بنویس..."></textarea>
-    <small class="deck-card__count" id="deckCount" aria-live="polite"></small>
-  </div>`);
-  const ta = deckCard.querySelector('#deckInput');
-  const count = deckCard.querySelector('#deckCount');
-  ta.value = state.customText || '';
-  ta.addEventListener('input', e => { state.customText = e.target.value; });
-  ta.addEventListener('change', e => {
-    const words = e.target.value.split(/[\n,،]+/).map(w => w.trim()).filter(Boolean);
-    if(words.length >= 10){
-      state.wordSource = words; state.customDeck = true;
-      count.textContent = `بازی با ${faNum(words.length)} کلمه‌ی خودت انجام می‌شه.`;
-    } else {
-      state.customDeck = false;
-      count.textContent = words.length ? 'برای جایگزینی، حداقل ۱۰ کلمه لازمه؛ کلمه‌های آماده استفاده می‌شن.' : '';
-    }
-  });
-  wrap.appendChild(deckCard);
-  if(ta.value) ta.dispatchEvent(new Event('change'));
+  state.customDeck = false;
   wrap.appendChild(buildSetupNav({ onPrev: () => setupGoStep(1), label: 'ادامه', onNext: () => setupGoStep(3) }));
   }
 
