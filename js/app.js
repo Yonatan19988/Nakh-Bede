@@ -1164,8 +1164,8 @@ function stepHomeMap(dir){
 
 // ---------------- SPLASH: Nakhi pops in next to the logo and throws its three dots into place, then laughs ----------------
 let splashEl = null, splashTimer = null, splashSfx = [], splashRaf = 0;
-const SPLASH_END = 4.6;                       // seconds of the scene
-const SPLASH_MS = 5000;
+const SPLASH_END = 3.6;                       // seconds of the scene
+const SPLASH_MS = 4000;
 function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; cancelAnimationFrame(splashRaf); }
 function splashDone(){
   splashStop();
@@ -1243,14 +1243,14 @@ function renderSplash(){
   // the stage is 390 x 780: Nakhi on the left, the logo on the right, standing on one floor
   const NX = 26, NW = 99, NH = 150, FLOOR = 470, LX = 133, LT = 347, LW = 230, LH = 119.2;
   const HAND = { x: NX + .875 * NW, y: FLOOR - NH + .64 * NH };   // the ball of his right hand
-  const THROWS = [1.3, 2.05, 2.8], FLY = .42, LAUGH = 3.7;
+  const THROWS = [1.1, 1.5, 1.9], FLY = .25, LAUGH = 2.6;
   const frame = (t) => {
     nk.style.transform = '';
     // Nakhi and the logo pop in
     let ns = back(t / .8), ny = 0, rot = 0;
     lgEl.style.transform = `scale(${back((t - .35) / .8)})`;
     // a little wind-up and swing of the body with every throw
-    THROWS.forEach((t0) => { const u = (t - (t0 - .15)) / .3; if(u > 0 && u < 1) rot = -14 * Math.sin(u * Math.PI); });
+    THROWS.forEach((t0) => { const u = (t - (t0 - .1)) / .2; if(u > 0 && u < 1) rot = -14 * Math.sin(u * Math.PI); });
     if(t >= LAUGH) ny = -16 * Math.sin(clamp((t - LAUGH) / .55) * Math.PI);
     const br = t > LAUGH + .55 ? .012 * Math.sin(t * 2.4) : 0;
     nk.style.transform = `translate(${NX}px,${FLOOR - NH + ny}px) rotate(${rot}deg) scale(${ns * (1 + br)},${ns * (1 - br)})`;
@@ -1263,7 +1263,7 @@ function renderSplash(){
       const cx = LX + (x + w / 2) / 1138 * LW, cy = LT + (y + h / 2) / 590 * LH;
       const k = inout((t - t0) / FLY);
       const dx = (HAND.x - cx) * (1 - k), dy = (HAND.y - cy) * (1 - k) - 130 * Math.sin(k * Math.PI);
-      const land = k >= 1 ? 1 + .35 * Math.sin(clamp((t - t0 - FLY) / .35) * Math.PI) : 1;
+      const land = k >= 1 ? 1 + .35 * Math.sin(clamp((t - t0 - FLY) / .25) * Math.PI) : 1;
       d.style.opacity = 1;
       d.style.transform = `translate(${dx}px,${dy}px) rotate(${(1 - k) * 540}deg) scale(${land})`;
     });
@@ -1293,11 +1293,11 @@ function splashSounds(){
   const pop = (f) => { playTone(f, .12, 'triangle', .16); playTone(f * 1.5, .16, 'sine', .1); };
   at(100, () => pop(523));                                     // Nakhi pops in
   at(420, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });   // the logo
-  [1300, 2050, 2800].forEach((t, i) => {
+  [1100, 1500, 1900].forEach((t, i) => {
     at(t - 80, () => { playTone(500 + i * 60, .18, 'sine', .07); playTone(900 + i * 80, .14, 'sine', .05); });   // whoosh of the throw
-    at(t + 420, () => pop(784 + i * 110));                    // the dot lands
+    at(t + 250, () => pop(784 + i * 110));                    // the dot lands
   });
-  [3700, 3820, 3940].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));   // the laugh
+  [2600, 2720, 2840].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));   // the laugh
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
