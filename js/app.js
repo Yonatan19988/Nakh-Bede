@@ -1013,10 +1013,10 @@ function stepHomeMap(dir){
   sfxTap(); render();
 }
 
-// ---------------- SPLASH: Nakhi pulls the logo in with a thread, watches the dots hop in, smiles and leans on the word ----------------
+// ---------------- SPLASH: Nakhi pops in next to the logo and throws its three dots into place, then laughs ----------------
 let splashEl = null, splashTimer = null, splashSfx = [], splashRaf = 0;
-const SPLASH_END = 9;                         // seconds of the scene
-const SPLASH_MS = 9300;
+const SPLASH_END = 3.2;                       // seconds of the scene
+const SPLASH_MS = 3500;
 function splashStop(){ clearTimeout(splashTimer); splashSfx.forEach(clearTimeout); splashSfx = []; cancelAnimationFrame(splashRaf); }
 function splashDone(){
   splashStop();
@@ -1059,87 +1059,53 @@ function splashHandoff(){
 function renderSplash(){
   if(splashEl) return splashEl;
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // positions are the pieces' places inside the 1138 x 590 splash logo
+  // the logo's dots, by their places inside the 1138 x 590 splash logo
+  const DOTS = [[392, 427, 124, 130, 'splash-dot-3'], [691, 14, 136, 130, 'splash-dot-2'], [928, 47, 137, 131, 'splash-dot-1']];
   const pc = (x, y, w, h) => `left:${x / 11.38}%;top:${y / 5.9}%;width:${w / 11.38}%;height:${h / 5.9}%`;
   const wrap = el(`<div class="sp sp--scene${reduce ? ' sp--still' : ''}" aria-label="نخ بده">
     <div class="sp__stage">
-      <svg class="sp__thr" viewBox="0 0 390 780" aria-hidden="true"><path class="t1" fill="none" stroke="#7a4a07" stroke-width="7" stroke-linecap="round"/><path class="t2" fill="none" stroke="#F6B831" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 3"/><g class="knot"><circle r="7" fill="#F6B831" stroke="#7a4a07" stroke-width="3"/><circle r="2.5" fill="#7a4a07"/></g></svg>
       <div class="sp__sw"><div class="sp__lg">
         <img class="sp__base" src="assets/splash-base.webp" alt="" decoding="async">
-        <div class="sp__nd sp__nd--a" style="${pc(691, 14, 136, 130)}"><img src="assets/splash-dot-2.webp" alt=""></div>
-        <div class="sp__nd sp__nd--b" style="${pc(928, 47, 137, 131)}"><img src="assets/splash-dot-1.webp" alt=""></div>
-        <div class="sp__nd sp__nd--c" style="${pc(392, 427, 124, 130)}"><img src="assets/splash-dot-3.webp" alt=""></div>
+        ${DOTS.map(([x, y, w, h, src]) => `<div class="sp__nd" style="${pc(x, y, w, h)}"><img src="assets/${src}.webp" alt=""></div>`).join('')}
       </div></div>
-      <div class="sp__nk"><img class="sp__nk1" src="assets/mascot.webp" alt="" decoding="async"><img class="sp__nk2" src="assets/mascot-laugh.webp" alt="" decoding="async" style="left:6.8px;top:-0.1px;width:102.4px;height:155.1px;opacity:0">
-        <svg viewBox="0 0 882 1167" aria-hidden="true">
-          <g class="eyes"><ellipse cx="328" cy="401" rx="46" ry="60" fill="#fff"/><ellipse cx="533" cy="380" rx="46" ry="60" fill="#fff"/>
-            <g class="pup"><ellipse cx="338" cy="412" rx="30" ry="38" fill="#2a1306"/><ellipse cx="543" cy="391" rx="30" ry="38" fill="#2a1306"/><circle cx="328" cy="396" r="10" fill="#fff"/><circle cx="533" cy="375" r="10" fill="#fff"/></g></g>
-        </svg></div>
+      <div class="sp__nk"><img class="sp__nk1" src="assets/mascot.webp" alt="" decoding="async"><img class="sp__nk2" src="assets/mascot-laugh.webp" alt="" decoding="async"></div>
     </div></div>`);
   const q = (c) => wrap.querySelector(c);
-  const nk1 = q('.sp__nk1'), nk2 = q('.sp__nk2'), nkSvg = q('.sp__nk > svg');
-  const lgEl = q('.sp__lg'), nk = q('.sp__nk'), pup = q('.pup');
-  const t1 = q('.t1'), t2 = q('.t2'), knot = q('.knot');
+  const lgEl = q('.sp__lg'), nk = q('.sp__nk'), nk1 = q('.sp__nk1'), nk2 = q('.sp__nk2');
+  const dotEls = [...wrap.querySelectorAll('.sp__nd')];
+  // the laughing drawing is swapped in only once it is decoded, so Nakhi never blinks out
+  let laughReady = false;
+  (nk2.decode ? nk2.decode() : Promise.resolve()).then(() => { laughReady = true; }, () => { laughReady = true; });
   const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-  const eo = (x) => 1 - Math.pow(1 - clamp(x), 3);
-  const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
-  const mixv = (a, b, k) => a + (b - a) * k;
-  // a dot hops in from the left and lands with a small pop
-  const dot = (cls, t0, dur, dist) => { const d = q(cls), img = d.firstElementChild; return (t) => {
-    if(t < t0){ d.style.opacity = 0; return; }
-    const k = clamp((t - t0) / dur);
-    d.style.opacity = 1; d.style.transform = `translateX(${-dist * (1 - k)}px)`;
-    d.style.scale = k >= 1 ? 1 + .28 * Math.sin(clamp((t - t0 - dur) / .35) * Math.PI) : 1;
-    const ph = ((t - t0) / .3) % 1; let y = 0, sc = 'scale(1,1)';
-    if(k < 1){ if(ph < .12) sc = `scale(${1.12 - .12 * (ph / .12)},${.88 + .12 * (ph / .12)})`; else y = -45 * Math.sin(Math.min((ph - .12) / .88, 1) * Math.PI); }
-    img.style.transform = `translateY(${y}px) ${sc}`;
-  }; };
-  const dots = [dot('.sp__nd--a', 4.4, 1.5, 216), dot('.sp__nd--b', 4.8, 1.8, 266), dot('.sp__nd--c', 5.2, 2.1, 317)];
-  const BASE = 315, LX = 8, LW = 230, LY = 350, NW = 117, NH = 155;
-  const W0 = .3, W1 = 3.1, X0 = -170, X1 = 268, SP = .55;       // Nakhi walks in from the left, hauling the logo behind him
-  const TS = 7.5, TL = 8.2;                                      // smile, lean
-  // Nakhi's pose at time t
-  const pose = (t) => {
-    let x = X0, rot = 0, y = 0, sx = 1, sy = 1;
-    const walk = t < W0 || t > W1 + .3 ? 0 : ease((t - W0) / .5) * (1 - ease((t - (W1 - .3)) / .6));
-    if(t >= W0 && t < W1){ const u = (t - W0) / (W1 - W0); x = X0 + (X1 - X0) * (.5 * ease(u) + .5 * u); }
-    else if(t >= W1) x = X1;
-    const ph = t * 2 * Math.PI / SP;
-    rot = (13 + 2 * Math.sin(ph)) * walk;                      // leaning into the load
-    y = -4 * Math.abs(Math.sin(ph / 2)) * walk;                // a bob with every step
-    sx = 1 + .025 * Math.cos(ph) * walk; sy = 1 - .025 * Math.cos(ph) * walk;
-    if(t >= W1 + .3){ const br = .018 * Math.sin(t * 2.4) * (t < 4.2 ? 2 : 1); sx = 1 + br; sy = 1 - br; }
-    if(t >= TS && t < TS + .7) y = -22 * Math.sin(clamp((t - TS) / .6) * Math.PI);
-    if(t >= TL){ const k = ease((t - TL) / .7); x = mixv(X1, 238, k); rot = mixv(0, -8, k); }
-    return { x, y, rot, sx, sy };
-  };
-  // the ball of Nakhi's hand (his left one, the one the thread hangs from)
-  const hand = (ps) => { const rad = ps.rot * Math.PI / 180, dx = 10.6 - NW / 2, dy = 109 - NH;
-    return { x: ps.x + NW / 2 + dx * Math.cos(rad) - dy * Math.sin(rad), y: BASE + ps.y + NH + dx * Math.sin(rad) + dy * Math.cos(rad) }; };
+  const back = (x) => { x = clamp(x); const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };   // ease-out with a small overshoot
+  const inout = (x) => { x = clamp(x); return .5 - .5 * Math.cos(x * Math.PI); };
+  // the stage is 390 x 780: Nakhi on the left, the logo on the right, standing on one floor
+  const NX = 26, NW = 99, NH = 150, FLOOR = 470, LX = 133, LT = 347, LW = 230, LH = 119.2;
+  const HAND = { x: NX + .875 * NW, y: FLOOR - NH + .64 * NH };   // the ball of his right hand
+  const THROWS = [.9, 1.4, 1.9], FLY = .5, LAUGH = 2.7;
   const frame = (t) => {
-    const ps = pose(t);
-    nk.style.transform = `translate(${ps.x}px,${BASE + ps.y}px) rotate(${ps.rot}deg) scale(${ps.sx},${ps.sy})`;
-    // the logo trails a moment behind his hand on the thread, bobbing as it is dragged
-    const lag = pose(Math.max(0, t - .25)), hl = hand(lag);
-    const settle = t < 3.3 ? 1 : 1 - ease((t - 3.3) / .5);
-    const tx = (hl.x - 40 - (LX + LW)) * settle;
-    const dragging = t < W1 + .3 ? clamp((t - W0) / .5) * (1 - ease((t - (W1 - .3)) / .6)) : 0;
-    const ldy = -2.5 * Math.abs(Math.sin((t - .25) * Math.PI / SP)) * dragging, lrot = 1.6 * Math.sin((t - .25) * 2 * Math.PI / SP) * dragging;
-    lgEl.style.transform = `translate(${tx}px, ${ldy}px) rotate(${lrot}deg)`;
-    // eyes and mouth: ahead while hauling, then a glance at us, then at the hopping dots, then a smile
-    const look = t < 3.4 ? 14 : t < 3.8 ? 0 : t < TS ? -17 : 0;
-    pup.setAttribute('transform', `translate(${look},${t < W1 ? 3 : 0})`);
-    const hp = t >= TS ? 1 : 0;
-    // the last part: the laughing drawing of Nakhi, eyes closed and arms open
-    nk2.style.opacity = hp; nk1.style.opacity = nkSvg.style.opacity = 1 - hp;
-    dots.forEach(f => f(t));
-    // the thread: from his hand to the knot on the logo's end; taut while hauling, slack once he stops, then gone
-    const h = hand(ps), alpha = t < .1 ? 0 : t < 3.5 ? 1 : clamp(1 - (t - 3.5) / .5);
-    const rx = LX + LW + tx - 3, ry = LY + 62 + ldy, sag = t < W1 ? 6 : 6 + 44 * clamp((t - W1) / .5);
-    const d = `M${h.x} ${h.y} Q${(h.x + rx) / 2} ${(h.y + ry) / 2 + sag} ${rx} ${ry}`;
-    t1.setAttribute('d', d); t2.setAttribute('d', d); t1.style.opacity = t2.style.opacity = alpha;
-    knot.setAttribute('transform', `translate(${rx} ${ry})`); knot.style.opacity = alpha;
-    t2.setAttribute('stroke-dashoffset', -(t * 14) % 10);
+    nk.style.transform = '';
+    // Nakhi and the logo pop in
+    let ns = back(t / .5), ny = 0, rot = 0;
+    lgEl.style.transform = `scale(${back((t - .2) / .55)})`;
+    // a little wind-up and swing of the body with every throw
+    THROWS.forEach((t0) => { const u = (t - (t0 - .13)) / .3; if(u > 0 && u < 1) rot = -14 * Math.sin(u * Math.PI); });
+    if(t >= LAUGH) ny = -16 * Math.sin(clamp((t - LAUGH) / .4) * Math.PI);
+    const br = t > LAUGH + .4 ? .012 * Math.sin(t * 2.4) : 0;
+    nk.style.transform = `translate(${NX}px,${FLOOR - NH + ny}px) rotate(${rot}deg) scale(${ns * (1 + br)},${ns * (1 - br)})`;
+    const laugh = t >= LAUGH && laughReady;
+    nk2.style.opacity = laugh ? 1 : 0; nk1.style.opacity = laugh ? 0 : 1;
+    // each dot flies from his hand in an arc, spinning, and lands in its place with a pop
+    dotEls.forEach((d, i) => {
+      const [x, y, w, h] = DOTS[i], t0 = THROWS[i];
+      if(t < t0){ d.style.opacity = 0; return; }
+      const cx = LX + (x + w / 2) / 1138 * LW, cy = LT + (y + h / 2) / 590 * LH;
+      const k = inout((t - t0) / FLY);
+      const dx = (HAND.x - cx) * (1 - k), dy = (HAND.y - cy) * (1 - k) - 110 * Math.sin(k * Math.PI);
+      const land = k >= 1 ? 1 + .35 * Math.sin(clamp((t - t0 - FLY) / .27) * Math.PI) : 1;
+      d.style.opacity = 1;
+      d.style.transform = `translate(${dx}px,${dy}px) rotate(${(1 - k) * 540}deg) scale(${land})`;
+    });
   };
   wrap._frame = frame;
   const fit = () => {
@@ -1164,17 +1130,13 @@ function renderSplash(){
 function splashSounds(){
   const at = (ms, fn) => splashSfx.push(setTimeout(fn, ms));
   const pop = (f) => { playTone(f, .12, 'triangle', .16); playTone(f * 1.5, .16, 'sine', .1); };
-  // heavy footsteps while he hauls the logo, with the scrape of the drag
-  for(let k = 0; k < 6; k++) at(300 + k * 550 + 120, () => { playTone(95, .16, 'sine', .22); playTone(190, .06, 'triangle', .06); });
-  [500, 1000, 1500, 2000, 2500].forEach(t => at(t, () => playTone(150 + Math.random() * 40, .3, 'sawtooth', .025)));
-  // he stops and lets out a breath
-  at(3200, () => { playTone(420, .3, 'sine', .08); playTone(300, .35, 'sine', .07); });
-  // the dots hop in
-  [[4400, 5, 330, 45], [4800, 6, 300, 50], [5200, 7, 290, 48]].forEach(([t0, n, f0, df]) => { for(let i = 0; i < n; i++) at(t0 + 300 * (i + 1) - 40, () => playTone(f0 + i * df, .09, 'sine', .13)); });
-  [5900, 6600, 7300].forEach((t, i) => at(t, () => pop(784 + i * 100)));
-  // the smile and the lean
-  [7500, 7600, 7700].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));
-  at(8300, () => { playTone(150, .18, 'sine', .2); playTone(300, .1, 'triangle', .06); });
+  at(60, () => pop(523));                                     // Nakhi pops in
+  at(260, () => { playTone(260, .18, 'triangle', .1); playTone(390, .22, 'sine', .08); });   // the logo
+  [900, 1400, 1900].forEach((t, i) => {
+    at(t - 60, () => { playTone(500 + i * 60, .18, 'sine', .07); playTone(900 + i * 80, .14, 'sine', .05); });   // whoosh of the throw
+    at(t + 500, () => pop(784 + i * 110));                    // the dot lands
+  });
+  [2700, 2800, 2900].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));   // the laugh
 }
 
 // ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
@@ -1205,7 +1167,7 @@ function renderWelcome(){
     <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
     <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
   // the logo with the yarn mascot standing next to it
-  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in nk__in--wave"><img src="assets/mascot.webp" width="520" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
+  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in nk__in--wave"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
   const nk = brand.querySelector('.nk');
   const nkHop = () => { nk.classList.remove('nk--hop'); void nk.offsetWidth; nk.classList.add('nk--hop'); nk.querySelector('.nk__in').classList.remove('nk__in--wave'); haptic(8); playTone(520,0.07,'triangle',0.09); setTimeout(()=>playTone(780,0.1,'triangle',0.08),70); };
   nk.addEventListener('click', nkHop);
@@ -1262,7 +1224,7 @@ function renderHome(){
   profChip.querySelector('b').textContent = prof.name || 'بازیکن مهمان';
   profChip.addEventListener('click', () => { state.screen = 'profile'; render(); });
   top.appendChild(profChip);
-  top.appendChild(el(`<div class="hm2-brand"><img class="hm2-logo" src="${HOME_LOGO}" alt="نخ بده" /><img class="hm2-mascot" src="assets/mascot.webp" width="520" height="688" alt="" aria-hidden="true" /></div>`));
+  top.appendChild(el(`<div class="hm2-brand"><img class="hm2-logo" src="${HOME_LOGO}" alt="نخ بده" /><img class="hm2-mascot" src="assets/mascot.webp" width="455" height="688" alt="" aria-hidden="true" /></div>`));
   const gear = el(`<button class="hm-gear" aria-label="تنظیمات"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#EAF6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>`);
   gear.addEventListener('click', () => { state.screen = 'settings'; render(); });
   top.appendChild(gear);
