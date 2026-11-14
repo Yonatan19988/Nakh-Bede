@@ -482,7 +482,7 @@ function musicSync(){
     // menus: normal level; during a round: quiet so the timer and cards stay clear
     bgm.a.volume = (state.screen === 'board' || state.screen === 'online-board') ? 0.09 : 0.22;
     // no music on the splash and the welcome screen: it starts once the player is in the game
-    const inIntro = state.screen === 'splash' || state.screen === 'welcome';
+    const inIntro = state.screen === 'splash' || state.screen === 'welcome' || state.screen === 'onboard';
     if(prefs.music && bgm.started && !document.hidden && !bgm.ducked && !inIntro){ const p = bgm.a.play(); if(p && p.catch) p.catch(() => {}); }
     else bgm.a.pause();
   }catch(e){}
@@ -595,8 +595,8 @@ function render(){
   const ae = document.activeElement;
   const keepKey = ae && ae.dataset && ae.dataset.keep ? ae.dataset.keep : null;
   const keepSel = keepKey ? [ae.selectionStart, ae.selectionEnd] : null;
-  document.body.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'splash');
-  document.documentElement.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'splash');
+  document.body.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'onboard' || state.screen === 'splash');
+  document.documentElement.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'onboard' || state.screen === 'splash');
   document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick' || state.screen === 'daily');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
@@ -612,6 +612,8 @@ function render(){
     app.appendChild(renderSplash());
   } else if(state.screen === 'welcome'){
     app.appendChild(renderWelcome());
+  } else if(state.screen === 'onboard'){
+    app.appendChild(renderOnboard());
   } else if(state.screen === 'home'){
     app.appendChild(renderHome());
   } else if(state.screen === 'settings'){
@@ -1063,7 +1065,7 @@ function ringColor(p){
 }
 // the player's own photo: a small square JPEG kept in the profile (on this phone and in their own account only)
 const PHOTO_MAX = 60000;
-function validPhoto(v){ return typeof v === 'string' && v.length < PHOTO_MAX && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v); }
+function validPhoto(v){ return typeof v === 'string' && v.length < PHOTO_MAX && (/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v) || /^https:\/\/[a-z0-9-]+\.googleusercontent\.com\/[A-Za-z0-9._~\/=?&%-]{1,400}$/.test(v)); }
 function photoFromFile(file){
   return new Promise((resolve, reject) => {
     if(!file || !/^image\//.test(file.type)){ reject(new Error('type')); return; }
@@ -1300,81 +1302,203 @@ function splashSounds(){
   [2600, 2720, 2840].forEach((t, i) => at(t, () => playTone(660 + i * 220, .14, 'triangle', .14)));   // the laugh
 }
 
-// ---------------- WELCOME (first launch): big logo, then guest or Google ----------------
-// a player who is already signed in passes this screen by himself after two seconds
-let welcomeAutoTimer = null, welcomeAutoAt = 0;
-function welcomeAutoStart(){
-  if(welcomeAutoTimer || state.screen !== 'welcome' || !accountIsGoogle()) return;
-  welcomeAutoAt = Date.now() + (document.querySelector('.sp--over') ? 900 : 0);   // the two seconds count from when the screen is in place
-  welcomeAutoTimer = setTimeout(() => { welcomeAutoTimer = null; if(state.screen === 'welcome') welcomeEnter(); }, welcomeAutoAt - Date.now() + 2000);
+// ---------------- WELCOME = LOADING: the logo and Nakhi with a loading box, then home or the sign-in ----------------
+// A player with an account goes straight home; anyone else (new, or a guest from before) signs in first.
+const LOAD_TIPS = [
+  'با «راهنمایی غیرمجاز» حریف رو جریمه کن!',
+  'کارت‌های گردونه می‌تونن کل بازی رو عوض کنن.',
+  'هر کلمه‌ی درست ۲ سکه داره؛ با سکه نقشه و مود تازه بخر.',
+  'با «کلمه‌ی امروز» هر روز یه چالش تازه داری.',
+  'تو بازی آنلاین، دوستاتو با یه لینک دعوت کن.',
+  'از پروفایلت چهره‌ات رو بساز یا عکس خودت رو بذار.'
+];
+let loadT0 = 0, loadTimer = null, loadTip = 0, loadFailed = false;
+function loadingProgress(){
+  const t = (Date.now() - loadT0) / 1000;
+  const ready = accountReady();
+  // creeps toward 90% while waiting, runs to 100% once Firebase is ready and the bar has been seen a moment
+  return ready && t > 1.4 ? 1 : Math.min(.9, 1 - Math.exp(-t * 1.3));
 }
-function welcomeEnter(){
-  clearTimeout(welcomeAutoTimer); welcomeAutoTimer = null;
-  LS.set('welcomed', true);
-  state.screen = 'home';
+function loadingTick(){
+  const box = document.querySelector('.ld');
+  if(state.screen !== 'welcome'){ clearInterval(loadTimer); loadTimer = null; return; }
+  if(document.querySelector('.sp--over')) return;          // still zooming in from the opening scene
+  const k = loadingProgress();
+  if(box){
+    box.querySelector('.ld__fill').style.width = Math.round(k * 100) + '%';
+    box.querySelector('.ld__pct').textContent = faNum(Math.round(k * 100)) + '٪';
+  }
+  if(k >= 1){ clearInterval(loadTimer); loadTimer = null; setTimeout(loadingDone, 250); return; }
+  if(!loadFailed && Date.now() - loadT0 > 9000 && !accountReady()){ loadFailed = true; render(); }
+}
+function loadingDone(){
+  if(state.screen !== 'welcome') return;
+  if(accountIsGoogle()){ state.screen = profileNeedsSetup() ? 'onboard' : 'home'; state.obStep = 'profile'; }
+  else { state.screen = 'onboard'; state.obStep = 'login'; }
   render();
 }
-async function welcomeGoogle(kind){
-  LS.set('welcomed', true);               // set first: signing in to a known account reloads the page
-  await accountSignIn(kind);
-  if(accountIsGoogle()) welcomeEnter();
-  else { LS.set('welcomed', false); render(); }
-}
+function profileNeedsSetup(){ return !loadProfile().name; }
 let welcomeShown = false;
 function renderWelcome(){
   const intro = welcomeIntro; welcomeIntro = false;
-  // the screen is drawn again when the account is ready or after the opening scene: no second entrance animation then
   const again = welcomeShown && !intro; welcomeShown = true;
-  const wrap = el(`<div class="wl${intro ? ' wl--intro wl--hold' : ''}${again ? ' wl--static' : ''}"></div>`);
-  wrap.appendChild(el(`<div class="wl__cards" aria-hidden="true">
-    <img class="wl__card wl__card--a" src="assets/card-action.webp" alt="">
-    <img class="wl__card wl__card--b" src="assets/card-back.webp" alt="">
-    <img class="wl__card wl__card--c" src="assets/card-word.webp" alt=""></div>`));
-  // the logo with the yarn mascot standing next to it
-  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" role="button" tabindex="0" aria-label="نخی"><div class="nk__in${intro || again ? '' : ' nk__in--wave'}"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
-  const nk = brand.querySelector('.nk');
-  const nkHop = () => { nk.classList.remove('nk--hop'); void nk.offsetWidth; nk.classList.add('nk--hop'); nk.querySelector('.nk__in').classList.remove('nk__in--wave'); haptic(8); playTone(520,0.07,'triangle',0.09); setTimeout(()=>playTone(780,0.1,'triangle',0.08),70); };
-  nk.addEventListener('click', nkHop);
-  nk.addEventListener('keydown', e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); nkHop(); } });
+  if(!loadT0){ loadT0 = Date.now() + (intro ? 900 : 0); loadTip = Math.floor(Math.random() * LOAD_TIPS.length); }
+  if(!loadTimer) loadTimer = setInterval(loadingTick, 60);
+  const wrap = el(`<div class="wl wl--load${intro ? ' wl--intro wl--hold' : ''}${again ? ' wl--static' : ''}"></div>`);
+  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" aria-hidden="true"><div class="nk__in"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
   wrap.appendChild(brand);
-  wrap.appendChild(el(`<p class="wl__tag">کلمه رو بدون گفتنش توضیح بده!<br><span>بازی دسته‌جمعی، رو به‌رو یا آنلاین</span></p>`));
-  const box = el(`<div class="wl__btns${IS_NATIVE ? '' : ' wl__btns--full'}"></div>`);
-  const signedIn = !IS_NATIVE && accountIsGoogle();
-  // the buttons are always laid out, so the logo never moves when the account turns out to be signed in;
-  // a signed-in player sees them hidden, with only the thin progress bar
-  if(!IS_NATIVE){
-    const g = el(`<button type="button" class="wl__google"><span class="acc__g"><svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.300-8.300 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg></span><span>${acc.busy ? 'در حال ورود…' : 'ورود با گوگل'}</span></button>`);
-    g.disabled = acc.busy || !accountReady();
-    g.addEventListener('click', () => welcomeGoogle());
-    box.appendChild(g);
-    if(APPLE_LOGIN){
-      const ap = el(`<button type="button" class="wl__apple"><span class="wl__ap"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 6.9 1.2 9.2.8 1.1 1.700 2.400 2.900 2.300 1.200 0 1.600-.7 3-.7s1.800.7 3 .7c1.300 0 2.100-1.100 2.800-2.200.9-1.300 1.300-2.500 1.300-2.600 0 0-2.500-1-2.500-3.800zM14.200 5.900c.6-.8 1.100-1.900.9-3-.9 0-2.100.6-2.700 1.400-.6.700-1.100 1.800-.9 2.900 1 .1 2-.5 2.700-1.300z"/></svg></span><span>${acc.busy ? 'در حال ورود…' : 'ورود با اپل'}</span></button>`);
-      ap.disabled = acc.busy || !accountReady();
-      ap.addEventListener('click', () => welcomeGoogle('apple'));
-      box.appendChild(ap);
-    }
-  }
-  {
-  const guest = el(`<button type="button" class="wl__guest"><span>${IS_NATIVE ? 'شروع بازی' : 'ادامه به‌عنوان مهمان'}</span></button>`);
-    guest.disabled = acc.busy;
-    guest.addEventListener('click', welcomeEnter);
-    box.appendChild(guest);
-    const code = el(`<button type="button" class="wl__code">🔑 کد اتاق دارم</button>`);
-    code.disabled = acc.busy;
-    code.addEventListener('click', () => { LS.set('welcomed', true); state.screen = 'home'; state.homeSheet = 'join'; render(); });
-    box.appendChild(code);
+  const k = loadingProgress();
+  const box = el(`<div class="ld" role="status" aria-live="polite">
+    <div class="ld__top"><span>${loadFailed ? 'اتصال به اینترنت برقرار نشد' : 'در حال آماده‌سازی…'}</span><b class="ld__pct">${faNum(Math.round(k * 100))}٪</b></div>
+    <div class="ld__bar"><i class="ld__fill" style="width:${Math.round(k * 100)}%"></i></div>
+    <p class="ld__tip"><b>💡 نکته:</b> </p>
+  </div>`);
+  box.querySelector('.ld__tip').append(LOAD_TIPS[loadTip]);
+  if(loadFailed){
+    const acts = el(`<div class="ld__acts"></div>`);
+    const retry = el(`<button type="button" class="ld__btn">دوباره امتحان کن</button>`);
+    retry.addEventListener('click', () => location.reload());
+    const off = el(`<button type="button" class="ld__btn ld__btn--ghost">بازی بدون اینترنت</button>`);
+    off.addEventListener('click', () => { clearInterval(loadTimer); loadTimer = null; state.screen = 'home'; render(); });
+    acts.append(retry, off);
+    box.appendChild(acts);
   }
   wrap.appendChild(box);
-  if(signedIn){
-    // already signed in: nothing to read or press, only a thin bar right under the tagline while the game opens by itself
-    wrap.classList.add('wl--auto');
-    box.querySelectorAll('button').forEach(b => { b.disabled = true; b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); });
-    welcomeAutoStart();
-    const elapsed = Math.max(0, Date.now() - welcomeAutoAt);
-    box.appendChild(el(`<div class="wl__auto" aria-hidden="true"><i style="animation-delay:${-Math.min(elapsed, 2000)}ms"></i></div>`));
+  return wrap;
+}
+
+// ---------------- SIGN-IN AND PROFILE (first time on this phone) ----------------
+const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+const APPLE_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 6.9 1.2 9.2.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.3-2.5 1.3-2.6 0 0-2.5-1-2.5-3.8zM14.2 5.9c.6-.8 1.1-1.9.9-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-.9 2.9 1 .1 2-.5 2.7-1.3z"/></svg>';
+function obAsk(q, sub, laugh){
+  const b = el(`<div class="ob-ask"><img src="assets/${laugh ? 'mascot-laugh' : 'mascot'}.webp" alt="" aria-hidden="true" decoding="async"><div class="ob-ask__bub"><span></span>${sub ? '<small></small>' : ''}</div></div>`);
+  b.querySelector('.ob-ask__bub span').textContent = q;
+  if(sub) b.querySelector('small').textContent = sub;
+  return b;
+}
+function obErr(box){ if(acc.err){ const e = el(`<div class="ob-err" role="alert"></div>`); e.textContent = acc.err; box.appendChild(e); } }
+function obAfterSignIn(){
+  if(!accountIsGoogle()) return;
+  acc.err = '';
+  if(profileNeedsSetup()){ state.obStep = 'profile'; render(); }
+  else { state.screen = 'home'; render(); }
+}
+function renderOnboard(){
+  const step = state.obStep || 'login';
+  if(step !== 'login' && step !== 'email' && accountIsGoogle() === false){ state.obStep = 'login'; return renderOnboard(); }
+  const wrap = el(`<div class="ob ob--${step}"></div>`);
+  if(step === 'login'){
+    wrap.appendChild(el(`<img class="ob-logo" src="assets/splash-full.webp" alt="نخ بده" decoding="async">`));
+    wrap.appendChild(el(`<img class="ob-nk" src="assets/mascot.webp" alt="" aria-hidden="true" decoding="async">`));
+    const hasData = !!LS.get('profile', null);
+    wrap.appendChild(el(`<p class="ob-txt">${hasData ? 'حسابت رو وصل کن تا پروفایل و سکه‌هایی که داری روی حسابت ذخیره بشه و هیچ‌وقت گم نشه.' : 'برای شروع، حسابت رو وصل کن تا سکه‌ها و پروفایلت همیشه بمونه.'}</p>`));
+    const st = el(`<div class="ob-stack"></div>`);
+    if(!IS_NATIVE){
+      const g = el(`<button type="button" class="ob-btn ob-btn--g">${GOOGLE_SVG}<span>${acc.busy ? 'در حال ورود…' : 'ادامه با گوگل'}</span></button>`);
+      g.disabled = acc.busy || !accountReady();
+      g.addEventListener('click', async () => { await accountSignIn(); obAfterSignIn(); });
+      st.appendChild(g);
+      if(APPLE_LOGIN){
+        const ap = el(`<button type="button" class="ob-btn ob-btn--a">${APPLE_SVG}<span>${acc.busy ? 'در حال ورود…' : 'ادامه با اپل'}</span></button>`);
+        ap.disabled = acc.busy || !accountReady();
+        ap.addEventListener('click', async () => { await accountSignIn('apple'); obAfterSignIn(); });
+        st.appendChild(ap);
+      }
+      st.appendChild(el(`<div class="ob-or">یا</div>`));
+    }
+    const em = el(`<button type="button" class="ob-btn ob-btn--e">✉️ <span>ادامه با ایمیل</span></button>`);
+    em.disabled = acc.busy;
+    em.addEventListener('click', () => { acc.err = ''; state.obStep = 'email'; render(); });
+    st.appendChild(em);
+    obErr(st);
+    st.appendChild(el(`<small class="ob-note">با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
+    wrap.appendChild(st);
+  } else if(step === 'email'){
+    const back = el(`<button type="button" class="ob-back">‹ برگشت</button>`);
+    back.addEventListener('click', () => { acc.err = ''; state.obStep = 'login'; render(); });
+    wrap.appendChild(back);
+    wrap.appendChild(obAsk('با ایمیل وارد شو', 'اگه حساب نداری، همین‌جا ساخته می‌شه.'));
+    const form = el(`<form class="ob-form" novalidate>
+      <label class="ob-lbl" for="obMail">ایمیل</label>
+      <input class="ob-inp" id="obMail" type="email" dir="ltr" autocomplete="email" inputmode="email" placeholder="you@example.com" />
+      <label class="ob-lbl" for="obPass">رمز عبور</label>
+      <input class="ob-inp" id="obPass" type="password" dir="ltr" autocomplete="current-password" placeholder="حداقل ۶ حرف" />
+      <button type="button" class="ob-link">رمز رو فراموش کردی؟</button>
+      <div class="ob-stack"><button type="submit" class="ob-btn ob-btn--s">${acc.busy ? 'لطفاً صبر کن…' : 'ورود / ساخت حساب'}</button></div>
+    </form>`);
+    const mail = form.querySelector('#obMail'), pass = form.querySelector('#obPass');
+    mail.value = state.obMail || '';
+    mail.addEventListener('input', () => { state.obMail = mail.value.trim(); });
+    form.querySelector('.ob-link').addEventListener('click', () => {
+      const a = mail.value.trim();
+      if(!a){ acc.err = 'اول ایمیلت رو بنویس.'; render(); return; }
+      window.FB.account.resetPassword(a).then(() => { acc.err = ''; toastHome('لینک تغییر رمز به ایمیلت فرستاده شد'); render(); })
+        .catch((e) => { acc.err = accountErrorText(e); render(); });
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const a = mail.value.trim(), pw = pass.value;
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a)){ acc.err = 'ایمیل درست نیست.'; render(); return; }
+      if(pw.length < 6){ acc.err = 'رمز باید حداقل ۶ حرف باشد.'; render(); return; }
+      state.obMail = a;
+      if(await accountEmailSignIn(a, pw)) obAfterSignIn();
+    });
+    form.querySelector('button[type=submit]').disabled = acc.busy || !accountReady();
+    obErr(form.querySelector('.ob-stack'));
+    wrap.appendChild(form);
+  } else {
+    // ---- the profile: picture and the name the others see ----
+    const p = loadProfile();
+    const who = window.FB.account.email_() || (window.FB.account.displayName() || '');
+    if(who){ const c = el(`<div class="ob-chip">✓ حسابت وصل شد · <span dir="ltr"></span></div>`); c.querySelector('span').textContent = who; wrap.appendChild(c); }
+    wrap.appendChild(obAsk(p.name ? `سلام ${p.name}! پروفایلت آماده‌ست؟` : 'حالا بیا پروفایلت رو بسازیم!', '', false));
+    const big = el(`<div class="ob-big"></div>`);
+    big.innerHTML = avatarMarkup(p); big.style.cssText = frameStyle(p);
+    wrap.appendChild(big);
+    const opts = el(`<div class="ob-opts"></div>`);
+    const zoom = svg => svg.replace('viewBox="0 0 100 100"', 'viewBox="12 6 76 76"');
+    const opt = (on, inner, label, fn) => { const b = el(`<button type="button" class="ob-opt ${on ? 'is-on' : ''}"><i>${inner}</i><span></span></button>`); b.querySelector('span').textContent = label; b.addEventListener('click', fn); opts.appendChild(b); };
+    const set = (fn) => { const q = loadProfile(); fn(q); saveProfile(q); sfxSelect(); render(); };
+    opt(!p.photo && !p.avatar, zoom(NBAvatar.svg(p.look)), 'آواتار من', () => set(q => { q.photo = ''; q.avatar = ''; }));
+    opt(false, '🎲', 'تصادفی', () => set(q => {
+      const L = NBAvatar.LISTS, r = n => Math.floor(Math.random() * n);
+      Object.keys(NBAvatar.DEFAULT_LOOK).forEach(k => { let v = 0; for(let t = 0; t < 12; t++){ v = r(L[k].length); if(!partPrice(k, v) || q.parts.includes(k + ':' + v)) break; v = 0; } q.look[k] = v; });
+      q.photo = ''; q.avatar = '';
+    }));
+    const isUpload = p.photo && p.photo.startsWith('data:');
+    opt(isUpload, isUpload ? `<img src="${p.photo}" alt="">` : '📷', 'عکس خودم', () => {
+      const f = el(`<input type="file" accept="image/*" hidden>`);
+      f.addEventListener('change', () => { const file = f.files && f.files[0]; if(!file) return; photoFromFile(file).then(ph => set(q => { q.photo = ph; q.avatar = ''; })).catch(() => toastHome('این عکس باز نشد؛ یکی دیگه امتحان کن')); });
+      document.body.appendChild(f); f.click(); setTimeout(() => f.remove(), 60000);
+    });
+    const acct = window.FB.account.photoURL();
+    if(validPhoto(acct)){
+      const on = p.photo === acct;
+      opt(on, `<img src="${acct}" alt="" referrerpolicy="no-referrer">`, 'عکس حسابم', () => set(q => { q.photo = acct; q.avatar = ''; }));
+    }
+    wrap.appendChild(opts);
+    wrap.appendChild(el(`<label class="ob-lbl" for="obName">اسمی که بقیه می‌بینن</label>`));
+    const nm = el(`<input class="ob-inp" id="obName" type="text" maxlength="14" autocomplete="nickname" placeholder="مثلاً سارا" />`);
+    nm.value = state.obName !== undefined ? state.obName : (p.name || (window.FB.account.displayName() || '').split(' ')[0].slice(0, 14));
+    nm.addEventListener('input', () => { state.obName = nm.value; });
+    wrap.appendChild(nm);
+    const st = el(`<div class="ob-stack"></div>`);
+    const cust = el(`<button type="button" class="ob-btn ob-btn--o">🎨 شخصی‌سازی کامل چهره</button>`);
+    cust.addEventListener('click', openAvatarModal);
+    const go = el(`<button type="button" class="ob-btn ob-btn--s">بزن بریم!</button>`);
+    go.addEventListener('click', () => {
+      const name = nm.value.trim().slice(0, 14);
+      if(!name){ acc.err = 'یه اسم بنویس تا بقیه بشناسنت.'; render(); return; }
+      if(NBSafety.bad(name)){ acc.err = 'این اسم مناسب نیست. یه اسم دیگه بنویس.'; render(); return; }
+      const q = loadProfile(); q.name = name; saveProfile(q);
+      LS.set('name', name); LS.set('welcomed', true);
+      acc.err = ''; state.obName = undefined; sfxWin();
+      state.screen = 'home'; render();
+    });
+    st.append(cust, go);
+    obErr(st);
+    wrap.appendChild(st);
   }
-  if(acc.err){ const e = el(`<div class="room-form__error" role="alert" style="display:block;"></div>`); e.textContent = acc.err; wrap.appendChild(e); }
-  wrap.appendChild(el(`<small class="wl__note"${signedIn ? ' aria-hidden="true"' : ''}>${IS_NATIVE ? '' : 'با حساب گوگل، پروفایل و سکه‌هات هیچ‌وقت گم نمی‌شن.<br>'}با ادامه دادن، <a href="privacy.html" target="_blank" rel="noopener">حریم خصوصی</a> را می‌پذیری · Yomor Games</small>`));
   return wrap;
 }
 
@@ -3086,7 +3210,7 @@ function openAvatarModal(){
   sheet.querySelector('.pm-btn--save').addEventListener('click', () => {
     if(JSON.stringify(work.p) !== before){ saveProfile(work.p); sfxWin(); }
     close();
-    if(state.screen === 'profile') render();
+    if(state.screen === 'profile' || state.screen === 'onboard') render();
   });
   back.appendChild(sheet);
   document.body.appendChild(back);
@@ -3230,7 +3354,7 @@ function renderTutorial(){
 
 // Screens you may leave with a visible control. The board is deliberately
 // excluded: a round in progress should not be abandoned by a stray tap.
-const NO_BACK_SCREENS = ['splash', 'welcome', 'home', 'board', 'online-board'];
+const NO_BACK_SCREENS = ['splash', 'welcome', 'onboard', 'home', 'board', 'online-board'];
 
 function attachBackButton(app){
   if(NO_BACK_SCREENS.includes(state.screen)) return;
@@ -3240,7 +3364,8 @@ function attachBackButton(app){
   app.appendChild(btn);
 }
 function handleAppBack(){
-  if(state.screen === 'splash') return true;
+  if(state.screen === 'splash' || state.screen === 'welcome') return true;
+  if(state.screen === 'onboard'){ if(state.obStep === 'email'){ acc.err = ''; state.obStep = 'login'; render(); } return true; }
   if(state.homeSheet){ state.homeSheet = false; render(); return true; }
   // a mid-round decision must not be skipped by a stray back press
   if(state.showAbout){ state.showAbout = false; render(); return true; }
@@ -3299,7 +3424,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['splash','welcome','home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily'];
+  const ownHeader = ['splash','welcome','onboard','home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }
@@ -4907,14 +5032,13 @@ try {
   if(q){
     state.joinCode = q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
     state.homeSheet = 'join';
-    if(state.screen === 'splash' || state.screen === 'welcome') state.screen = 'home';   // an invite link goes straight to joining
     history.replaceState(null, '', location.pathname);
   }
 } catch(e){}
 // a reload within the same session (a new version, signing in) does not replay the opening scene
 try {
   const seen = sessionStorage.getItem('nbIntro');
-  if(state.screen === 'splash' && seen) state.screen = seen === 'home' ? 'home' : 'welcome';
+  if(state.screen === 'splash' && seen) state.screen = 'welcome';
 } catch(e){}
 window.addEventListener('fb-ready', () => { if(state.screen === 'welcome' && !document.querySelector('.sp--over')) render(); });
 

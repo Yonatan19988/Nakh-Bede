@@ -75,6 +75,11 @@ function accountErrorText(e){
   if(c === 'auth/unauthorized-domain') return 'این آدرس بازی هنوز در Firebase مجاز نشده است (Authentication ← Settings ← Authorized domains).';
   if(c === 'auth/operation-not-allowed') return 'این روش ورود هنوز در Firebase فعال نشده است.';
   if(c === 'auth/network-request-failed') return 'اتصال به اینترنت برقرار نیست.';
+  if(c === 'auth/invalid-email' || c === 'auth/missing-email') return 'ایمیل درست نیست.';
+  if(c === 'auth/weak-password' || c === 'auth/missing-password') return 'رمز باید حداقل ۶ حرف باشد.';
+  if(c === 'auth/wrong-password' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials') return 'ایمیل یا رمز اشتباه است.';
+  if(c === 'auth/user-not-found') return 'حسابی با این ایمیل نیست.';
+  if(c === 'auth/too-many-requests') return 'چند بار اشتباه شد؛ کمی بعد دوباره امتحان کن.';
   if(c === 'auth/operation-not-supported-in-this-environment' || c === 'auth/web-storage-unsupported') return 'این مرورگر ورود با گوگل را پشتیبانی نمی‌کند. بازی را در Chrome یا Safari باز کن.';
   return 'ورود انجام نشد. دوباره امتحان کن. (' + (c || 'خطای نامشخص') + ')';
 }
@@ -92,9 +97,25 @@ async function accountSignIn(kind){
   }
   acc.busy = false; render();
 }
+// email and password (also works inside the installed app, where Google's page can't open)
+async function accountEmailSignIn(addr, pass){
+  if(acc.busy || !accountReady()) return false;
+  acc.busy = true; acc.err = ''; acc.note = ''; render();
+  try{
+    const how = await window.FB.account.email(addr, pass);
+    await accountSync(how === 'switched');
+    if(how === 'switched'){ location.reload(); return true; }
+    acc.busy = false; render();
+    return true;
+  }catch(e){
+    acc.err = accountErrorText(e);
+  }
+  acc.busy = false; render();
+  return false;
+}
 async function accountSignOut(){
   if(acc.busy || !accountReady()) return;
-  if(!confirm('از حساب گوگل خارج بشی؟ پروفایل روی همین گوشی می‌ماند ولی دیگر ذخیره‌ی ابری نمی‌شود.')) return;
+  if(!confirm('از حسابت خارج بشی؟ پروفایل روی همین گوشی می‌ماند ولی دیگر ذخیره‌ی ابری نمی‌شود.')) return;
   acc.busy = true; render();
   try{
     // save the latest changes, unless the account already holds a newer copy from another phone
@@ -108,7 +129,7 @@ async function accountSignOut(){
 
 function buildAccountCard(){
   const card = el(`<div class="team-card set-card acc"></div>`);
-  card.appendChild(el(`<h2 class="set-card__title">حساب گوگل</h2>`));
+  card.appendChild(el(`<h2 class="set-card__title">حساب</h2>`));
   if(IS_NATIVE){
     // Google's sign-in page refuses to open inside an app's web view; the native sign-in comes later
     card.appendChild(el(`<p class="acc__txt">ورود با گوگل در نسخه‌ی اپلیکیشن به‌زودی اضافه می‌شود. تا آن موقع پروفایلت روی همین گوشی می‌ماند.</p>`));
@@ -119,7 +140,7 @@ function buildAccountCard(){
     return card;
   }
   if(accountIsGoogle()){
-    const name = (window.FB.account.displayName() || '').split(' ')[0] || 'حساب گوگل';
+    const name = (window.FB.account.displayName() || '').split(' ')[0] || window.FB.account.email_() || 'حساب';
     const row = el(`<p class="acc__txt"></p>`);
     row.textContent = `✓ وارد شدی (${name}). پروفایل، سکه‌ها، دوستان و روزهای پشت‌هم‌ات روی حسابت ذخیره می‌شود و در گوشی دیگر هم می‌توانی واردش شوی.`;
     card.appendChild(row);
