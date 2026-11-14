@@ -1333,7 +1333,7 @@ function loadingTick(){
   if(tip && Date.now() - loadTipAt > 3800){
     loadTipAt = Date.now(); loadTip = (loadTip + 1) % LOAD_TIPS.length;
     tip.classList.remove('is-in'); void tip.offsetWidth;
-    tip.querySelector('span').textContent = LOAD_TIPS[loadTip]; tip.classList.add('is-in');
+    tip.querySelector('span').textContent = '💡 ' + LOAD_TIPS[loadTip]; tip.classList.add('is-in');
   }
   if(k >= 1){ clearInterval(loadTimer); loadTimer = null; setTimeout(loadingDone, 250); return; }
   if(!loadFailed && Date.now() - loadT0 > 9000 && !accountReady()){ loadFailed = true; render(); }
@@ -1352,17 +1352,24 @@ function renderWelcome(){
   if(!loadT0){ loadT0 = Date.now() + (intro ? 900 : 0); loadTipAt = loadT0 + 600; loadTip = Math.floor(Math.random() * LOAD_TIPS.length); }
   if(!loadTimer) loadTimer = setInterval(loadingTick, 60);
   const wrap = el(`<div class="wl wl--load${intro ? ' wl--intro wl--hold' : ''}${again ? ' wl--static' : ''}"></div>`);
-  const brand = el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div><div class="wl__mascot nk" aria-hidden="true"><div class="nk__in"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div></div>`);
-  wrap.appendChild(brand);
+  // the logo on top; under it a thick ring of yarn fills around Nakhi while the logo's three dots circle him
+  wrap.appendChild(el(`<div class="wl__brand"><div class="wl__logo"><img src="assets/splash-full.webp" width="1024" height="531" alt="نخ بده" decoding="async"></div></div>`));
   const k = loadingProgress();
-  // Nakhi says a tip, and a ball of yarn rolls across, unwinding the thread that is the progress bar
-  const tip = el(`<p class="ld-tip"><b>💡</b> <span></span></p>`);
-  tip.querySelector('span').textContent = LOAD_TIPS[loadTip];
-  wrap.appendChild(tip);
   const box = el(`<div class="ld" role="status" aria-live="polite" style="--k:${k.toFixed(3)}">
-    <div class="ld__track"><i class="ld__rail"></i><i class="ld__fill"></i><span class="ld__ball"><i></i></span></div>
-    <div class="ld__top"><span>${loadFailed ? 'اتصال به اینترنت برقرار نشد' : 'نخی داره نخ‌ها رو باز می‌کنه…'}</span><b class="ld__pct">${faNum(Math.round(k * 100))}٪</b></div>
+    <div class="ld__ring">
+      <svg viewBox="0 0 220 220" aria-hidden="true">
+        <circle class="ld__track" cx="110" cy="110" r="92"/>
+        <circle class="ld__arc ld__arc--edge" cx="110" cy="110" r="92" pathLength="100"/>
+        <circle class="ld__arc ld__arc--yarn" cx="110" cy="110" r="92" pathLength="100"/>
+      </svg>
+      <div class="ld__orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="wl__mascot nk" aria-hidden="true"><div class="nk__in"><img src="assets/mascot.webp" width="455" height="688" alt="" decoding="async"><i class="nk__lid"></i><i class="nk__lid nk__lid--r"></i></div></div>
+    </div>
+    <b class="ld__pct">${faNum(Math.round(k * 100))}٪</b>
+    <span class="ld__msg">${loadFailed ? 'اتصال به اینترنت برقرار نشد' : 'نخی داره بازی رو آماده می‌کنه…'}</span>
+    <p class="ld-tip"><span></span></p>
   </div>`);
+  box.querySelector('.ld-tip span').textContent = '💡 ' + LOAD_TIPS[loadTip];
   if(loadFailed){
     const acts = el(`<div class="ld__acts"></div>`);
     const retry = el(`<button type="button" class="ld__btn">دوباره امتحان کن</button>`);
