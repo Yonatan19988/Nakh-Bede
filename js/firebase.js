@@ -1,6 +1,6 @@
 // The Firebase SDK (app, realtime database and anonymous auth only) is bundled in js/firebase-sdk.js,
 // so nothing is loaded from Google's servers except the live connection to the database itself.
-import { initializeApp, getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect, query, orderByChild, limitToLast, getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, linkWithPopup, signInWithCredential, signOut } from "./firebase-sdk.js";
+import { initializeApp, getDatabase, ref, set, get, update, onValue, off, remove, onDisconnect, query, orderByChild, limitToLast, getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, linkWithPopup, signInWithCredential, signOut, EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword, sendPasswordResetEmail } from "./firebase-sdk.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDSrLKHeMsY6qD2FZggiBqZY4GNmhdj3q8",
@@ -64,5 +64,21 @@ window.FB.account = {
   displayName: () => (auth.currentUser && auth.currentUser.displayName) || '',
   google(){ return linkOrSwitch(googleProvider, GoogleAuthProvider); },
   apple(){ return linkOrSwitch(appleProvider, OAuthProvider); },
+  // email and password: a new address becomes this player's account (same uid); a known one signs in to it
+  async email(addr, pass){
+    try{
+      await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(addr, pass));
+      return 'linked';
+    }catch(e){
+      if(e && (e.code === 'auth/email-already-in-use' || e.code === 'auth/credential-already-in-use')){
+        await signInWithEmailAndPassword(auth, addr, pass);
+        return 'switched';
+      }
+      throw e;
+    }
+  },
+  resetPassword(addr){ return sendPasswordResetEmail(auth, addr); },
+  email_(){ return (auth.currentUser && auth.currentUser.email) || ''; },
+  photoURL(){ return (auth.currentUser && auth.currentUser.photoURL) || ''; },
   async signOut(){ await signOut(auth); await signInAnonymously(auth); },
 };
