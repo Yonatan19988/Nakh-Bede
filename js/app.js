@@ -3369,7 +3369,7 @@ function renderTutorial(){
 
 // Screens you may leave with a visible control. The board is deliberately
 // excluded: a round in progress should not be abandoned by a stray tap.
-const NO_BACK_SCREENS = ['splash', 'welcome', 'onboard', 'home', 'board', 'online-board'];
+const NO_BACK_SCREENS = ['splash', 'welcome', 'onboard', 'home', 'board', 'online-board', 'daily'];   // «حدس کلمه» draws its own
 
 function attachBackButton(app){
   if(NO_BACK_SCREENS.includes(state.screen)) return;
@@ -3382,6 +3382,7 @@ function handleAppBack(){
   if(state.screen === 'splash' || state.screen === 'welcome') return true;
   if(state.screen === 'onboard'){ if(state.obStep === 'email'){ acc.err = ''; state.obStep = 'login'; render(); } return true; }
   if(state.homeSheet){ state.homeSheet = false; render(); return true; }
+  if(state.screen === 'daily' && dl.help){ dl.help = false; render(); return true; }
   // a mid-round decision must not be skipped by a stray back press
   if(state.showAbout){ state.showAbout = false; render(); return true; }
   if(state.foulPending || state.actionPickActive || state.roundEnded || state.animating) return true;
