@@ -2653,6 +2653,8 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .wg-t.is-caret{ box-shadow:inset 0 3px 5px rgba(74,26,6,.3),0 0 0 3px #F7A81B,0 0 18px rgba(247,168,27,.85); animation:wgCaret 1.2s ease-in-out infinite; }
 @keyframes wgCaret{ 50%{ box-shadow:inset 0 3px 5px rgba(74,26,6,.3),0 0 0 3px #F7A81B,0 0 6px rgba(247,168,27,.4); } }
 .wg-t.is-ghost b{ color:rgba(45,170,67,.55); }
+.wg-t.is-tap{ cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.wg-t.has.is-caret{ box-shadow:0 4px 0 var(--ink),0 0 0 3px #F7A81B,0 0 18px rgba(247,168,27,.85); animation:none; }
 .wg-t.has,.wg-t.is-g,.wg-t.is-y,.wg-t.is-x{ border:3px solid var(--ink); transform:translateY(-3px); box-shadow:0 4px 0 var(--ink); }
 .wg-t.has{ background:linear-gradient(#FFFFFF,#FFEFC6); }
 .wg-t.is-g{ background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 4px 0 #1d5e22; color:#fff; text-shadow:0 2px 0 #1d5e22; }
@@ -2697,12 +2699,13 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .wg-k.is-g::before{ border-color:rgba(255,255,255,.65); } .wg-k.is-y::before{ border-color:rgba(138,75,5,.5); }
 .wg-k.is-x{ background:#0f3346; border-color:#071b26; box-shadow:0 1px 0 #071b26; color:#4a7086; transform:translateY(3px); }
 .wg-k.is-x::before{ border-color:rgba(255,255,255,.07); }
-.wg-k--ent{ flex:1.8 1 0; gap:3px; font-size:17px; color:#fff; text-shadow:0 1px 0 #1d5e22; background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 4px 0 #1d5e22; }
-.wg-k--hint{ flex:1.3 1 0; flex-direction:column; gap:1px; color:#fff; background:linear-gradient(#6FD6F0,#1B86B3); border-color:#0b4a66; box-shadow:0 4px 0 #0b4a66; }
-.wg-k--cut{ flex:1.3 1 0; flex-direction:column; gap:2px; color:#fff; background:linear-gradient(#FFB766,#EE7418); border-color:#7a3306; box-shadow:0 4px 0 #7a3306; }
+.wg-k--side{ flex:0 0 min(58px, 15vw); }
+.wg-k--ent{ gap:3px; font-size:17px; color:#fff; text-shadow:0 1px 0 #1d5e22; background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 4px 0 #1d5e22; }
+.wg-k--hint{ flex-direction:column; gap:1px; color:#fff; background:linear-gradient(#6FD6F0,#1B86B3); border-color:#0b4a66; box-shadow:0 4px 0 #0b4a66; }
+.wg-k--cut{ flex-direction:column; gap:2px; color:#fff; background:linear-gradient(#FFB766,#EE7418); border-color:#7a3306; box-shadow:0 4px 0 #7a3306; }
 .wg-k--ent::before,.wg-k--hint::before,.wg-k--cut::before{ border-color:rgba(255,255,255,.6); }
 .wg-nkh{ width:26px; height:26px; border-radius:50%; background:url(../assets/mascot.webp) 50% -5px / 38px auto no-repeat; position:relative; z-index:2; }
-.wg-price{ position:absolute; z-index:5; top:-9px; left:-7px; height:20px; padding:0 5px 0 3px; border-radius:10px; background:#05222f; border:2px solid var(--ink);
+.wg-price{ position:absolute; z-index:5; top:-9px; right:-6px; height:20px; padding:0 5px 0 3px; border-radius:10px; background:#05222f; border:2px solid var(--ink);
   color:#FFE27A; font-size:12px; font-weight:900; display:flex; align-items:center; gap:2px; }
 .wg-price svg{ width:12px; height:12px; }
 .wg-pop{ position:fixed; z-index:200; width:56px; height:68px; transform:translate(-50%,-100%) scale(.6); opacity:0; pointer-events:none;

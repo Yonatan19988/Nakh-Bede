@@ -76,7 +76,7 @@ const WORDS_WIN_COINS = [0, 15, 12, 10, 8, 6, 5];          // by the number of t
 // the Persian keyboard's order, nine to a row
 const WORDS_KEYS = ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','چ','ش','س','ی','ب','ل','ا','ت','ن','م','ک','گ','ظ','ط','ژ','ز','ر','ذ','د','پ','و'];
 
-let dl = { cur: '', say: '', shake: false, pop: -1, revealing: false, celebrate: false, help: false, k: null };
+let dl = { row: null, at: 0, say: '', shake: false, pop: -1, revealing: false, celebrate: false, help: false, k: null };
 
 function wgIcon(name){
   const I = {
@@ -121,29 +121,62 @@ function wgKeyColours(){
   return best;
 }
 
-// ---- typing ----
+// ---- typing: the current row is a set of boxes; a tap on any box moves the caret there ----
+function wgRow(){
+  const n = dailyLetters(dailyLoad().word).length;
+  if(!dl.row || dl.row.length !== n){ dl.row = new Array(n).fill(''); dl.at = 0; }
+  return dl.row;
+}
+function wgResetRow(){ dl.row = null; dl.at = 0; dl.pop = -1; }
+// the next empty box after i, else the first empty one, else past the end
+function wgNextEmpty(row, i){
+  for(let j = i + 1; j < row.length; j++) if(!row[j]) return j;
+  const k = row.indexOf('');
+  return k < 0 ? row.length : k;
+}
 function dailyAddLetter(ch){
   const s = dailyLoad();
   if(s.done || dl.revealing) return;
-  if(Array.from(dl.cur).length >= dailyLetters(s.word).length) return;
-  dl.cur += ch; dl.say = ''; dl.pop = Array.from(dl.cur).length - 1;
+  const row = wgRow();
+  if(dl.at >= row.length){ const k = row.indexOf(''); if(k < 0) return; dl.at = k; }
+  row[dl.at] = ch; dl.pop = dl.at; dl.say = '';
+  dl.at = wgNextEmpty(row, dl.at);
   sfxTap();
   wgPaint();
 }
 function dailyBackspace(){
   const s = dailyLoad();
-  if(s.done || dl.revealing || !dl.cur) return;
-  dl.cur = Array.from(dl.cur).slice(0, -1).join(''); dl.say = ''; dl.pop = -1;
+  if(s.done || dl.revealing) return;
+  const row = wgRow();
+  if(dl.at < row.length && row[dl.at]){ row[dl.at] = ''; }
+  else {
+    let j = Math.min(dl.at, row.length) - 1;
+    while(j >= 0 && !row[j]) j--;
+    if(j < 0) return;
+    row[j] = ''; dl.at = j;
+  }
+  dl.say = ''; dl.pop = -1;
+  wgPaint();
+}
+function wgMoveCaret(i){
+  const s = dailyLoad();
+  if(s.done || dl.revealing) return;
+  const row = wgRow();
+  // a second tap on a box Nakhi gave away writes its letter
+  if(i === dl.at && !row[i] && (s.hints || []).includes(i)){ dailyAddLetter(dailyLetters(s.word)[i]); return; }
+  dl.at = Math.max(0, Math.min(row.length - 1, i));
   wgPaint();
 }
 function dailySubmitGuess(){
   const s = dailyLoad();
   if(s.done || dl.revealing) return;
-  const n = dailyLetters(s.word).length;
-  const cur = Array.from(nbNorm(dl.cur));
-  if(cur.length < n){ dl.say = `کلمه باید ${faNum(n)} حرفی باشه!`; dl.shake = true; sfxWrong(); wgPaint(); return; }
-  s.guesses.push(cur.join(''));
-  dl.cur = ''; dl.say = ''; dl.pop = -1;
+  const typed = wgRow(), n = typed.length;
+  if(typed.some(c => !c)){
+    dl.say = typed.every(c => !c) ? `یه کلمه‌ی ${faNum(n)} حرفی بنویس!` : 'جای خالی رو پر کن!';
+    dl.shake = true; sfxWrong(); wgPaint(); return;
+  }
+  s.guesses.push(typed.join(''));
+  wgResetRow(); dl.say = '';
   const win = nbNorm(s.word) === s.guesses[s.guesses.length - 1];
   if(win || s.guesses.length >= DAILY_TRIES){
     s.done = true; s.won = win;
@@ -208,7 +241,7 @@ function wgBoard(revealRow){
     const guess = s.guesses[r];
     const fb = guess ? dailyFeedback(guess, s.word) : null;
     const cur = r === s.guesses.length && !s.done;
-    const letters = guess ? Array.from(guess) : (cur ? Array.from(nbNorm(dl.cur)) : []);
+    const letters = guess ? Array.from(guess) : (cur ? wgRow() : []);
     for(let i = 0; i < n; i++){
       const t = el(`<span class="wg-t"><b></b></span>`);
       if(fb){
@@ -221,9 +254,13 @@ function wgBoard(revealRow){
       } else if(cur && hints.has(i)){
         t.querySelector('b').textContent = L[i];
         t.classList.add('is-ghost');
-        if(i === letters.length) t.classList.add('is-caret');
-      } else if(cur && i === letters.length){
-        t.classList.add('is-caret');
+      }
+      if(cur){
+        if(i === dl.at) t.classList.add('is-caret');
+        t.classList.add('is-tap');
+        t.setAttribute('role', 'button');
+        t.setAttribute('aria-label', `خونه‌ی ${faNum(i + 1)}${letters[i] ? '، ' + letters[i] : ''}`);
+        t.addEventListener('pointerdown', (e) => { e.preventDefault(); wgMoveCaret(i); });
       }
       row.appendChild(t);
     }
@@ -283,23 +320,28 @@ function wgKeyboard(){
     press(b, () => { wgPopup(b, ch); dailyAddLetter(ch); });
     return b;
   };
-  for(let r = 0; r < 4; r++){
+  // nine, nine, eight and six letters: «پاک» sits over «ثبت» on the right, «یه حرف» at the end of the last row
+  const SPLIT = [[0, 9], [9, 18], [18, 26], [26, 32]];
+  SPLIT.forEach(([from, to], r) => {
     const row = el(`<div class="wg-kr"></div>`);
+    if(r === 2){
+      const cut = el(`<button type="button" class="wg-k wg-k--side wg-k--cut" aria-label="پاک کردن">${wgIcon('cut')}<small>پاک</small></button>`);
+      press(cut, dailyBackspace);
+      row.appendChild(cut);
+    }
     if(r === 3){
-      const ent = el(`<button type="button" class="wg-k wg-k--ent">${wgIcon('check')}<b>ثبت</b></button>`);
+      const ent = el(`<button type="button" class="wg-k wg-k--side wg-k--ent">${wgIcon('check')}<b>ثبت</b></button>`);
       press(ent, dailySubmitGuess);
       row.appendChild(ent);
     }
-    WORDS_KEYS.slice(r * 9, r * 9 + 9).forEach(ch => row.appendChild(letter(ch)));
+    WORDS_KEYS.slice(from, to).forEach(ch => row.appendChild(letter(ch)));
     if(r === 3){
-      const hint = el(`<button type="button" class="wg-k wg-k--hint" aria-label="یه حرف رو لو بده، ${faNum(WORDS_HINT_PRICE)} سکه"><span class="wg-price">${wgIcon('coin')}${faNum(WORDS_HINT_PRICE)}</span><span class="wg-nkh"></span><small>یه حرف</small></button>`);
+      const hint = el(`<button type="button" class="wg-k wg-k--side wg-k--hint" aria-label="یه حرف رو لو بده، ${faNum(WORDS_HINT_PRICE)} سکه"><span class="wg-price">${wgIcon('coin')}${faNum(WORDS_HINT_PRICE)}</span><span class="wg-nkh"></span><small>یه حرف</small></button>`);
       press(hint, dailyHint);
-      const cut = el(`<button type="button" class="wg-k wg-k--cut" aria-label="پاک کردن">${wgIcon('cut')}<small>پاک</small></button>`);
-      press(cut, dailyBackspace);
-      row.append(hint, cut);
+      row.appendChild(hint);
     }
     inner.appendChild(row);
-  }
+  });
   return tray;
 }
 
@@ -309,6 +351,7 @@ document.addEventListener('keydown', (e) => {
   if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   if(e.key === 'Enter'){ e.preventDefault(); dailySubmitGuess(); return; }
   if(e.key === 'Backspace'){ e.preventDefault(); dailyBackspace(); return; }
+  if(e.key === 'ArrowLeft' || e.key === 'ArrowRight'){ e.preventDefault(); wgMoveCaret(Math.min(dl.at, wgRow().length - 1) + (e.key === 'ArrowLeft' ? 1 : -1)); return; }
   const ch = nbNorm(e.key);
   if(ch.length === 1 && /[ء-ی]/.test(ch)){ e.preventDefault(); dailyAddLetter(ch); }
 });
@@ -338,7 +381,7 @@ function wgResult(){
     sub.appendChild(word);
   }
   const next = el(`<button type="button" class="wg-btn wg-btn--next"><b>کلمه‌ی بعدی</b></button>`);
-  next.addEventListener('click', () => { dailyNewWord(); dl.cur = ''; dl.say = ''; render(); });
+  next.addEventListener('click', () => { dailyNewWord(); wgResetRow(); dl.say = ''; render(); });
   const share = el(`<button type="button" class="wg-btn wg-btn--share" aria-label="اشتراک نتیجه">${wgIcon('share')}</button>`);
   share.addEventListener('click', () => {
     const text = dailyShareText(dailyLoad());
@@ -377,6 +420,7 @@ function wgHelp(){
     <div class="wg-help__ex"><span class="wg-t is-g"><b>گ</b></span><span>حرف درسته و سر جاشه.</span></div>
     <div class="wg-help__ex"><span class="wg-t is-y"><b>س</b></span><span>تو کلمه هست، ولی جای دیگه.</span></div>
     <div class="wg-help__ex"><span class="wg-t is-x"><b>م</b></span><span>تو کلمه نیست.</span></div>
+    <p>روی هر خونه‌ی ردیفت بزنی، اون خونه انتخاب می‌شه؛ مثلاً می‌تونی اول حرف آخر رو بنویسی و بعد بقیه رو پر کنی.</p>
     <p>گیر کردی؟ با دکمه‌ی «یه حرف»، نخی در ازای ${faNum(WORDS_HINT_PRICE)} سکه یکی از حرف‌ها رو لو می‌ده. هر کلمه‌ای که پیدا کنی سکه داره؛ هر چی زودتر، بیشتر.</p>
     <button type="button" class="wg-btn wg-btn--next"><b>فهمیدم</b></button>
   </div></div>`);
@@ -388,7 +432,7 @@ function wgHelp(){
 
 function renderDaily(){
   const s = dailyLoad(), st = dailyStats();
-  if(dl.k !== s.word){ dl.k = s.word; dl.cur = ''; dl.say = ''; dl.pop = -1; }
+  if(dl.k !== s.word){ dl.k = s.word; wgResetRow(); dl.say = ''; }
   const n = dailyLetters(s.word).length;
   const num = st.played + (s.done ? 0 : 1);
   const celebrate = dl.celebrate;
@@ -419,7 +463,7 @@ function renderDaily(){
 }
 
 function openDaily(){
-  dl.cur = ''; dl.say = ''; dl.pop = -1; dl.help = false;
+  dl.say = ''; dl.help = false;
   state.screen = 'daily';
   render();
 }
