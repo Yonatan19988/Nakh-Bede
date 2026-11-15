@@ -1308,7 +1308,7 @@ const LOAD_TIPS = [
   'با «راهنمایی غیرمجاز» حریف رو جریمه کن!',
   'کارت‌های گردونه می‌تونن کل بازی رو عوض کنن.',
   'هر کلمه‌ی درست ۲ سکه داره؛ با سکه نقشه و مود تازه بخر.',
-  'با «کلمه‌ی امروز» هر روز یه چالش تازه داری.',
+  'با «حدس کلمه» هر چند تا کلمه که بخوای حدس بزن.',
   'تو بازی آنلاین، دوستاتو با یه لینک دعوت کن.',
   'از پروفایلت چهره‌ات رو بساز یا عکس خودت رو بذار.'
 ];
@@ -1588,8 +1588,7 @@ function renderHome(){
   }
 
   // ---- the arena: the game modes as cards to swipe through, one big play button for the chosen one ----
-  const dst = dailyStreak();
-  const dailyDone = dailyLoad().done;
+  const dst = dailyStats();
   const MODE_ICONS = {
     local: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
     online: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><path d="M15.5 14.3c2.4.1 4.4 1.6 5 4.2"/></svg>',
@@ -1600,7 +1599,7 @@ function renderHome(){
     { id:'local',  title:'روی همین گوشی',   text:'دور هم بشینید، تیم بچینید و گوشی رو دست‌به‌دست کنید.', go: () => { state.setupStep = 0; state.screen = 'setup'; render(); } },
     { id:'online', title:'آنلاین با دوستان', text:'اتاق بساز، لینکش رو بفرست و هر کی هر جا هست بیاد.', go: () => { state.screen = 'online-create'; render(); } },
     { id:'quick',  title:'بازی سریع',        text:'با فارسی‌زبان‌هایی که همین الان آنلاین‌اند بازی کن.', go: openQuick },
-    { id:'daily',  title:'کلمه‌ی امروز',     text: dst.n ? `${faNum(dst.n)} روز پشت هم! چالش امروز رو از دست نده.` : (dailyDone ? 'چالش امروز رو انجام دادی؛ فردا یکی تازه میاد.' : 'هر روز یک کلمه‌ی تازه؛ ببین چقدر سریع حدسش می‌زنی.'), go: openDaily }
+    { id:'daily',  title:'حدس کلمه',         text: dst.n ? `${faNum(dst.n)} کلمه پشت‌هم! ببین تا کجا می‌تونی ادامه بدی.` : 'کلمه‌ی پنهان رو در شش حدس پیدا کن؛ هر چند تا کلمه که بخوای.', go: openDaily }
   ];
   let modeIdx = Math.max(0, MODES.findIndex(m => m.id === LS.get('homeMode', 'local')));
   const arena = el(`<div class="hm2-modes" role="listbox" aria-label="حالت بازی"><div class="hm2-modes__track"></div></div>`);
