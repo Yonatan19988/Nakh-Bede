@@ -69,11 +69,12 @@ function dailyBumpStreak(won){
 }
 
 // ---------------- the screen ----------------
-// Nakhi peeks over a cream board of raised tiles; under it a wool tray holds a four-row keyboard of sewn-on
-// patches: «ثبت», «یه حرف» (Nakhi gives away a letter for coins) and the scissors that cut the last letter.
+// Nakhi peeks over a cream board of raised tiles; under it a wool tray holds a keyboard of sewn-on patches laid
+// out like the phone's Persian keyboard, with the scissors («پاک») over a wide «ثبت». «یه حرف» (Nakhi gives away
+// a letter for coins) sits under the board.
 const WORDS_HINT_PRICE = 20;
 const WORDS_WIN_COINS = [0, 15, 12, 10, 8, 6, 5];          // by the number of tries
-// the Persian keyboard's order, nine to a row
+// the Persian keyboard's letters, in its order
 const WORDS_KEYS = ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','چ','ش','س','ی','ب','ل','ا','ت','ن','م','ک','گ','ظ','ط','ژ','ز','ر','ذ','د','پ','و'];
 
 let dl = { row: null, at: 0, say: '', shake: false, pop: -1, revealing: false, celebrate: false, help: false, k: null };
@@ -273,11 +274,20 @@ function wgBoard(revealRow){
 function wgTries(){
   const s = dailyLoad(), st = dailyStats();
   const left = DAILY_TRIES - s.guesses.length;
-  const box = el(`<div class="wg-tries"><span class="wg-streak">${wgIcon('flame')}<span></span></span><span class="wg-balls" aria-hidden="true"></span><span class="wg-left"></span><button type="button" class="wg-q" aria-label="راهنمای بازی">؟</button></div>`);
-  box.querySelector('.wg-q').addEventListener('click', () => { dl.help = true; render(); });
-  box.querySelector('.wg-streak span').textContent = `${faNum(st.n)} پشت‌هم`;
+  const box = el(`<div class="wg-tries"><span class="wg-streak" aria-label="${faNum(st.n)} کلمه پشت‌هم">${wgIcon('flame')}<span></span></span><span class="wg-balls" role="img" aria-label="${faNum(left)} حدس مونده"></span></div>`);
+  box.querySelector('.wg-streak span').textContent = faNum(st.n);
   for(let i = 0; i < DAILY_TRIES; i++) box.querySelector('.wg-balls').appendChild(el(`<i class="${i < left ? '' : 'is-used'}"></i>`));
-  box.querySelector('.wg-left').textContent = s.done ? `رکورد ${faNum(st.best)}` : `${faNum(left)} حدس مونده`;
+  if(s.done){
+    box.appendChild(el(`<span class="wg-left">رکورد ${faNum(st.best)}</span>`));
+  } else {
+    // «یه حرف» lives here, away from the letters, so coins are not spent by a stray tap
+    const hint = el(`<button type="button" class="wg-hint" aria-label="یه حرف رو لو بده، ${faNum(WORDS_HINT_PRICE)} سکه"><span class="wg-nkh"></span><b>یه حرف</b><span class="wg-hint__p">${wgIcon('coin')}${faNum(WORDS_HINT_PRICE)}</span></button>`);
+    hint.addEventListener('click', dailyHint);
+    box.appendChild(hint);
+  }
+  const q = el(`<button type="button" class="wg-q" aria-label="راهنمای بازی">؟</button>`);
+  q.addEventListener('click', () => { dl.help = true; render(); });
+  box.appendChild(q);
   return box;
 }
 // redraw the board, Nakhi's words and the tries (a full render would restart every animation)
@@ -320,28 +330,23 @@ function wgKeyboard(){
     press(b, () => { wgPopup(b, ch); dailyAddLetter(ch); });
     return b;
   };
-  // nine, nine, eight and six letters: «پاک» sits over «ثبت» on the right, «یه حرف» at the end of the last row
-  const SPLIT = [[0, 9], [9, 18], [18, 26], [26, 32]];
-  SPLIT.forEach(([from, to], r) => {
+  // the rows of the phone's own Persian keyboard (12, 11, 9), so every letter is where the thumb expects it;
+  // «پاک» starts the third row and «ثبت» is the wide key under it
+  [[0, 12], [12, 23], [23, 32]].forEach(([from, to], r) => {
     const row = el(`<div class="wg-kr"></div>`);
     if(r === 2){
-      const cut = el(`<button type="button" class="wg-k wg-k--side wg-k--cut" aria-label="پاک کردن">${wgIcon('cut')}<small>پاک</small></button>`);
+      const cut = el(`<button type="button" class="wg-k wg-k--cut" aria-label="پاک کردن">${wgIcon('cut')}<small>پاک</small></button>`);
       press(cut, dailyBackspace);
       row.appendChild(cut);
     }
-    if(r === 3){
-      const ent = el(`<button type="button" class="wg-k wg-k--side wg-k--ent">${wgIcon('check')}<b>ثبت</b></button>`);
-      press(ent, dailySubmitGuess);
-      row.appendChild(ent);
-    }
     WORDS_KEYS.slice(from, to).forEach(ch => row.appendChild(letter(ch)));
-    if(r === 3){
-      const hint = el(`<button type="button" class="wg-k wg-k--side wg-k--hint" aria-label="یه حرف رو لو بده، ${faNum(WORDS_HINT_PRICE)} سکه"><span class="wg-price">${wgIcon('coin')}${faNum(WORDS_HINT_PRICE)}</span><span class="wg-nkh"></span><small>یه حرف</small></button>`);
-      press(hint, dailyHint);
-      row.appendChild(hint);
-    }
     inner.appendChild(row);
   });
+  const last = el(`<div class="wg-kr"></div>`);
+  const ent = el(`<button type="button" class="wg-k wg-k--ent">${wgIcon('check')}<b>ثبت</b></button>`);
+  press(ent, dailySubmitGuess);
+  last.appendChild(ent);
+  inner.appendChild(last);
   return tray;
 }
 
