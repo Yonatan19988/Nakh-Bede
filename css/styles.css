@@ -2599,7 +2599,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
   /* the keys: eleven to a row like the phone's Persian keyboard, a little taller than wide */
   --kw:calc((min(100vw - 10px, 480px) - 40px) / 11); --kh:clamp(40px, calc(var(--kw) * 1.4), 56px);
   --tw:calc((min(100vw, 480px) - 96px - (var(--n) - 5) * 7px) / var(--n));
-  --fix:346px;
+  --fix:361px;
   --th:calc((100vh - var(--fix) - 4 * var(--kh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 6);
   --tile:clamp(30px, min(var(--tw), var(--th)), 58px);
   position:relative; height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden; isolation:isolate;
@@ -2643,8 +2643,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .wg-q{ width:30px; height:30px; flex:0 0 auto; border-radius:50%; cursor:pointer; color:#fff; padding-top:3px;
   background:linear-gradient(#6FD6F0,#1B86B3); border:2.5px solid var(--ink); box-shadow:0 3px 0 var(--ink); font-family:'Lalezar',sans-serif; font-size:18px; line-height:1; }
 .wg-q:active{ transform:translateY(3px); box-shadow:0 0 0 var(--ink); }
-  background:linear-gradient(#6FD6F0,#1B86B3); border:3px solid var(--ink); box-shadow:0 3px 0 var(--ink); font-family:'Lalezar',sans-serif; font-size:20px; line-height:1; padding-top:3px; }
-.wg-board{ display:flex; flex-direction:column; gap:7px; }
+.wg-board{ display:flex; flex-direction:column; gap:10px; }
 .wg-board.is-shake{ animation:dlShake .35s ease; }
 @keyframes dlShake{ 0%,100%{ transform:translateX(0); } 20%,60%{ transform:translateX(-8px); } 40%,80%{ transform:translateX(8px); } }
 .wg-row{ display:flex; gap:7px; direction:rtl; }
@@ -2754,7 +2753,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .wg-help__ex .wg-t{ flex:0 0 auto; }
  /* short phones: a smaller Nakhi leaves more room for the board */
 @media (max-height:700px){
-  .wg{ --fix:306px; }
+  .wg{ --fix:321px; }
   .wg-stage{ padding-top:54px; gap:9px; }
   .wg-nk{ width:68px; top:-54px; }
   .wg-hand{ left:6px; }
