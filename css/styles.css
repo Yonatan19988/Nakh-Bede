@@ -2672,7 +2672,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 @keyframes wgJump{ 0%,100%{ transform:translateY(-3px); } 40%{ transform:translateY(-22px); } 70%{ transform:translateY(0); } }
 
 /* the streak and the tries left */
-.wg-tries{ display:flex; align-items:center; gap:8px; font-family:'Lalezar',sans-serif; font-size:16px; color:#FFE9B0; white-space:nowrap; }
+.wg-tries{ display:flex; align-items:center; gap:9px; font-family:'Lalezar',sans-serif; font-size:16px; color:#FFE9B0; white-space:nowrap; }
 .wg-streak{ display:flex; align-items:center; gap:4px; height:30px; padding:0 10px; border-radius:16px; border:2.5px solid var(--ink); box-shadow:0 3px 0 var(--ink);
   background:linear-gradient(#FFA14A,#E2541A); color:#fff; text-shadow:0 2px 0 rgba(74,26,6,.6); font-size:15px; }
 .wg-balls{ display:flex; gap:5px; margin-right:4px; }
@@ -2684,13 +2684,13 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
   background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='13'><path d='M2 2 L8 10 L14 2' fill='none' stroke='white' stroke-opacity='.06' stroke-width='2.4' stroke-linecap='round'/></svg>"),linear-gradient(#104862,#062536);
   box-shadow:0 -12px 30px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.1); }
 .wg-kb::before{ content:''; position:absolute; left:22px; right:22px; top:8px; border-top:2.5px dashed #F7A81B; opacity:.75; }
-.wg-kb__in{ max-width:480px; margin:0 auto; display:flex; flex-direction:column; gap:9px; }
-.wg-kr{ display:flex; gap:4px; direction:rtl; }
-.wg-k{ flex:1 1 0; min-width:0; height:var(--kh); position:relative; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer;
-  font-family:'Vazirmatn',sans-serif; font-weight:900; font-size:21px; color:var(--ink); touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-  border-radius:12px; background:linear-gradient(#FFFDF4,#F0DAA5); border:2.5px solid var(--ink); box-shadow:0 4px 0 var(--ink);
+.wg-kb__in{ --kw:calc((min(100vw - 10px, 480px) - 44px) / 12); max-width:480px; margin:0 auto; display:flex; flex-direction:column; gap:9px; }
+.wg-kr{ display:flex; justify-content:center; gap:4px; direction:rtl; }
+.wg-k{ flex:0 0 var(--kw); min-width:0; height:var(--kh); position:relative; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer;
+  font-family:'Vazirmatn',sans-serif; font-weight:900; font-size:clamp(17px, calc(var(--kw) * .7), 24px); color:var(--ink); touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  border-radius:10px; background:linear-gradient(#FFFDF4,#F0DAA5); border:2.5px solid var(--ink); box-shadow:0 4px 0 var(--ink);
   transition:transform 60ms ease, box-shadow 60ms ease; }
-.wg-k::before{ content:''; position:absolute; inset:3px; border-radius:8px; border:1.6px dashed rgba(122,58,6,.5); pointer-events:none; }
+.wg-k::before{ content:''; position:absolute; inset:3px; border-radius:6px; border:1.6px dashed rgba(122,58,6,.5); pointer-events:none; }
 .wg-k b,.wg-k small,.wg-k svg{ position:relative; z-index:2; }
 .wg-k small{ font-size:12px; font-weight:900; line-height:1; }
 .wg-k:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--ink); }
@@ -2699,15 +2699,17 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .wg-k.is-g::before{ border-color:rgba(255,255,255,.65); } .wg-k.is-y::before{ border-color:rgba(138,75,5,.5); }
 .wg-k.is-x{ background:#0f3346; border-color:#071b26; box-shadow:0 1px 0 #071b26; color:#4a7086; transform:translateY(3px); }
 .wg-k.is-x::before{ border-color:rgba(255,255,255,.07); }
-.wg-k--side{ flex:0 0 min(58px, 15vw); }
-.wg-k--ent{ gap:3px; font-size:17px; color:#fff; text-shadow:0 1px 0 #1d5e22; background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 4px 0 #1d5e22; }
-.wg-k--hint{ flex-direction:column; gap:1px; color:#fff; background:linear-gradient(#6FD6F0,#1B86B3); border-color:#0b4a66; box-shadow:0 4px 0 #0b4a66; }
-.wg-k--cut{ flex-direction:column; gap:2px; color:#fff; background:linear-gradient(#FFB766,#EE7418); border-color:#7a3306; box-shadow:0 4px 0 #7a3306; }
-.wg-k--ent::before,.wg-k--hint::before,.wg-k--cut::before{ border-color:rgba(255,255,255,.6); }
+.wg-k--ent{ flex:1 1 auto; height:calc(var(--kh) - 4px); gap:6px; font-size:19px; color:#fff; text-shadow:0 1px 0 #1d5e22; background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 4px 0 #1d5e22; }
+.wg-k--cut{ flex:0 0 calc(var(--kw) * 1.6 + 2px); flex-direction:column; gap:2px; color:#fff; background:linear-gradient(#FFB766,#EE7418); border-color:#7a3306; box-shadow:0 4px 0 #7a3306; }
+.wg-k--ent::before,.wg-k--cut::before{ border-color:rgba(255,255,255,.6); }
 .wg-nkh{ width:26px; height:26px; border-radius:50%; background:url(../assets/mascot.webp) 50% -5px / 38px auto no-repeat; position:relative; z-index:2; }
-.wg-price{ position:absolute; z-index:5; top:-9px; right:-6px; height:20px; padding:0 5px 0 3px; border-radius:10px; background:#05222f; border:2px solid var(--ink);
-  color:#FFE27A; font-size:12px; font-weight:900; display:flex; align-items:center; gap:2px; }
-.wg-price svg{ width:12px; height:12px; }
+.wg-hint{ position:relative; display:flex; align-items:center; gap:4px; height:34px; padding:0 8px 0 4px; border-radius:17px; cursor:pointer; color:#fff;
+  background:linear-gradient(#6FD6F0,#1B86B3); border:2.5px solid #0b4a66; box-shadow:0 3px 0 #0b4a66; font-family:'Lalezar',sans-serif; font-size:15px; text-shadow:0 1px 0 #0b4a66; white-space:nowrap; }
+.wg-hint b{ font-weight:400; }
+.wg-hint:active{ transform:translateY(3px); box-shadow:0 0 0 #0b4a66; }
+.wg-hint .wg-nkh{ width:24px; height:24px; background-size:34px auto; background-position:50% -4px; }
+.wg-hint__p{ display:flex; align-items:center; gap:2px; height:22px; padding:0 6px 0 3px; border-radius:11px; background:#05222f; color:#FFE27A; text-shadow:none; font-size:14px; }
+.wg-hint__p svg{ width:14px; height:14px; }
 .wg-pop{ position:fixed; z-index:200; width:56px; height:68px; transform:translate(-50%,-100%) scale(.6); opacity:0; pointer-events:none;
   border-radius:16px; background:linear-gradient(#FFFFFF,#FFEFC6); border:3px solid #4a1a06; box-shadow:0 5px 0 #4a1a06,0 12px 18px rgba(0,0,0,.5);
   display:flex; align-items:center; justify-content:center; font-family:'Vazirmatn',sans-serif; font-size:36px; font-weight:900; color:#4a1a06;
