@@ -2595,7 +2595,9 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 
 /* ---------------- «حدس کلمه»: Nakhi over a board of raised tiles, a wool tray of sewn-on keys ---------------- */
 .wg{
-  --ink:#4a1a06; --kh:clamp(42px, 6.4vh, 54px);
+  --ink:#4a1a06;
+  /* the keys: eleven to a row like the phone's Persian keyboard, a little taller than wide */
+  --kw:calc((min(100vw - 10px, 480px) - 40px) / 11); --kh:clamp(40px, calc(var(--kw) * 1.4), 56px);
   --tw:calc((min(100vw, 480px) - 96px - (var(--n) - 5) * 7px) / var(--n));
   --fix:346px;
   --th:calc((100vh - var(--fix) - 4 * var(--kh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 6);
@@ -2604,7 +2606,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
   background:radial-gradient(130% 70% at 50% -5%,#2a93b5 0%,#0f5675 35%,#073047 70%,#041c2a 100%);
   user-select:none; -webkit-user-select:none;
 }
-@supports (height:100svh){ .wg{ --kh:clamp(42px, 6.4svh, 54px); --th:calc((100svh - var(--fix) - 4 * var(--kh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 6); } }
+@supports (height:100svh){ .wg{ --th:calc((100svh - var(--fix) - 4 * var(--kh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 6); } }
 .wg-bg{ position:absolute; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='18'><path d='M2 2 L11 14 L20 2' fill='none' stroke='white' stroke-opacity='.06' stroke-width='3' stroke-linecap='round'/></svg>"); }
 .wg-bg::before{ content:''; position:absolute; left:50%; top:-300px; width:820px; height:820px; transform:translateX(-50%);
@@ -2684,15 +2686,15 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
   background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='13'><path d='M2 2 L8 10 L14 2' fill='none' stroke='white' stroke-opacity='.06' stroke-width='2.4' stroke-linecap='round'/></svg>"),linear-gradient(#104862,#062536);
   box-shadow:0 -12px 30px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.1); }
 .wg-kb::before{ content:''; position:absolute; left:22px; right:22px; top:8px; border-top:2.5px dashed #F7A81B; opacity:.75; }
-.wg-kb__in{ --kw:calc((min(100vw - 10px, 480px) - 44px) / 12); max-width:480px; margin:0 auto; display:flex; flex-direction:column; gap:9px; }
+.wg-kb__in{ max-width:480px; margin:0 auto; display:flex; flex-direction:column; gap:9px; }
 .wg-kr{ display:flex; justify-content:center; gap:4px; direction:rtl; }
 .wg-k{ flex:0 0 var(--kw); min-width:0; height:var(--kh); position:relative; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer;
-  font-family:'Vazirmatn',sans-serif; font-weight:900; font-size:clamp(17px, calc(var(--kw) * .7), 24px); color:var(--ink); touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-  border-radius:10px; background:linear-gradient(#FFFDF4,#F0DAA5); border:2.5px solid var(--ink); box-shadow:0 4px 0 var(--ink);
+  font-family:'Vazirmatn',sans-serif; font-weight:900; font-size:clamp(17px, calc(var(--kw) * .66), 26px); color:var(--ink); touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  border-radius:9px; background:linear-gradient(#FFFDF4,#F0DAA5); border:2px solid var(--ink); box-shadow:0 4px 0 var(--ink);
   transition:transform 60ms ease, box-shadow 60ms ease; }
-.wg-k::before{ content:''; position:absolute; inset:3px; border-radius:6px; border:1.6px dashed rgba(122,58,6,.5); pointer-events:none; }
+.wg-k::before{ content:''; position:absolute; inset:2.5px; border-radius:6px; border:1.4px dashed rgba(122,58,6,.45); pointer-events:none; }
 .wg-k b,.wg-k small,.wg-k svg{ position:relative; z-index:2; }
-.wg-k small{ font-size:12px; font-weight:900; line-height:1; }
+.wg-k small{ font-size:11.5px; font-weight:900; line-height:1; }
 .wg-k:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--ink); }
 .wg-k.is-g{ background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 4px 0 #1d5e22; color:#fff; text-shadow:0 1px 0 #1d5e22; }
 .wg-k.is-y{ background:linear-gradient(#FFEA85,#F5A81A); border-color:#8a4b05; box-shadow:0 4px 0 #8a4b05; color:#5a2a03; }
@@ -2700,7 +2702,7 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .wg-k.is-x{ background:#0f3346; border-color:#071b26; box-shadow:0 1px 0 #071b26; color:#4a7086; transform:translateY(3px); }
 .wg-k.is-x::before{ border-color:rgba(255,255,255,.07); }
 .wg-k--ent{ flex:1 1 auto; height:calc(var(--kh) - 4px); gap:6px; font-size:19px; color:#fff; text-shadow:0 1px 0 #1d5e22; background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 4px 0 #1d5e22; }
-.wg-k--cut{ flex:0 0 calc(var(--kw) * 1.6 + 2px); flex-direction:column; gap:2px; color:#fff; background:linear-gradient(#FFB766,#EE7418); border-color:#7a3306; box-shadow:0 4px 0 #7a3306; }
+.wg-k--cut{ flex-direction:column; gap:2px; color:#fff; background:linear-gradient(#FFB766,#EE7418); border-color:#7a3306; box-shadow:0 4px 0 #7a3306; }
 .wg-k--ent::before,.wg-k--cut::before{ border-color:rgba(255,255,255,.6); }
 .wg-nkh{ width:26px; height:26px; border-radius:50%; background:url(../assets/mascot.webp) 50% -5px / 38px auto no-repeat; position:relative; z-index:2; }
 .wg-hint{ position:relative; display:flex; align-items:center; gap:4px; height:34px; padding:0 8px 0 4px; border-radius:17px; cursor:pointer; color:#fff;

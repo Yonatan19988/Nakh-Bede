@@ -70,12 +70,12 @@ function dailyBumpStreak(won){
 
 // ---------------- the screen ----------------
 // Nakhi peeks over a cream board of raised tiles; under it a wool tray holds a keyboard of sewn-on patches laid
-// out like the phone's Persian keyboard, with the scissors («پاک») over a wide «ثبت». «یه حرف» (Nakhi gives away
+// out like the phone's Persian keyboard, with the scissors («پاک») after «چ» and a wide «ثبت» under them. «یه حرف» (Nakhi gives away
 // a letter for coins) sits under the board.
 const WORDS_HINT_PRICE = 20;
 const WORDS_WIN_COINS = [0, 15, 12, 10, 8, 6, 5];          // by the number of tries
 // the Persian keyboard's letters, in its order
-const WORDS_KEYS = ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','چ','ش','س','ی','ب','ل','ا','ت','ن','م','ک','گ','ظ','ط','ژ','ز','ر','ذ','د','پ','و'];
+const WORDS_KEYS = ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','ش','س','ی','ب','ل','ا','ت','ن','م','ک','گ','ظ','ط','ژ','ز','ر','ذ','د','پ','و','چ'];
 
 let dl = { row: null, at: 0, say: '', shake: false, pop: -1, revealing: false, celebrate: false, help: false, k: null };
 
@@ -330,16 +330,16 @@ function wgKeyboard(){
     press(b, () => { wgPopup(b, ch); dailyAddLetter(ch); });
     return b;
   };
-  // the rows of the phone's own Persian keyboard (12, 11, 9), so every letter is where the thumb expects it;
-  // «پاک» starts the third row and «ثبت» is the wide key under it
-  [[0, 12], [12, 23], [23, 32]].forEach(([from, to], r) => {
+  // the phone's own Persian keyboard: eleven equal keys a row, «چ» at the end of the third row and «پاک»
+  // after it, so every letter is where the thumb expects it; «ثبت» is the wide key under them
+  [[0, 11], [11, 22], [22, 32]].forEach(([from, to], r) => {
     const row = el(`<div class="wg-kr"></div>`);
+    WORDS_KEYS.slice(from, to).forEach(ch => row.appendChild(letter(ch)));
     if(r === 2){
       const cut = el(`<button type="button" class="wg-k wg-k--cut" aria-label="پاک کردن">${wgIcon('cut')}<small>پاک</small></button>`);
       press(cut, dailyBackspace);
       row.appendChild(cut);
     }
-    WORDS_KEYS.slice(from, to).forEach(ch => row.appendChild(letter(ch)));
     inner.appendChild(row);
   });
   const last = el(`<div class="wg-kr"></div>`);
