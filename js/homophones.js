@@ -120,11 +120,12 @@ function homoSay(){
 }
 
 function renderHomo(){
-  if(!ho) homoNewRound();
+  if(hd) return renderHomoDuel();
+  if(!ho) return renderHomoChoose();
   const wrap = el(`<div class="wg hm"><div class="wg-bg" aria-hidden="true"></div></div>`);
   const hud = el(`<div class="wg-hud"><span class="wg-coin">${wgIcon('coin')}<b></b></span>${wgRibbonText('کدوم درسته؟')}<button type="button" class="wg-back" aria-label="بازگشت">${wgIcon('back')}</button></div>`);
   hud.querySelector('.wg-coin b').textContent = faNum(loadProfile().coins);
-  hud.querySelector('.wg-back').addEventListener('click', () => { homoStopTimer(); ho = null; goBack(); });
+  hud.querySelector('.wg-back').addEventListener('click', () => { homoStopTimer(); ho = null; render(); });
   wrap.appendChild(hud);
   if(ho.done){ wrap.appendChild(homoResult()); return wrap; }
 
@@ -219,8 +220,8 @@ function homoResult(){
   box.querySelector('.hm-res__best').textContent = ho.newBest ? `رکورد تازه: ${faNum(ho.points)} امتیاز!` : `امتیاز ${faNum(ho.points)} · رکورد ${faNum(st.best)}`;
   const again = el(`<button type="button" class="wg-btn wg-btn--next"><b>یه دور دیگه</b></button>`);
   again.addEventListener('click', () => { homoNewRound(); render(); });
-  const home = el(`<button type="button" class="wg-btn wg-btn--share" aria-label="برگشت به خانه">${wgIcon('back')}</button>`);
-  home.addEventListener('click', () => { ho = null; goBack(); });
+  const home = el(`<button type="button" class="wg-btn wg-btn--share" aria-label="برگشت">${wgIcon('back')}</button>`);
+  home.addEventListener('click', () => { ho = null; render(); });
   box.querySelector('.wg-res__btns').append(again, home);
   if(ho.celebrate){
     ho.celebrate = false;
@@ -230,8 +231,121 @@ function homoResult(){
 }
 
 function openHomo(){
-  homoStopTimer();
-  homoNewRound();
+  homoStopTimer(); clearTimeout(hdT);
+  ho = null; hd = null;
   state.screen = 'homo';
   render();
+}
+
+// ---- first: alone, or a duel on one phone ----
+function renderHomoChoose(){
+  const wrap = el(`<div class="wg hm"><div class="wg-bg" aria-hidden="true"></div></div>`);
+  const hud = el(`<div class="wg-hud"><span class="wg-coin">${wgIcon('coin')}<b></b></span>${wgRibbonText('کدوم درسته؟')}<button type="button" class="wg-back" aria-label="بازگشت">${wgIcon('back')}</button></div>`);
+  hud.querySelector('.wg-coin b').textContent = faNum(loadProfile().coins);
+  hud.querySelector('.wg-back').addEventListener('click', goBack);
+  wrap.appendChild(hud);
+  const st = homoStats();
+  const box = el(`<div class="hm-choose">
+    <div class="hm-say"><img src="assets/mascot.webp" alt="" aria-hidden="true" decoding="async"><div class="wg-bub">حیاط یا حیات؟ صد یا سد؟ چطوری بازی کنیم؟</div></div>
+    <button type="button" class="hm-pick hm-pick--solo"><b>تک‌نفره</b><small></small></button>
+    <button type="button" class="hm-pick hm-pick--duel"><b>دوئل دونفره</b><small>گوشی رو بذارید وسط؛ هر کی زودتر املای درست رو بزنه امتیاز می‌گیره. اول به ${faNum(HOMO_DUEL_TO)} برسی، بردی!</small></button>
+  </div>`);
+  box.querySelector('.hm-pick--solo small').textContent = `${faNum(HOMO_ROUND)} جمله، ${faNum(HOMO_SECS)} ثانیه برای هر کدوم.${st.best ? ` رکوردت ${faNum(st.best)} امتیازه.` : ''}`;
+  box.querySelector('.hm-pick--solo').addEventListener('click', () => { homoNewRound(); render(); });
+  box.querySelector('.hm-pick--duel').addEventListener('click', () => { homoNewDuel(); render(); });
+  wrap.appendChild(box);
+  return wrap;
+}
+
+// ---- the duel: the phone lies between two players, the top half turned to face the one across ----
+const HOMO_DUEL_TO = 7;
+let hd = null, hdT = null;
+function homoNewDuel(){
+  clearTimeout(hdT);
+  hd = { qs: homoNextQs(40), i: 0, sc: [0, 0], lock: [false, false], res: null, done: false, flip: Math.random() < .5 };
+}
+function hdQ(){ const [p, ans] = HOMO_QS[hd.qs[hd.i % hd.qs.length]]; return { p, ans: ans, pair: HOMO_PAIRS[p] }; }
+// player 0 is at the bottom, player 1 at the top
+function homoDuelTap(who, k){
+  if(!hd || hd.res || hd.done || hd.lock[who]) return;
+  const { ans } = hdQ();
+  if(k === ans){
+    hd.sc[who]++; hd.res = { who, k };
+    sfxWin();
+    render();
+    hdT = setTimeout(homoDuelNext, 1500);
+  } else {
+    hd.sc[who] = Math.max(0, hd.sc[who] - 1); hd.lock[who] = k + 1;
+    sfxWrong();
+    if(hd.lock[0] && hd.lock[1]){ hd.res = { who: -1 }; render(); hdT = setTimeout(homoDuelNext, 1900); }
+    else render();
+  }
+}
+function homoDuelNext(){
+  if(!hd || state.screen !== 'homo') return;
+  if(hd.sc[0] >= HOMO_DUEL_TO || hd.sc[1] >= HOMO_DUEL_TO){
+    hd.done = true; hd.celebrate = true;
+  } else {
+    hd.i++; hd.lock = [false, false]; hd.res = null; hd.flip = Math.random() < .5;
+  }
+  render();
+}
+function homoDuelHalf(who){
+  const { ans, pair } = hdQ();
+  const me = who === 0 ? 'آبی' : 'نارنجی';
+  const half = el(`<div class="hd-half hd-half--${who ? 'top' : 'bot'}"><div class="hd-score"><b></b><span class="hd-dots" aria-hidden="true"></span></div></div>`);
+  half.querySelector('.hd-score b').textContent = `${me} · ${faNum(hd.sc[who])}`;
+  for(let i = 0; i < HOMO_DUEL_TO; i++) half.querySelector('.hd-dots').appendChild(el(`<i class="${i < hd.sc[who] ? 'is-on' : ''}"></i>`));
+  if(hd.done){
+    const won = hd.sc[who] >= HOMO_DUEL_TO;
+    const end = el(`<div class="hd-end ${won ? 'is-won' : ''}"><img src="assets/${won ? 'mascot-laugh' : 'mascot'}.webp" alt="" aria-hidden="true"><b></b></div>`);
+    end.querySelector('b').textContent = won ? 'بردی!' : 'باختی! دفعه‌ی بعد…';
+    end.appendChild(el(`<small>${faNum(hd.sc[who])} — ${faNum(hd.sc[1 - who])}</small>`));
+    half.querySelector('.hd-score').remove();
+    half.appendChild(end);
+    return half;
+  }
+  const card = el(`<div class="hm-sent hd-sent"><p></p></div>`);
+  const [before, after] = pair[4 + ans].split('___');
+  const pp = card.querySelector('p');
+  const gap = el(`<span class="hm-gap${hd.res && hd.res.who >= 0 ? ' is-fill' : ''}"></span>`);
+  if(hd.res) gap.textContent = pair[ans * 2];
+  pp.append(before, gap, after || '');
+  half.appendChild(card);
+  const msg = el(`<div class="hd-msg"></div>`);
+  if(hd.res){
+    if(hd.res.who === who){ msg.textContent = 'امتیاز مال تو!'; msg.classList.add('is-ok'); }
+    else if(hd.res.who >= 0){ msg.textContent = 'حریفت زودتر زد!'; }
+    else { msg.textContent = `هیچ‌کدوم! درستش «${pair[ans * 2]}» بود.`; }
+  } else if(hd.lock[who]){ msg.textContent = 'اشتباه بود! −۱ — صبر کن تا سؤال بعد.'; msg.classList.add('is-bad'); }
+  half.appendChild(msg);
+  const opts = el(`<div class="hm-opts hd-opts"></div>`);
+  (hd.flip ? [1, 0] : [0, 1]).forEach(k => {
+    const b = el(`<button type="button" class="hm-opt"><b></b></button>`);
+    b.querySelector('b').textContent = pair[k * 2];
+    if(hd.res && k === ans) b.classList.add('is-ok');
+    else if(hd.lock[who] === k + 1) b.classList.add('is-bad');
+    if(hd.res || hd.lock[who]) b.disabled = true;
+    // pointerdown: both players can tap at the same moment
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); homoDuelTap(who, k); });
+    opts.appendChild(b);
+  });
+  half.appendChild(opts);
+  return half;
+}
+function renderHomoDuel(){
+  const wrap = el(`<div class="wg hd${hd.done ? ' is-done' : ''}"><div class="wg-bg" aria-hidden="true"></div></div>`);
+  wrap.appendChild(homoDuelHalf(1));
+  const mid = el(`<div class="hd-mid"><button type="button" class="wg-back hd-back" aria-label="بازگشت">${wgIcon('back')}</button><span class="hd-to"></span><img src="assets/mascot.webp" alt="" aria-hidden="true"></div>`);
+  mid.querySelector('.hd-to').textContent = hd.done ? 'تموم شد!' : `تا ${faNum(HOMO_DUEL_TO)}`;
+  mid.querySelector('.hd-back').addEventListener('click', () => { clearTimeout(hdT); hd = null; render(); });
+  wrap.appendChild(mid);
+  wrap.appendChild(homoDuelHalf(0));
+  if(hd.done){
+    const again = el(`<div class="hd-again"><button type="button" class="wg-btn wg-btn--next"><b>دوباره</b></button></div>`);
+    again.querySelector('button').addEventListener('click', () => { homoNewDuel(); render(); });
+    wrap.appendChild(again);
+    if(hd.celebrate){ hd.celebrate = false; setTimeout(() => { const w = document.querySelector('.wg'); if(w) wgConfetti(w); }, 60); }
+  }
+  return wrap;
 }
