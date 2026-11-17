@@ -1,50 +1,21 @@
 // «کدوم درسته؟» — words that sound the same but are spelt differently (هم‌آواها), like حیاط and حیات.
 // A sentence with a gap comes up with the two spellings under it; pick the right one before the time runs out.
 // After every answer Nakhi says what both words mean. Ten sentences a round.
-// Needs: app.js (el, LS, faNum, state, render, loadProfile, saveProfile, sfx*, goBack, accountTouch)
+// Needs: homodata.js (HOMO_PAIRS, HOMO_TYPOS), app.js (el, LS, faNum, state, render, loadProfile, saveProfile, sfx*, goBack, accountTouch)
 // and daily.js (wgIcon, wgRibbonText, wgConfetti, wgReduced).
 
-// [word, its meaning, the other word, its meaning, sentence for the first, sentence for the second]
-const HOMO_PAIRS = [
-  ['حیاط', 'محوطه‌ی باز خانه', 'حیات', 'زندگی', 'بچه‌ها توی ___ فوتبال بازی می‌کنن.', 'آب مایه‌ی ___ است.'],
-  ['خار', 'تیغ گیاه', 'خوار', 'پست و بی‌ارزش', 'گل بی ___ دنیا نیست.', 'آدم دروغگو پیش همه ___ می‌شه.'],
-  ['سد', 'دیواری که جلوی آب را می‌گیرد', 'صد', 'عدد ۱۰۰', 'آب پشت ___ جمع شد.', 'این کتاب ___ صفحه داره.'],
-  ['سفر', 'رفتن به جای دیگر', 'صفر', 'عدد ۰', 'تابستون رفتیم ___ شمال.', 'نمره‌ی امتحانش ___ شد!'],
-  ['اساس', 'پایه و بنیاد', 'اثاث', 'وسایل خانه', 'اعتماد ___ هر دوستیه.', 'موقع اسباب‌کشی ___ خونه رو بار کامیون کردیم.'],
-  ['خاست', 'بلند شد (از «خاستن»)', 'خواست', 'میل داشت (از «خواستن»)', 'پیرمرد آهسته از جا ___ و راه افتاد.', 'بچه از مادرش یه لیوان آب ___.'],
-  ['ثواب', 'پاداش کار نیک', 'صواب', 'درست و بجا', 'کمک به دیگران ___ داره.', 'به نظرم کار ___ اینه که صبر کنیم.'],
-  ['قریب', 'نزدیک', 'غریب', 'ناآشنا، دور از وطن', '___ یک ساعت منتظرش موندیم.', 'توی این شهر ___ هستم و کسی رو نمی‌شناسم.'],
-  ['خان', 'ارباب و بزرگ', 'خوان', 'سفره؛ مرحله‌ی سخت', '___ روستا به همه دستور می‌داد.', 'رستم از هفت ___ گذشت.'],
-  ['غذا', 'خوراک', 'قضا', 'سرنوشت؛ کاری که وقتش گذشته', 'مامان برای ناهار ___ پخته.', 'خواب موند و نمازش ___ شد.'],
-  ['خویش', 'خود', 'خیش', 'ابزار شخم زدن', 'هر کس مسئول کار ___ است.', 'کشاورز با ___ زمین رو شخم زد.'],
-  ['خرد', 'ریز و شکسته', 'خورد', 'از «خوردن»', 'لیوان از دستم افتاد و ___ شد.', 'علی ناهارش رو کامل ___.'],
-  ['عرض', 'پهنا', 'ارز', 'پول کشورهای دیگر', '___ این میز یک متره.', 'قیمت ___ دوباره بالا رفت.'],
-  ['اسرار', 'رازها', 'اصرار', 'پافشاری', 'دوست خوب ___ آدم رو نگه می‌داره.', 'هرچی ___ کردم، باهامون نیومد.'],
-  ['حال', 'احوال، وضعیت', 'هال', 'سالن خانه', 'امروز ___ من خیلی خوبه.', 'مهمونا توی ___ نشسته بودن.'],
-  ['قالب', 'شکل، ظرف شکل‌دادن', 'غالب', 'پیروز', 'کیک رو توی ___ ریختیم.', 'تیم ما بر حریف ___ شد.'],
-  ['نذر', 'عهد برای انجام کار خیر', 'نظر', 'دیدگاه', 'مادربزرگ ___ کرده بود شله‌زرد بپزه.', '___ تو درباره‌ی این فیلم چیه؟'],
-  ['فراق', 'جدایی', 'فراغ', 'آسودگی', 'شاعر از ___ یار شعر گفته.', 'بعد از امتحان‌ها با ___ بال استراحت کردیم.'],
-  ['منسوب', 'نسبت داده‌شده', 'منصوب', 'گماشته‌شده به یک مقام', 'این شعر به حافظ ___ است.', 'او به مدیریت مدرسه ___ شد.'],
-  ['علم', 'پرچم (عَلَم)', 'الم', 'درد و رنج', 'سرباز ___ کشور رو بالا برد.', 'بیمار از درد و ___ می‌نالید.'],
-  ['هوا', 'هوای اطراف ما', 'حوا', 'همسر آدم', 'امروز ___ خیلی سرده.', 'آدم و ___ اولین انسان‌ها بودن.'],
-  ['ثنا', 'ستایش', 'سنا', 'نام یکی از مجلس‌ها', 'حمد و ___ مخصوص خداست.', 'در آمریکا مجلس ___ وجود داره.'],
-  ['سفیر', 'نماینده‌ی یک کشور', 'صفیر', 'صدای تیز و سوت‌مانند', '___ ایران در فرانسه کار می‌کنه.', '___ باد از لای پنجره میومد.'],
-  ['نصب', 'کار گذاشتن', 'نسب', 'نژاد و تبار', 'کولر رو روی دیوار ___ کردیم.', '___ این خانواده به یه خاندان قدیمی می‌رسه.'],
-  ['غاز', 'پرنده‌ی آبی', 'قاز', 'پول خیلی کم', 'توی برکه یه ___ سفید شنا می‌کرد.', 'این وسیله یه ___ هم نمی‌ارزه.'],
-  ['انتصاب', 'گماشتن به یک مقام', 'انتساب', 'نسبت دادن', 'خبر ___ مدیر جدید اعلام شد.', '___ این نقاشی به اون هنرمند درست نیست.'],
-  ['حلال', 'جایز و روا', 'هلال', 'ماه نو', 'این غذا ___ است.', '___ ماه توی آسمون پیدا شد.'],
-  ['حول', 'اطراف، درباره', 'هول', 'ترس و عجله', 'صحبت‌ها ___ همین موضوع بود.', 'با ___ و عجله از خونه زد بیرون.'],
-  ['راضی', 'خشنود', 'رازی', 'زکریای رازی، دانشمند ایرانی', 'از نتیجه‌ی کار ___ بودیم.', 'زکریای ___ الکل رو کشف کرد.'],
-  ['غدیر', 'نام یک عید', 'قدیر', 'توانا', 'عید ___ رو جشن گرفتیم.', 'خداوند ___ و تواناست.'],
-  ['غربت', 'دوری از وطن', 'قربت', 'نزدیکی', 'سال‌ها در ___ زندگی کرد و دلش برای وطن تنگ بود.', 'نماز رو به قصد ___ به خدا می‌خونن.'],
-  ['قرض', 'وام', 'غرض', 'منظور، قصد', 'ازش پول ___ گرفتم.', '___ از این حرف چی بود؟'],
-  ['سلاح', 'جنگ‌افزار', 'صلاح', 'خیر و مصلحت', 'سربازها ___ به دست گرفتن.', '___ نیست این وقت شب تنها بری بیرون.'],
-  ['نغز', 'زیبا و دلپذیر', 'نقض', 'شکستن قانون یا قول', 'این شعر خیلی ___ و دلنشینه.', '___ قانون جریمه داره.'],
-  ['سوت', 'صدای سوتک', 'صوت', 'صدا', 'داور ___ پایان بازی رو زد.', 'کیفیت ___ این بلندگو عالیه.'],
-  ['تهدید', 'ترساندن', 'تحدید', 'محدود کردن', 'دزد صاحب‌خونه رو ___ کرد.', 'دولت برای ___ مصرف آب قانون گذاشت.'],
-];
-// every sentence as a question: [pair, which word is right (0 or 1)]
-const HOMO_QS = HOMO_PAIRS.flatMap((_, i) => [[i, 0], [i, 1]]);
+// Every question, built from js/homodata.js. Each is [word 0, its meaning, word 1, its meaning, sentence, sentence]
+// (the sentence twice, so item[4 + ans] is it), with .ans the right word and .typo for a misspelling.
+const HOMO_ITEMS = [];
+HOMO_PAIRS.forEach(([a, ma, b, mb, sa, sb]) => {
+  sa.forEach(t => { const it = [a, ma, b, mb, t, t]; it.ans = 0; HOMO_ITEMS.push(it); });
+  sb.forEach(t => { const it = [a, ma, b, mb, t, t]; it.ans = 1; HOMO_ITEMS.push(it); });
+});
+HOMO_TYPOS.forEach(([right, wrong, ss]) => ss.forEach(t => {
+  const it = [right, 'املای درست', wrong, 'غلط املایی', t, t]; it.ans = 0; it.typo = true; HOMO_ITEMS.push(it);
+}));
+// every question: [item, which word is right (0 or 1)]
+const HOMO_QS = HOMO_ITEMS.map((it, i) => [i, it.ans]);
 const HOMO_ROUND = 10, HOMO_SECS = 12;
 
 // a shuffled order of the questions for this phone, so a sentence does not come back until all were asked
@@ -68,7 +39,7 @@ let ho = null;     // the round being played
 function homoNewRound(){
   ho = { qs: homoNextQs(HOMO_ROUND), i: 0, right: 0, points: 0, run: 0, bestRun: 0, picked: -1, t0: 0, flip: Math.random() < .5, done: false, coins: 0 };
 }
-function homoQ(){ const [p, ans] = HOMO_QS[ho.qs[ho.i]]; return { p: HOMO_PAIRS[p], ans }; }
+function homoQ(){ const [p, ans] = HOMO_QS[ho.qs[ho.i]]; return { p: HOMO_ITEMS[p], ans }; }
 
 let homoTimer = null;
 function homoStopTimer(){ clearTimeout(homoTimer); homoTimer = null; }
@@ -173,7 +144,7 @@ function renderHomo(){
     const mean = el(`<div class="hm-mean"></div>`);
     mean.innerHTML = '<b></b> <span></span>';
     mean.querySelector('b').textContent = `«${p[0]}»`;
-    mean.querySelector('span').textContent = `یعنی ${p[1]}؛ «${p[2]}» یعنی ${p[3]}.`;
+    mean.querySelector('span').textContent = p.typo ? `درسته؛ «${p[2]}» غلط املاییه.` : `یعنی ${p[1]}؛ «${p[2]}» یعنی ${p[3]}.`;
     stage.appendChild(mean);
   }
   wrap.appendChild(stage);
@@ -264,7 +235,7 @@ function homoNewDuel(){
   clearTimeout(hdT);
   hd = { qs: homoNextQs(40), i: 0, sc: [0, 0], lock: [false, false], res: null, done: false, flip: Math.random() < .5 };
 }
-function hdQ(){ const [p, ans] = HOMO_QS[hd.qs[hd.i % hd.qs.length]]; return { p, ans: ans, pair: HOMO_PAIRS[p] }; }
+function hdQ(){ const [p, ans] = HOMO_QS[hd.qs[hd.i % hd.qs.length]]; return { p, ans: ans, pair: HOMO_ITEMS[p] }; }
 // player 0 is at the bottom, player 1 at the top
 function homoDuelTap(who, k){
   if(!hd || hd.res || hd.done || hd.lock[who]) return;
