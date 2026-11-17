@@ -3387,6 +3387,8 @@ function handleAppBack(){
   if(state.screen === 'onboard'){ if(state.obStep === 'email'){ acc.err = ''; state.obStep = 'login'; render(); } return true; }
   if(state.homeSheet){ state.homeSheet = false; render(); return true; }
   if(state.screen === 'daily' && dl.help){ dl.help = false; render(); return true; }
+  // inside «کدوم درسته؟», back steps out of a round or a duel to the choice first
+  if(state.screen === 'homo' && (ho || hd)){ homoStopTimer(); clearTimeout(hdT); ho = null; hd = null; render(); return true; }
   // a mid-round decision must not be skipped by a stray back press
   if(state.showAbout){ state.showAbout = false; render(); return true; }
   if(state.foulPending || state.actionPickActive || state.roundEnded || state.animating) return true;

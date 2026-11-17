@@ -2807,6 +2807,44 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .hm-res__big{ font-family:'Lalezar',sans-serif; font-size:36px; color:#2DAA43; text-shadow:0 2px 0 #1d5e22; }
 .hm-res__best{ font-size:14px; font-weight:800; color:#7a3a06; }
 .hm-res .wg-res__btns{ max-width:none; }
+.hm-choose{ flex:1 1 auto; width:100%; max-width:440px; margin:0 auto; padding:20px 16px calc(24px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; justify-content:center; gap:18px; }
+.hm-pick{ position:relative; padding:18px 18px 16px; border-radius:22px; cursor:pointer; text-align:right; display:flex; flex-direction:column; gap:6px; color:#fff; border:4px solid; touch-action:manipulation; }
+.hm-pick::before{ content:''; position:absolute; inset:5px; border-radius:16px; border:2px dashed rgba(255,255,255,.55); pointer-events:none; }
+.hm-pick b{ font-family:'Lalezar',sans-serif; font-weight:400; font-size:28px; line-height:1.3; position:relative; }
+.hm-pick small{ font-size:14px; font-weight:700; line-height:1.8; position:relative; opacity:.95; }
+.hm-pick--solo{ background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 6px 0 #1d5e22; text-shadow:0 1px 0 #1d5e22; }
+.hm-pick--duel{ background:linear-gradient(#FFB766,#EE7418); border-color:#7a3306; box-shadow:0 6px 0 #7a3306; text-shadow:0 1px 0 #7a3306; }
+.hm-pick:active{ transform:translateY(5px); box-shadow:0 1px 0 var(--ink); }
+/* the duel */
+.hd{ user-select:none; -webkit-user-select:none; }
+.hd-half{ flex:1 1 0; min-height:0; display:flex; flex-direction:column; justify-content:space-evenly; align-items:stretch; gap:10px; padding:12px 14px; width:100%; max-width:480px; margin:0 auto; }
+.hd-half--top{ transform:rotate(180deg); padding-top:calc(12px + env(safe-area-inset-bottom, 0px)); }
+.hd-half--bot{ padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); }
+.hd-half--top .hd-score b{ background:linear-gradient(#FFA14A,#E2541A); }
+.hd-score{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.hd-score b{ font-family:'Lalezar',sans-serif; font-weight:400; font-size:18px; color:#fff; padding:2px 14px; border-radius:16px; border:2.5px solid var(--ink); box-shadow:0 3px 0 var(--ink); background:linear-gradient(#6FD6F0,#1B86B3); text-shadow:0 1px 0 rgba(0,0,0,.4); }
+.hd-dots{ display:flex; gap:5px; }
+.hd-dots i{ width:15px; height:15px; border-radius:50%; border:2px solid var(--ink); background:#0b3a50; }
+.hd-dots i.is-on{ background:radial-gradient(circle at 35% 30%,#FFE07A,#F7A81B 60%,#C4650C); }
+.hd-sent{ padding:14px 12px; border-radius:20px; }
+.hd-sent p{ font-size:clamp(18px, 5.4vw, 23px); line-height:1.9; }
+.hd-sent .hm-gap{ min-width:80px; height:40px; font-size:20px; }
+.hd-msg{ min-height:24px; text-align:center; font-family:'Lalezar',sans-serif; font-size:17px; color:#FFE9B0; }
+.hd-msg.is-ok{ color:#9BF58C; } .hd-msg.is-bad{ color:#FFB3A0; }
+.hd-opts .hm-opt{ height:clamp(70px, 11vh, 100px); }
+.hd-opts .hm-opt b{ font-size:clamp(28px, 8.5vw, 38px); }
+.hd-mid{ flex:0 0 auto; position:relative; height:0; border-top:3px dashed #F7A81B; z-index:5; }
+.hd-mid img{ position:absolute; left:50%; top:-34px; width:46px; transform:translateX(-50%); filter:drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
+.hd-back{ position:absolute; left:12px; top:-23px; width:42px; height:42px; }
+.hd-to{ position:absolute; right:12px; top:-15px; padding:0 10px; height:28px; display:flex; align-items:center; border-radius:14px; background:#05222f; border:2px solid var(--ink); font-family:'Lalezar',sans-serif; font-size:15px; color:#FFE27A; }
+.hd-end{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+.hd-end img{ width:90px; filter:drop-shadow(0 6px 8px rgba(0,0,0,.4)); }
+.hd-end b{ font-family:'Lalezar',sans-serif; font-weight:400; font-size:30px; color:#FFE9B0; text-shadow:0 3px 0 var(--ink); }
+.hd-end.is-won b{ color:#9BF58C; font-size:40px; }
+.hd-end small{ font-family:'Lalezar',sans-serif; font-size:20px; color:#FFE27A; }
+.hd-again{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:6; width:min(46vw, 190px); display:flex; }
+.hd.is-done .hd-to,.hd.is-done .hd-mid img{ display:none; }
+.hd-again .wg-btn{ flex:1; }
 @media (prefers-reduced-motion:reduce){ .hm-gap.is-fill,.hm-opt.is-ok,.hm-opt.is-bad,.hm-mean{ animation:none; } }
 
 /* ---------------- Google account card ---------------- */
