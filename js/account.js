@@ -4,7 +4,7 @@
 // What is backed up: the profile (name, avatar, coins, purchases, stats), friends, the daily-word streak,
 // the saved name and the block list. It lives at users/<uid> as one JSON string, readable only by its owner.
 
-const ACCOUNT_KEYS = ['profile', 'friends', 'wordsStats', 'name', 'blocked'];
+const ACCOUNT_KEYS = ['profile', 'friends', 'wordsStats', 'homoStats', 'name', 'blocked'];
 let acc = { busy: false, err: '', note: '', pushTimer: null, checked: false };
 
 function accountReady(){ return !!(window.FB && window.FB.account && window.FB.uid); }
