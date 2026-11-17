@@ -2764,6 +2764,51 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
   .wg-bg::before,.wg-t.is-caret,.wg-t.is-pop,.wg-t.is-flip,.wg-row.is-win .wg-t,.wg-nk.is-hop,.wg-board.is-shake,.wg-res,.wg-bub{ animation:none; }
 }
 
+/* ---------------- «کدوم درسته؟»: homophones ---------------- */
+.hm .wg-hud{ flex:0 0 auto; }
+.hm-top{ flex:0 0 auto; width:100%; max-width:480px; margin:10px auto 0; padding:0 14px; display:flex; align-items:center; gap:10px; }
+.hm-n{ font-family:'Lalezar',sans-serif; font-size:17px; color:#FFE9B0; white-space:nowrap; }
+.hm-time{ flex:1; height:16px; border-radius:9px; background:#05222f; border:2.5px solid var(--ink); overflow:hidden; display:flex; justify-content:flex-start; }
+.hm-time i{ display:block; height:100%; width:100%; border-radius:6px; background:linear-gradient(90deg,#FFE27A,#F7A81B); }
+.hm-stage{ flex:1 1 auto; min-height:0; width:100%; max-width:480px; margin:0 auto; padding:26px 14px 8px; display:flex; flex-direction:column; justify-content:center; gap:16px; }
+.hm-sent{ position:relative; padding:26px 16px 20px; border-radius:24px; text-align:center;
+  background:linear-gradient(#FFF8E6,#F1D9A0); border:4px solid var(--ink); box-shadow:0 7px 0 var(--ink),0 22px 32px rgba(0,0,0,.45); }
+.hm-lbl{ position:absolute; top:-16px; right:18px; padding:1px 12px; border-radius:12px; border:2.5px solid var(--ink); box-shadow:0 3px 0 var(--ink);
+  background:linear-gradient(#FFA14A,#E2541A); font-family:'Lalezar',sans-serif; font-size:15px; color:#fff; text-shadow:0 2px 0 rgba(74,26,6,.6); }
+.hm-sent p{ margin:0; font-family:'Lalezar',sans-serif; font-size:clamp(21px, 6.4vw, 27px); line-height:2.1; color:var(--ink); }
+.hm-gap{ display:inline-flex; align-items:center; justify-content:center; min-width:96px; height:46px; padding:0 12px; margin:0 4px; vertical-align:middle; border-radius:12px;
+  background:#EAD09A; box-shadow:inset 0 3px 5px rgba(74,26,6,.3),0 0 0 3px #F7A81B,0 0 16px rgba(247,168,27,.7); font-family:'Vazirmatn',sans-serif; font-weight:900; font-size:22px; line-height:1; }
+.hm-gap.is-fill{ background:linear-gradient(#93EE84,#2DAA43); color:#fff; text-shadow:0 2px 0 #1d5e22; box-shadow:0 0 0 3px #1d5e22,0 4px 0 3px #1d5e22; animation:wgPop .3s ease-out; }
+.hm-say{ display:flex; align-items:center; gap:6px; min-height:60px; }
+.hm-say img{ width:56px; height:auto; flex:0 0 auto; transform:rotate(-8deg); filter:drop-shadow(0 6px 8px rgba(0,0,0,.35)); }
+.hm-say .wg-bub{ position:static; max-width:none; width:auto; }
+.hm-opts{ display:flex; gap:14px; direction:rtl; }
+.hm-opt{ flex:1 1 0; min-width:0; height:116px; position:relative; border-radius:22px; cursor:pointer; touch-action:manipulation; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  background:linear-gradient(#FFFDF4,#F0DAA5); border:4px solid var(--ink); box-shadow:0 6px 0 var(--ink); color:var(--ink); font-family:'Vazirmatn',sans-serif; transition:transform 80ms ease, box-shadow 80ms ease; }
+.hm-opt::before{ content:''; position:absolute; inset:5px; border-radius:16px; border:2px dashed rgba(122,58,6,.45); pointer-events:none; }
+.hm-opt b{ font-size:clamp(30px, 10vw, 42px); font-weight:900; line-height:1.2; position:relative; }
+.hm-opt small{ font-size:13px; font-weight:800; min-height:18px; position:relative; padding:0 6px; text-align:center; }
+.hm-opt:active:not(:disabled){ transform:translateY(5px); box-shadow:0 1px 0 var(--ink); }
+.hm-opt:disabled{ cursor:default; }
+.hm-opt.is-ok{ background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; box-shadow:0 6px 0 #1d5e22; color:#fff; text-shadow:0 2px 0 #1d5e22; animation:wgPop .3s ease-out; }
+.hm-opt.is-ok::before{ border-color:rgba(255,255,255,.6); }
+.hm-opt.is-bad{ background:linear-gradient(#FF9B7E,#D9412A); border-color:#6a1a0a; box-shadow:0 6px 0 #6a1a0a; color:#fff; text-shadow:0 2px 0 #6a1a0a; animation:dlShake .35s ease; }
+.hm-opt.is-bad::before{ border-color:rgba(255,255,255,.5); }
+.hm-opt:not(.is-ok):not(.is-bad):disabled{ opacity:.6; }
+.hm-mean{ padding:10px 14px; border-radius:16px; background:#05222f; border:2.5px solid var(--ink); box-shadow:0 3px 0 var(--ink); font-size:14px; line-height:1.9; color:#cfe8ee; animation:wgBub .3s ease-out; }
+.hm-mean b{ color:#FFE27A; font-family:'Lalezar',sans-serif; font-weight:400; font-size:16px; }
+.hm-foot{ flex:0 0 auto; width:100%; max-width:480px; margin:0 auto; min-height:64px; padding:0 14px calc(18px + env(safe-area-inset-bottom, 0px)); display:flex; }
+.hm-foot .wg-btn{ flex:1; }
+.hm-res{ flex:1 1 auto; width:100%; max-width:420px; margin:0 auto; padding:20px 16px calc(24px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+.hm-res__nk{ width:110px; height:auto; margin-bottom:-34px; position:relative; z-index:2; filter:drop-shadow(0 8px 10px rgba(0,0,0,.4)); }
+.hm-res__card{ width:100%; padding:40px 16px 20px; border-radius:24px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;
+  background:linear-gradient(#FFF8E6,#F1D9A0); border:4px solid var(--ink); box-shadow:0 7px 0 var(--ink),0 22px 32px rgba(0,0,0,.45); }
+.hm-res__card .wg-res__t{ color:var(--ink); text-shadow:none; }
+.hm-res__big{ font-family:'Lalezar',sans-serif; font-size:36px; color:#2DAA43; text-shadow:0 2px 0 #1d5e22; }
+.hm-res__best{ font-size:14px; font-weight:800; color:#7a3a06; }
+.hm-res .wg-res__btns{ max-width:none; }
+@media (prefers-reduced-motion:reduce){ .hm-gap.is-fill,.hm-opt.is-ok,.hm-opt.is-bad,.hm-mean{ animation:none; } }
+
 /* ---------------- Google account card ---------------- */
 .acc__txt{ margin:0 0 10px; font-size:13px; line-height:1.9; color:var(--text-dim); text-align:center; }
 .acc__google{
@@ -3044,6 +3089,7 @@ button{ font-size:inherit; }
 .hm2-mode--online{ background:linear-gradient(180deg,#6551be,#2f2470); }
 .hm2-mode--quick{ background:linear-gradient(180deg,#3d72d6,#1f3d86); }
 .hm2-mode--daily{ background:linear-gradient(180deg,#bd3d54,#6e1f33); }
+.hm2-mode--homo{ background:linear-gradient(180deg,#2fa36b,#14573a); }
 .hm2-mode__ill{ width:clamp(70px, 14vh, 112px); height:clamp(70px, 14vh, 112px); border-radius:50%; background:rgba(255,255,255,.13); display:flex; align-items:center; justify-content:center; flex:none; }
 .hm2-mode__ill svg{ width:46%; height:46%; }
 .hm2-mode__t{ font-family:'Lalezar','Vazirmatn',sans-serif; font-size:clamp(24px, 7.4vw, 30px); line-height:1.25; text-shadow:0 2px 0 rgba(0,0,0,.25); }

@@ -10,7 +10,7 @@ const FONT_CACHE = 'nakh-bede-fonts-v1';
 const CORE = [
   './', './index.html',
   './css/styles.css',
-  './js/version.js', './js/data.js', './js/packs.js', './js/maps.js', './js/avatar.js', './js/wheel.js', './js/mapfx.js', './js/safety.js', './js/dailywords.js', './js/daily.js', './js/account.js', './js/app.js', './js/firebase.js', './js/firebase-sdk.js',
+  './js/version.js', './js/data.js', './js/packs.js', './js/maps.js', './js/avatar.js', './js/wheel.js', './js/mapfx.js', './js/safety.js', './js/dailywords.js', './js/daily.js', './js/homophones.js', './js/account.js', './js/app.js', './js/firebase.js', './js/firebase-sdk.js',
   './assets/logo.webp', './assets/mascot.webp', './assets/mascot-laugh.webp', './assets/splash-base.webp', './assets/splash-full.webp', './assets/splash-dot-1.webp', './assets/splash-dot-2.webp', './assets/splash-dot-3.webp',
   './assets/fonts/vazirmatn-arabic.woff2', './assets/fonts/vazirmatn-latin.woff2',
   './assets/fonts/lalezar-arabic.woff2', './assets/fonts/kufam-arabic.woff2', './assets/fonts/lalezar-latin.woff2',

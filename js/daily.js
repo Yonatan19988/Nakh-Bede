@@ -91,8 +91,10 @@ function wgIcon(name){
   return I[name] || '';
 }
 // the banner on top: «کلمه‌ی ۲۴»
-function wgRibbon(num){
-  return `<svg class="wg-rib" viewBox="0 0 176 50" width="176" height="50" role="img" aria-label="کلمه‌ی ${faNum(num)}"><defs><linearGradient id="wgRibG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB040"/><stop offset="1" stop-color="#E5600F"/></linearGradient></defs><path d="M4 16h30v28H4l9-14z" fill="#B8500A" stroke="#4a1a06" stroke-width="3" stroke-linejoin="round"/><path d="M172 16h-30v28h30l-9-14z" fill="#B8500A" stroke="#4a1a06" stroke-width="3" stroke-linejoin="round"/><path d="M24 38l10 6V38zM152 38l-10 6V38z" fill="#4a1a06"/><rect x="22" y="4" width="132" height="35" rx="7" fill="url(#wgRibG)" stroke="#4a1a06" stroke-width="3"/><rect x="28" y="8" width="120" height="7" rx="3.5" fill="#fff" opacity=".3"/><text x="88" y="31" text-anchor="middle" font-family="Lalezar, Vazirmatn, sans-serif" font-size="21" fill="#fff" stroke="#4a1a06" stroke-width="4" paint-order="stroke" stroke-linejoin="round">کلمه‌ی ${faNum(num)}</text></svg>`;
+function wgRibbon(num){ return wgRibbonText(`کلمه‌ی ${faNum(num)}`); }
+function wgRibbonText(txt){
+  const t = String(txt).replace(/[<>&"]/g, '');
+  return `<svg class="wg-rib" viewBox="0 0 176 50" width="176" height="50" role="img" aria-label="${t}"><defs><linearGradient id="wgRibG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB040"/><stop offset="1" stop-color="#E5600F"/></linearGradient></defs><path d="M4 16h30v28H4l9-14z" fill="#B8500A" stroke="#4a1a06" stroke-width="3" stroke-linejoin="round"/><path d="M172 16h-30v28h30l-9-14z" fill="#B8500A" stroke="#4a1a06" stroke-width="3" stroke-linejoin="round"/><path d="M24 38l10 6V38zM152 38l-10 6V38z" fill="#4a1a06"/><rect x="22" y="4" width="132" height="35" rx="7" fill="url(#wgRibG)" stroke="#4a1a06" stroke-width="3"/><rect x="28" y="8" width="120" height="7" rx="3.5" fill="#fff" opacity=".3"/><text x="88" y="31" text-anchor="middle" font-family="Lalezar, Vazirmatn, sans-serif" font-size="21" fill="#fff" stroke="#4a1a06" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${t}</text></svg>`;
 }
 
 // what Nakhi says over the board
