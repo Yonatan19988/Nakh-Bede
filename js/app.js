@@ -597,7 +597,7 @@ function render(){
   const keepSel = keepKey ? [ae.selectionStart, ae.selectionEnd] : null;
   document.body.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'onboard' || state.screen === 'splash');
   document.documentElement.classList.toggle('home-mode', state.screen === 'home' || state.screen === 'welcome' || state.screen === 'onboard' || state.screen === 'splash');
-  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick' || state.screen === 'daily' || state.screen === 'homo');
+  document.body.classList.toggle('setup-mode', state.screen === 'setup' || state.screen === 'online-lobby' || state.screen === 'settings' || state.screen === 'profile' || state.screen === 'shop' || state.screen === 'friends' || state.screen === 'cards' || state.screen === 'tutorial' || state.screen === 'online-home' || state.screen === 'online-create' || state.screen === 'online-join' || state.screen === 'online-quick' || state.screen === 'daily' || state.screen === 'homo' || state.screen === 'nakhchin');
   // only the redesigned board is guaranteed to fit; the online board still
   // uses the older, taller layout and must stay reachable
   const boardScreen = state.screen === 'board';
@@ -642,6 +642,8 @@ function render(){
     app.appendChild(renderDaily());
   } else if(state.screen === 'homo'){
     app.appendChild(renderHomo());
+  } else if(state.screen === 'nakhchin'){
+    app.appendChild(renderNakhchin());
   } else if(state.screen === 'online-lobby'){
     app.appendChild(renderOnlineLobby());
   } else if(state.screen === 'online-board'){
@@ -1595,6 +1597,7 @@ function renderHome(){
     local: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
     online: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><path d="M15.5 14.3c2.4.1 4.4 1.6 5 4.2"/></svg>',
     quick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3Z"/></svg>',
+    nakhchin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M5 9.5c4 1.5 10 1.5 14 0M4.5 14c4.5 1.8 10.5 1.8 15 0M9 3.8c-2 5-2 11.4 0 16.4M15 3.8c2 5 2 11.4 0 16.4"/></svg>',
     homo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="8.5" height="12" rx="2"/><rect x="13" y="6" width="8.5" height="12" rx="2"/><path d="M5 12.5l1.6 1.6L9 11"/><path d="M15.5 10.5l3.5 3.5M19 10.5l-3.5 3.5"/></svg>',
     daily: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M12 13.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 15.3l2-.3Z" fill="currentColor"/></svg>'
   };
@@ -1602,6 +1605,7 @@ function renderHome(){
     { id:'local',  title:'روی همین گوشی',   text:'دور هم بشینید، تیم بچینید و گوشی رو دست‌به‌دست کنید.', go: () => { state.setupStep = 0; state.screen = 'setup'; render(); } },
     { id:'online', title:'آنلاین با دوستان', text:'اتاق بساز، لینکش رو بفرست و هر کی هر جا هست بیاد.', go: () => { state.screen = 'online-create'; render(); } },
     { id:'quick',  title:'بازی سریع',        text:'با فارسی‌زبان‌هایی که همین الان آنلاین‌اند بازی کن.', go: openQuick },
+    { id:'nakhchin', title:'نخ‌چین',        text: ncStats().best ? `رکوردت ${faNum(ncStats().best)} امتیازه. از بین ۵۰ کلمه بهترین نخ‌ها رو بچین!` : 'از بین ۵۰ کلمه بهترین نخ‌ها رو بچین؛ یارت باید از بین ۵ گزینه کلمه رو پیدا کنه.', go: openNakhchin },
     { id:'homo',   title:'کدوم درسته؟',      text: homoStats().best ? `رکوردت ${faNum(homoStats().best)} امتیازه. حیاط یا حیات؟ صد یا سد؟` : 'حیاط یا حیات؟ صد یا سد؟ املای درست رو قبل از تموم شدن وقت پیدا کن.', go: openHomo },
     { id:'daily',  title:'حدس کلمه',         text: dst.n ? `${faNum(dst.n)} کلمه پشت‌هم! ببین تا کجا می‌تونی ادامه بدی.` : 'کلمه‌ی پنهان رو در شش حدس پیدا کن؛ هر چند تا کلمه که بخوای.', go: openDaily }
   ];
@@ -3373,7 +3377,7 @@ function renderTutorial(){
 
 // Screens you may leave with a visible control. The board is deliberately
 // excluded: a round in progress should not be abandoned by a stray tap.
-const NO_BACK_SCREENS = ['splash', 'welcome', 'onboard', 'home', 'board', 'online-board', 'daily', 'homo'];   // «حدس کلمه» and «کدوم درسته؟» draw their own
+const NO_BACK_SCREENS = ['splash', 'welcome', 'onboard', 'home', 'board', 'online-board', 'daily', 'homo', 'nakhchin'];   // «حدس کلمه» and «کدوم درسته؟» draw their own
 
 function attachBackButton(app){
   if(NO_BACK_SCREENS.includes(state.screen)) return;
@@ -3388,6 +3392,7 @@ function handleAppBack(){
   if(state.homeSheet){ state.homeSheet = false; render(); return true; }
   if(state.screen === 'daily' && dl.help){ dl.help = false; render(); return true; }
   // inside «کدوم درسته؟», back steps out of a round or a duel to the choice first
+  if(state.screen === 'nakhchin' && nc){ ncStop(); nc = null; render(); return true; }
   if(state.screen === 'homo' && (ho || hd)){ homoStopTimer(); clearTimeout(hdT); ho = null; hd = null; render(); return true; }
   // a mid-round decision must not be skipped by a stray back press
   if(state.showAbout){ state.showAbout = false; render(); return true; }
@@ -3446,7 +3451,7 @@ function goBack(){
 function renderBrand(){
   // these screens draw their own header (brand + back), so the global bar
   // would render a second logo and a second back button on top of them
-  const ownHeader = ['splash','welcome','onboard','home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily','homo'];
+  const ownHeader = ['splash','welcome','onboard','home','online-home','online-create','online-join','setup','board','online-board','online-lobby','settings','profile','shop','friends','cards','tutorial','online-quick','daily','homo','nakhchin'];
   if(ownHeader.includes(state.screen)){
     return el(`<div style="display:none;"></div>`);
   }

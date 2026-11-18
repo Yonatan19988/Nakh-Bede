@@ -2847,6 +2847,38 @@ button.hm-prof{ border:none; cursor:pointer; font-family:inherit; text-align:rig
 .hd-again .wg-btn{ flex:1; }
 @media (prefers-reduced-motion:reduce){ .hm-gap.is-fill,.hm-opt.is-ok,.hm-opt.is-bad,.hm-mean{ animation:none; } }
 
+/* ---------------- «نخ‌چین» ---------------- */
+.hm-pick:disabled{ opacity:.55; cursor:default; transform:none; }
+.nc-wait{ flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:20px; text-align:center; }
+.nc-wait img{ width:120px; animation:wgHop .7s ease-in-out infinite; }
+.nc-wait h2{ margin:0; font-family:'Lalezar',sans-serif; font-weight:400; font-size:26px; color:#FFE9B0; }
+.nc-wait p{ margin:0; font-size:14px; line-height:1.9; color:#cfe8ee; }
+.nc-stage{ flex:1 1 auto; min-height:0; width:100%; max-width:480px; margin:0 auto; padding:12px 14px 8px; display:flex; flex-direction:column; gap:10px; overflow:auto; }
+.nc-pts{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-family:'Lalezar',sans-serif; color:#FFE9B0; }
+.nc-pts b{ font-weight:400; font-size:16px; }
+.nc-thr{ display:grid; grid-template-columns:1fr 1fr; gap:7px; direction:rtl; }
+.nc-th{ height:clamp(36px, 5.2vh, 44px); border-radius:13px; display:flex; align-items:center; gap:8px; padding:0 9px; font-weight:900; font-size:16px;
+  border:2.5px dashed rgba(255,233,176,.3); color:rgba(255,233,176,.4); background:rgba(3,25,36,.35); }
+.nc-th em{ width:24px; height:24px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-style:normal; font-family:'Lalezar',sans-serif; font-size:14px;
+  border:2px solid #06222f; background:#0b3a50; color:#2f6680; }
+.nc-th.is-on{ background:linear-gradient(#FFFDF4,#F3DEAC); border:3px solid var(--ink); box-shadow:0 3px 0 var(--ink); color:var(--ink); }
+.nc-th.is-on em{ border-color:var(--ink); background:radial-gradient(circle at 35% 30%,#FFE07A,#F7A81B 60%,#C4650C); color:var(--ink); }
+.nc-th.is-late{ opacity:.55; }
+.nc-th.is-new{ animation:wgPop .3s ease-out; }
+.nc-res{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:16px; border:2.5px solid var(--ink); box-shadow:0 3px 0 var(--ink); color:#fff; }
+.nc-res img{ width:48px; flex:0 0 auto; }
+.nc-res b{ display:block; font-family:'Lalezar',sans-serif; font-weight:400; font-size:20px; }
+.nc-res small{ font-size:13.5px; font-weight:800; }
+.nc-res.is-ok{ background:linear-gradient(#93EE84,#2DAA43); border-color:#1d5e22; text-shadow:0 1px 0 #1d5e22; }
+.nc-res.is-bad{ background:linear-gradient(#FF9B7E,#D9412A); border-color:#6a1a0a; text-shadow:0 1px 0 #6a1a0a; }
+.nc-five{ flex:0 0 auto; width:100%; max-width:480px; margin:0 auto; padding:6px 14px calc(14px + env(safe-area-inset-bottom, 0px)); display:grid; grid-template-columns:1fr 1fr; gap:9px; direction:rtl; }
+.nc .hm-foot{ padding-top:0; }
+.nc-opt{ height:clamp(48px, 7vh, 60px); border-width:3px; box-shadow:0 4px 0 var(--ink); border-radius:16px; }
+.nc-opt::before{ inset:3px; border-radius:12px; border-width:1.6px; }
+.nc-opt b{ font-size:clamp(18px, 5.4vw, 22px); }
+.nc-opt:last-child{ grid-column:1 / -1; }
+.nc-opt.is-ok{ box-shadow:0 4px 0 #1d5e22; } .nc-opt.is-bad{ box-shadow:0 4px 0 #6a1a0a; }
+
 /* ---------------- Google account card ---------------- */
 .acc__txt{ margin:0 0 10px; font-size:13px; line-height:1.9; color:var(--text-dim); text-align:center; }
 .acc__google{
@@ -3127,6 +3159,7 @@ button{ font-size:inherit; }
 .hm2-mode--online{ background:linear-gradient(180deg,#6551be,#2f2470); }
 .hm2-mode--quick{ background:linear-gradient(180deg,#3d72d6,#1f3d86); }
 .hm2-mode--daily{ background:linear-gradient(180deg,#bd3d54,#6e1f33); }
+.hm2-mode--nakhchin{ background:linear-gradient(180deg,#d6862a,#7a3d0c); }
 .hm2-mode--homo{ background:linear-gradient(180deg,#2fa36b,#14573a); }
 .hm2-mode__ill{ width:clamp(70px, 14vh, 112px); height:clamp(70px, 14vh, 112px); border-radius:50%; background:rgba(255,255,255,.13); display:flex; align-items:center; justify-content:center; flex:none; }
 .hm2-mode__ill svg{ width:46%; height:46%; }
