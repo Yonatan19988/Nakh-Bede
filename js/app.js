@@ -586,6 +586,8 @@ function render(){
     if(state.screen === 'home') sessionStorage.setItem('nbIntro', 'home');
     else if(state.screen === 'welcome' && sessionStorage.getItem('nbIntro') !== 'home') sessionStorage.setItem('nbIntro', 'welcome');
   } catch(e){}
+  // an invite link to a «نخ‌چین» room opens that mode once the player reaches home
+  if(state.screen === 'home' && state.ncPending) state.screen = 'nakhchin';
   if(window.__needsReload && state.screen === 'home'){ window.__needsReload = false; location.reload(); return; }
   // the wheel owns the screen for the length of its spin — but never block
   // a navigation away from the board, or the UI would freeze for 4s
@@ -3392,6 +3394,7 @@ function handleAppBack(){
   if(state.homeSheet){ state.homeSheet = false; render(); return true; }
   if(state.screen === 'daily' && dl.help){ dl.help = false; render(); return true; }
   // inside «کدوم درسته؟», back steps out of a round or a duel to the choice first
+  if(state.screen === 'nakhchin' && ncOn){ if(confirm('از اتاق بیرون بری؟')) ncLeaveRoom(); return true; }
   if(state.screen === 'nakhchin' && nc){ ncStop(); nc = null; render(); return true; }
   if(state.screen === 'homo' && (ho || hd)){ homoStopTimer(); clearTimeout(hdT); ho = null; hd = null; render(); return true; }
   // a mid-round decision must not be skipped by a stray back press
@@ -5053,7 +5056,12 @@ function renderWinner(){
 // after a round ends without win/obstacle, offer explicit "next turn" via re-drawing controls
 const origRenderBoard = renderBoard;
 
-// invite links look like  /?room=ABCDE  and open the join sheet with the code filled in
+// invite links look like  /?room=ABCDE  and open the join sheet with the code filled in;
+// /?nc=ABCDE is a «نخ‌چین» room
+try {
+  const nq = new URLSearchParams(location.search).get('nc');
+  if(nq){ state.ncPending = nq.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); history.replaceState(null, '', location.pathname); }
+} catch(e){}
 try {
   const q = new URLSearchParams(location.search).get('room');
   if(q){

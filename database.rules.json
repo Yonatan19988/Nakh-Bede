@@ -379,6 +379,25 @@
           ".validate": false
         }
       }
+    },
+    "ncrooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() ? newData.child('hostId').val() === auth.uid : (data.child('players').child(auth.uid).exists() || (newData.child('players').child(auth.uid).exists() && data.child('phase').val() === 'lobby') || data.child('createdAt').val() < now - 86400000))",
+        ".validate": "$code.length === 5 && (!newData.exists() || newData.hasChildren(['hostId','createdAt']))",
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && (data.exists() || root.child('ncrooms').child($code).child('phase').val() === 'lobby')",
+            ".validate": "!newData.exists() || newData.hasChildren(['name','team'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+            },
+            "team": {
+              ".validate": "newData.val() === 'a' || newData.val() === 'b'"
+            }
+          }
+        }
+      }
     }
   }
 }
